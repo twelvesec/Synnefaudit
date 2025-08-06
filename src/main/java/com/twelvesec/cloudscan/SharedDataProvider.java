@@ -1,0 +1,499 @@
+package com.twelvesec.cloudscan;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import software.amazon.awssdk.services.accessanalyzer.AccessAnalyzerAsyncClient;
+import software.amazon.awssdk.services.accessanalyzer.model.AnalyzerSummary;
+import software.amazon.awssdk.services.accessanalyzer.model.ListAnalyzersRequest;
+import software.amazon.awssdk.services.accessanalyzer.model.ListAnalyzersResponse;
+import software.amazon.awssdk.services.acm.AcmAsyncClient;
+import software.amazon.awssdk.services.acm.model.CertificateSummary;
+import software.amazon.awssdk.services.acm.model.ListCertificatesRequest;
+import software.amazon.awssdk.services.acm.model.ListCertificatesResponse;
+import software.amazon.awssdk.services.athena.AthenaAsyncClient;
+import software.amazon.awssdk.services.athena.model.ListWorkGroupsRequest;
+import software.amazon.awssdk.services.athena.model.ListWorkGroupsResponse;
+import software.amazon.awssdk.services.athena.model.WorkGroupSummary;
+import software.amazon.awssdk.services.cloudformation.CloudFormationAsyncClient;
+import software.amazon.awssdk.services.cloudformation.model.ListStacksRequest;
+import software.amazon.awssdk.services.cloudformation.model.ListStacksResponse;
+import software.amazon.awssdk.services.cloudformation.model.StackSummary;
+import software.amazon.awssdk.services.cloudfront.CloudFrontAsyncClient;
+import software.amazon.awssdk.services.cloudfront.model.DistributionSummary;
+import software.amazon.awssdk.services.cloudfront.model.ListDistributionsRequest;
+import software.amazon.awssdk.services.cloudfront.model.ListDistributionsResponse;
+import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
+import software.amazon.awssdk.services.cloudtrail.model.ListTrailsRequest;
+import software.amazon.awssdk.services.cloudtrail.model.ListTrailsResponse;
+import software.amazon.awssdk.services.cloudtrail.model.TrailInfo;
+import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient;
+import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogGroupsResponse;
+import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.model.ListTablesRequest;
+import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
+import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
+import software.amazon.awssdk.services.ec2.model.DescribeInstancesRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeNetworkAclsResponse;
+import software.amazon.awssdk.services.ec2.model.DescribeRouteTablesResponse;
+import software.amazon.awssdk.services.ec2.model.DescribeSubnetsResponse;
+import software.amazon.awssdk.services.ec2.model.DescribeVolumesRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeVolumesResponse;
+import software.amazon.awssdk.services.ec2.model.DescribeVpcEndpointsRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeVpcEndpointsResponse;
+import software.amazon.awssdk.services.ec2.model.DescribeVpcsRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeVpcsResponse;
+import software.amazon.awssdk.services.ec2.model.Instance;
+import software.amazon.awssdk.services.ec2.model.NetworkAcl;
+import software.amazon.awssdk.services.ec2.model.RouteTable;
+import software.amazon.awssdk.services.ec2.model.SecurityGroup;
+import software.amazon.awssdk.services.ec2.model.Subnet;
+import software.amazon.awssdk.services.ec2.model.Volume;
+import software.amazon.awssdk.services.ec2.model.Vpc;
+import software.amazon.awssdk.services.ec2.model.VpcEndpoint;
+import software.amazon.awssdk.services.ecr.EcrAsyncClient;
+import software.amazon.awssdk.services.ecr.model.Repository;
+import software.amazon.awssdk.services.efs.EfsAsyncClient;
+import software.amazon.awssdk.services.efs.model.DescribeFileSystemsRequest;
+import software.amazon.awssdk.services.efs.model.DescribeFileSystemsResponse;
+import software.amazon.awssdk.services.efs.model.FileSystemDescription;
+import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2AsyncClient;
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancersResponse;
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancer;
+import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
+import software.amazon.awssdk.services.guardduty.model.ListDetectorsResponse;
+import software.amazon.awssdk.services.iam.IamAsyncClient;
+import software.amazon.awssdk.services.iam.model.ListPoliciesRequest;
+import software.amazon.awssdk.services.iam.model.ListPoliciesResponse;
+import software.amazon.awssdk.services.iam.model.ListRolesRequest;
+import software.amazon.awssdk.services.iam.model.ListRolesResponse;
+import software.amazon.awssdk.services.iam.model.ListUsersRequest;
+import software.amazon.awssdk.services.iam.model.ListUsersResponse;
+import software.amazon.awssdk.services.iam.model.Policy;
+import software.amazon.awssdk.services.iam.model.PolicyScopeType;
+import software.amazon.awssdk.services.iam.model.Role;
+import software.amazon.awssdk.services.iam.model.User;
+import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
+import software.amazon.awssdk.services.kafka.model.ClusterInfo;
+import software.amazon.awssdk.services.kafka.model.ListClustersRequest;
+import software.amazon.awssdk.services.kafka.model.ListClustersResponse;
+import software.amazon.awssdk.services.kms.KmsAsyncClient;
+import software.amazon.awssdk.services.kms.model.KeyListEntry;
+import software.amazon.awssdk.services.kms.model.ListKeysRequest;
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
+import software.amazon.awssdk.services.lambda.model.FunctionConfiguration;
+import software.amazon.awssdk.services.rds.RdsAsyncClient;
+import software.amazon.awssdk.services.rds.model.DBInstance;
+import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest;
+import software.amazon.awssdk.services.rds.model.DescribeDbInstancesResponse;
+import software.amazon.awssdk.services.resourceexplorer2.model.Index;
+import software.amazon.awssdk.services.resourceexplorer2.ResourceExplorer2AsyncClient;
+import software.amazon.awssdk.services.resourceexplorer2.model.ListIndexesRequest;
+import software.amazon.awssdk.services.resourceexplorer2.model.ListIndexesResponse;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.Bucket;
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerAsyncClient;
+import software.amazon.awssdk.services.secretsmanager.model.ListSecretsRequest;
+import software.amazon.awssdk.services.secretsmanager.model.ListSecretsResponse;
+import software.amazon.awssdk.services.secretsmanager.model.SecretListEntry;
+import software.amazon.awssdk.services.sns.SnsAsyncClient;
+import software.amazon.awssdk.services.sns.model.ListTopicsRequest;
+import software.amazon.awssdk.services.sns.model.Topic;
+import software.amazon.awssdk.services.support.SupportAsyncClient;
+import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckResultRequest;
+import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckResultResponse;
+
+public class SharedDataProvider {
+    private final ConcurrentMap<String, CompletableFuture<?>> cache = new ConcurrentHashMap<>();
+
+    private AccessAnalyzerAsyncClient accessAnalyzer;
+    private AcmAsyncClient acm;
+    private AthenaAsyncClient athena;
+    private CloudFormationAsyncClient cloudformation;
+    private CloudFrontAsyncClient cf;
+    private CloudTrailAsyncClient cloudTrail;
+    private CloudWatchLogsAsyncClient cloudwatchlogs;
+    private DynamoDbAsyncClient dynamodb;
+    private Ec2AsyncClient ec2;
+    private EcrAsyncClient ecr;
+    private EfsAsyncClient efs;
+    private ElasticLoadBalancingV2AsyncClient elb;
+    private SecretsManagerAsyncClient secretsmanager;
+    private GuardDutyAsyncClient guardduty;
+    private IamAsyncClient iam;
+    private KafkaAsyncClient kafka;
+    private KmsAsyncClient kms;
+    private LambdaAsyncClient lambda;
+    private RdsAsyncClient rds;
+    private ResourceExplorer2AsyncClient resourceexplorer2;
+    private S3AsyncClient s3;
+    private SnsAsyncClient sns;
+    private SupportAsyncClient support;
+
+    public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AthenaAsyncClient athena,
+            CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
+            CloudWatchLogsAsyncClient cloudwatchlogs, DynamoDbAsyncClient dynamodb, Ec2AsyncClient ec2,
+            EcrAsyncClient ecr, EfsAsyncClient efs, ElasticLoadBalancingV2AsyncClient elb,
+            SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
+            KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, RdsAsyncClient rds,
+            ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
+            SupportAsyncClient support) {
+        this.accessAnalyzer = accessAnalyzer;
+        this.acm = acm;
+        this.athena = athena;
+        this.cloudformation = cloudformation;
+        this.cf = cf;
+        this.cloudTrail = cloudTrail;
+        this.cloudwatchlogs = cloudwatchlogs;
+        this.dynamodb = dynamodb;
+        this.ec2 = ec2;
+        this.ecr = ecr;
+        this.efs = efs;
+        this.elb = elb;
+        this.secretsmanager = secretsmanager;
+        this.guardduty = guardduty;
+        this.iam = iam;
+        this.kafka = kafka;
+        this.kms = kms;
+        this.lambda = lambda;
+        this.rds = rds;
+        this.resourceexplorer2 = resourceexplorer2;
+        this.s3 = s3;
+        this.sns = sns;
+        this.support = support;
+    }
+
+    private <T> CompletableFuture<T> getCachedData(String cacheKey, Supplier<CompletableFuture<T>> loader) {
+        while (true) {
+            CompletableFuture<?> existing = cache.get(cacheKey);
+            
+            if (existing != null && !existing.isCompletedExceptionally()) {
+                return (CompletableFuture<T>) existing;
+            }
+            
+            CompletableFuture<T> newFuture = loader.get();
+            CompletableFuture<T> futureWithCleanup = newFuture.whenComplete((result, ex) -> {
+                if (ex != null) {
+                    cache.remove(cacheKey, newFuture);
+                }
+            });
+            
+            if (existing == null) {
+                if (cache.putIfAbsent(cacheKey, futureWithCleanup) == null) {
+                    return futureWithCleanup;
+                }
+            } else {
+                if (cache.replace(cacheKey, existing, futureWithCleanup)) {
+                    return futureWithCleanup;
+                }
+            }
+        }
+    }
+
+    public CompletableFuture<List<CertificateSummary>> getAllACMCertificates() {
+        String cacheKey = "acm:certificates";
+        Supplier<CompletableFuture<List<CertificateSummary>>> loader = () ->
+            acm.listCertificates(ListCertificatesRequest.builder().build())
+                .thenApply(ListCertificatesResponse::certificateSummaryList);
+        return getCachedData(cacheKey, loader);
+    }
+
+    public CompletableFuture<List<WorkGroupSummary>> getAllWorkGroups() {
+        String cacheKey = "athena:workgroups";
+        Supplier<CompletableFuture<List<WorkGroupSummary>>> loader = () -> 
+            athena.listWorkGroups(ListWorkGroupsRequest.builder().build())
+                .thenApply(ListWorkGroupsResponse::workGroups);
+        return getCachedData(cacheKey, loader);
+    }
+
+    public CompletableFuture<List<StackSummary>> getAllStacks() {
+        String key = "cloudformation:stacks";
+        Supplier<CompletableFuture<List<StackSummary>>> loader = () -> 
+            PaginatorHelper.collectPaginatedItems(
+                cloudformation.listStacksPaginator(ListStacksRequest.builder().build()),
+                ListStacksResponse::stackSummaries
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<DistributionSummary>> getAllDistributions() {
+        String key = "cloudfront:distributions";
+        Supplier<CompletableFuture<List<DistributionSummary>>> loader = () ->
+            cf.listDistributions(ListDistributionsRequest.builder().build())
+                .thenApply(ListDistributionsResponse::distributionList)
+                .thenApply(dl -> dl.items());
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<TrailInfo>> getAllTrails() {
+        String key = "cloudtrail:trails";
+        Supplier<CompletableFuture<List<TrailInfo>>> loader = () ->
+            cloudTrail.listTrails(ListTrailsRequest.builder().build())
+                .thenApply(ListTrailsResponse::trails);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<LogGroup>> getAllLogGroups() {
+        String key = "cloudwatchlogs:loggroups";
+        Supplier<CompletableFuture<List<LogGroup>>> loader = () ->
+            cloudwatchlogs.describeLogGroups()
+                .thenApply(DescribeLogGroupsResponse::logGroups);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<String>> getAllTableNames() {
+        String key = "dynamodb:tables";
+        Supplier<CompletableFuture<List<String>>> loader = () ->
+            dynamodb.listTables(ListTablesRequest.builder().build())
+                .thenApply(ListTablesResponse::tableNames);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Volume>> getAllVolumes() {
+        String key = "ec2:volumes";
+        Supplier<CompletableFuture<List<Volume>>> loader = () ->
+            ec2.describeVolumes(DescribeVolumesRequest.builder().build())
+                .thenApply(DescribeVolumesResponse::volumes);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Instance>> getAllEC2Instances() {
+        String key = "ec2:instances";
+        Supplier<CompletableFuture<List<Instance>>> loader = () -> 
+            PaginatorHelper.collectPaginatedItems(
+                ec2.describeInstancesPaginator(DescribeInstancesRequest.builder().build()),
+                page -> page.reservations().stream()
+                    .flatMap(res -> res.instances().stream())
+                    .collect(Collectors.toList())
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<String>> getAllSecurityGroupIds() {
+        String key = "ec2:securitygroupids";
+        Supplier<CompletableFuture<List<String>>> loader = () ->
+            ec2.describeSecurityGroups()
+                .thenApply(r -> r.securityGroups().stream()
+                    .map(SecurityGroup::groupId)
+                    .collect(Collectors.toList()));
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<NetworkAcl>> getAllNetworkACLs() {
+        String key = "ec2:networkacls";
+        Supplier<CompletableFuture<List<NetworkAcl>>> loader = () ->
+            ec2.describeNetworkAcls()
+                .thenApply(DescribeNetworkAclsResponse::networkAcls);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<String>> getAllRepositoryNames() {
+        String key = "ecr:repositorynames";
+        Supplier<CompletableFuture<List<String>>> loader = () ->
+            ecr.describeRepositories()
+                .thenApply(r -> r.repositories().stream()
+                    .map(Repository::repositoryName)
+                    .collect(Collectors.toList()));
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<FileSystemDescription>> getAllFileSystems() {
+        String key = "efs:filesystems";
+        Supplier<CompletableFuture<List<FileSystemDescription>>> loader = () ->
+            efs.describeFileSystems(DescribeFileSystemsRequest.builder().build())
+                .thenApply(DescribeFileSystemsResponse::fileSystems);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<LoadBalancer>> getAllLoadBalancers() {
+        String key = "elb:loadbalancers";
+        Supplier<CompletableFuture<List<LoadBalancer>>> loader = () ->
+            elb.describeLoadBalancers()
+                .thenApply(DescribeLoadBalancersResponse::loadBalancers);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<SecretListEntry>> getAllSecrets() {
+        String key = "secretsmanager:secrets";
+        Supplier<CompletableFuture<List<SecretListEntry>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                secretsmanager.listSecretsPaginator(ListSecretsRequest.builder().build()),
+                ListSecretsResponse::secretList
+            );
+        return getCachedData(key, loader);
+    }
+    
+    public CompletableFuture<List<Index>> getAllIndexes() {
+        String key = "resourceexplorer2:indexes";
+        Supplier<CompletableFuture<List<Index>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                resourceexplorer2.listIndexesPaginator(ListIndexesRequest.builder().build()),
+                ListIndexesResponse::indexes
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<String>> getAllDetectorIds() {
+        String key = "guardduty:detectorids";
+        Supplier<CompletableFuture<List<String>>> loader = () ->
+            guardduty.listDetectors()
+                .thenApply(ListDetectorsResponse::detectorIds);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<AnalyzerSummary>> getAllAnalyzers() {
+        String key = "accessanalyzer:analyzers";
+        Supplier<CompletableFuture<List<AnalyzerSummary>>> loader = () ->
+            accessAnalyzer.listAnalyzers(ListAnalyzersRequest.builder().build())
+                .thenApply(ListAnalyzersResponse::analyzers);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Role>> getAllRoles() {
+        String key = "iam:roles";
+        Supplier<CompletableFuture<List<Role>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                iam.listRolesPaginator(ListRolesRequest.builder().build()),
+                ListRolesResponse::roles
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<User>> getAllUsers() {
+        String key = "iam:users";
+        Supplier<CompletableFuture<List<User>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                iam.listUsersPaginator(ListUsersRequest.builder().build()),
+                ListUsersResponse::users
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Policy>> getAllPolicies() {
+        String key = "iam:policies";
+        Supplier<CompletableFuture<List<Policy>>> loader = () ->
+            iam.listPolicies(ListPoliciesRequest.builder().scope(PolicyScopeType.ALL).build())
+                .thenApply(ListPoliciesResponse::policies);
+        return getCachedData(key, loader);
+    }
+    
+    public CompletableFuture<List<ClusterInfo>> getAllKafkaClusters() {
+        String key = "kafka:clusters";
+        Supplier<CompletableFuture<List<ClusterInfo>>> loader = () ->
+            kafka.listClusters(ListClustersRequest.builder().build())
+                .thenApply(ListClustersResponse::clusterInfoList);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<String>> getAllKeyIds() {
+        String key = "kms:keyids";
+        Supplier<CompletableFuture<List<String>>> loader = () ->
+            kms.listKeys(ListKeysRequest.builder().build())
+                .thenApply(r -> r.keys().stream()
+                    .map(KeyListEntry::keyId)
+                    .collect(Collectors.toList()));
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<String>> getAllLambdaFunctionNames() {
+        String key = "lambda:functions";
+        Supplier<CompletableFuture<List<String>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                lambda.listFunctionsPaginator(),
+                page -> page.functions().stream()
+                    .map(FunctionConfiguration::functionName)
+                    .collect(Collectors.toList())
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<DBInstance>> getAllDBInstances() {
+        String key = "rds:dbinstances";
+        Supplier<CompletableFuture<List<DBInstance>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                rds.describeDBInstancesPaginator(DescribeDbInstancesRequest.builder().build()),
+                DescribeDbInstancesResponse::dbInstances
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<String>> getAllS3BucketNames() {
+        String key = "s3:bucketnames";
+        Supplier<CompletableFuture<List<String>>> loader = () ->
+            s3.listBuckets()
+                .thenApply(r -> r.buckets().stream()
+                    .map(Bucket::name)
+                    .collect(Collectors.toList()));
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<String>> getAllSNSTopicArns() {
+        String key = "sns:topicarns";
+        Supplier<CompletableFuture<List<String>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                sns.listTopicsPaginator(ListTopicsRequest.builder().build()),
+                page -> page.topics().stream()
+                    .map(Topic::topicArn)
+                    .collect(Collectors.toList())
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<DescribeTrustedAdvisorCheckResultResponse> getTrustedAdvisorCheckResults(String id) {
+        String cacheKey = "support:trustedAdvisorResults";
+        Supplier<CompletableFuture<DescribeTrustedAdvisorCheckResultResponse>> loader = () ->
+            support.describeTrustedAdvisorCheckResult(DescribeTrustedAdvisorCheckResultRequest.builder()
+                .checkId(id)
+                .build());
+        return getCachedData(cacheKey, loader);
+    }
+
+    public CompletableFuture<List<Vpc>> getAllVPCs() {
+        String key = "ec2:vpcs";
+        Supplier<CompletableFuture<List<Vpc>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                ec2.describeVpcsPaginator(DescribeVpcsRequest.builder().build()),
+                DescribeVpcsResponse::vpcs
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<VpcEndpoint>> getAllVPCEndpoints() {
+        String key = "ec2:vpcendpoints";
+        Supplier<CompletableFuture<List<VpcEndpoint>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                ec2.describeVpcEndpointsPaginator(DescribeVpcEndpointsRequest.builder().build()),
+                DescribeVpcEndpointsResponse::vpcEndpoints
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Subnet>> getAllVPCSubnets() {
+        String key = "ec2:subnets";
+        Supplier<CompletableFuture<List<Subnet>>> loader = () ->
+            ec2.describeSubnets()
+                .thenApply(DescribeSubnetsResponse::subnets);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<RouteTable>> getAllRouteTables() {
+        String key = "ec2:routetables";
+        Supplier<CompletableFuture<List<RouteTable>>> loader = () ->
+            ec2.describeRouteTables()
+                .thenApply(DescribeRouteTablesResponse::routeTables);
+        return getCachedData(key, loader);
+    }
+
+    public void clearCache() {
+        cache.clear();
+    }
+
+    public void clearCacheEntry(String key) {
+        cache.remove(key);
+    }
+}
