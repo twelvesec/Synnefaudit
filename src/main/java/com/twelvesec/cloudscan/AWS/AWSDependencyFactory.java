@@ -12,7 +12,10 @@ import com.twelvesec.cloudscan.messages.Text;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.awscore.client.builder.AwsAsyncClientBuilder;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
+import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
+import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
 import software.amazon.awssdk.profiles.Profile;
 import software.amazon.awssdk.profiles.ProfileFile;
 import software.amazon.awssdk.regions.Region;
@@ -68,6 +71,7 @@ public class AWSDependencyFactory {
     private final AwsCredentialsProvider customChain;
     private final Map<Class<?>, Object> clients = new ConcurrentHashMap<>();
     private final List<AutoCloseable> toClose = new CopyOnWriteArrayList<>();
+    private final SdkAsyncHttpClient crtAsyncHttpClient = AwsCrtAsyncHttpClient.builder().build();
 
     private final Map<Class<?>, Supplier<?>> BUILDERS = Map.ofEntries(
         Map.entry(S3AsyncClient.class,                       builderFor(S3AsyncClient::builder)),
@@ -142,6 +146,7 @@ public class AWSDependencyFactory {
                }
             });
         toClose.clear();
+        crtAsyncHttpClient.close();
     }
     
     public S3AsyncClient getCorrectRegionClient(String bucket, S3AsyncClient s3) {
@@ -154,18 +159,18 @@ public class AWSDependencyFactory {
                 : Region.of(locationConstraint.toString());
 
         return S3AsyncClient.builder()
+                .httpClient(crtAsyncHttpClient)
                 .region(region)
                 .credentialsProvider(this.customChain)
                 .build();
     }
 
-    private <T> Supplier<T> builderFor(Supplier<? extends AwsClientBuilder<?, T>> rawBuilder) {
-        return () -> {
-            AwsClientBuilder<?, T> builder = rawBuilder.get();
-            return builder.region(this.region)
-                        .credentialsProvider(this.customChain)
-                        .build();
-        };
+    private <B extends AwsAsyncClientBuilder<B,T> & AwsClientBuilder<B,T>, T> Supplier<T> builderFor(Supplier<B> rawBuilder) {
+        return () -> rawBuilder.get()
+            .httpClient(crtAsyncHttpClient)
+            .credentialsProvider(this.customChain)
+            .region(this.region)
+            .build();
     }
 
     private AwsCredentialsProvider createCredentialsProvider(String profileName) {
