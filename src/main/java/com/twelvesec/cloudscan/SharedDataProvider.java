@@ -88,13 +88,23 @@ import software.amazon.awssdk.services.kms.model.ListKeysRequest;
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration;
 import software.amazon.awssdk.services.rds.RdsAsyncClient;
+import software.amazon.awssdk.services.rds.model.DBClusterSnapshot;
 import software.amazon.awssdk.services.rds.model.DBInstance;
+import software.amazon.awssdk.services.rds.model.DBSnapshot;
+import software.amazon.awssdk.services.rds.model.DescribeDbClusterSnapshotsRequest;
+import software.amazon.awssdk.services.rds.model.DescribeDbClusterSnapshotsResponse;
 import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest;
 import software.amazon.awssdk.services.rds.model.DescribeDbInstancesResponse;
+import software.amazon.awssdk.services.rds.model.DescribeDbSnapshotsRequest;
+import software.amazon.awssdk.services.rds.model.DescribeDbSnapshotsResponse;
 import software.amazon.awssdk.services.resourceexplorer2.model.Index;
 import software.amazon.awssdk.services.resourceexplorer2.ResourceExplorer2AsyncClient;
 import software.amazon.awssdk.services.resourceexplorer2.model.ListIndexesRequest;
 import software.amazon.awssdk.services.resourceexplorer2.model.ListIndexesResponse;
+import software.amazon.awssdk.services.route53.Route53AsyncClient;
+import software.amazon.awssdk.services.route53.model.HostedZone;
+import software.amazon.awssdk.services.route53.model.ListHostedZonesRequest;
+import software.amazon.awssdk.services.route53.model.ListHostedZonesResponse;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerAsyncClient;
@@ -130,6 +140,7 @@ public class SharedDataProvider {
     private KmsAsyncClient kms;
     private LambdaAsyncClient lambda;
     private RdsAsyncClient rds;
+    private Route53AsyncClient route53;
     private ResourceExplorer2AsyncClient resourceexplorer2;
     private S3AsyncClient s3;
     private SnsAsyncClient sns;
@@ -140,8 +151,8 @@ public class SharedDataProvider {
             CloudWatchLogsAsyncClient cloudwatchlogs, DynamoDbAsyncClient dynamodb, Ec2AsyncClient ec2,
             EcrAsyncClient ecr, EfsAsyncClient efs, ElasticLoadBalancingV2AsyncClient elb,
             SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
-            KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, RdsAsyncClient rds,
-            ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
+            KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, RdsAsyncClient rds, 
+            Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
             SupportAsyncClient support) {
         this.accessAnalyzer = accessAnalyzer;
         this.acm = acm;
@@ -162,6 +173,7 @@ public class SharedDataProvider {
         this.kms = kms;
         this.lambda = lambda;
         this.rds = rds;
+        this.route53 = route53;
         this.resourceexplorer2 = resourceexplorer2;
         this.s3 = s3;
         this.sns = sns;
@@ -418,6 +430,36 @@ public class SharedDataProvider {
             PaginatorHelper.collectPaginatedItems(
                 rds.describeDBInstancesPaginator(DescribeDbInstancesRequest.builder().build()),
                 DescribeDbInstancesResponse::dbInstances
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<DBSnapshot>> getAllDBSnapshots() {
+        String key = "rds:dbsnapshots";
+        Supplier<CompletableFuture<List<DBSnapshot>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                rds.describeDBSnapshotsPaginator(DescribeDbSnapshotsRequest.builder().build()),
+                DescribeDbSnapshotsResponse::dbSnapshots
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<DBClusterSnapshot>> getAllDBClusterSnapshots() {
+        String key = "rds:dbclustersnapshots";
+        Supplier<CompletableFuture<List<DBClusterSnapshot>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                rds.describeDBClusterSnapshotsPaginator(DescribeDbClusterSnapshotsRequest.builder().build()),
+                DescribeDbClusterSnapshotsResponse::dbClusterSnapshots
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<HostedZone>> getAllRoute53HostedZones() {
+        String key = "route53:hostedzones";
+        Supplier<CompletableFuture<List<HostedZone>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                route53.listHostedZonesPaginator(ListHostedZonesRequest.builder().build()),
+                ListHostedZonesResponse::hostedZones
             );
         return getCachedData(key, loader);
     }

@@ -97,6 +97,8 @@ public enum Text {
     NO_RDS_INSTANCES_FOUND("No RDS Instances found."),
     NO_RDS_EVENT_SUBSCRIPTIONS_FOUND("No RDS event subscription found."),
     MISSING_EVENT_SUBSCRIPTIONS("Missing event subscriptions : "),
+    NO_RDS_SNAPSHOTS_FOUND("No RDS Snapshots found."),
+    NO_RDS_CLUSTER_SNAPSHOTS_FOUND("No RDS Cluster Snapshots found."),
 
     NO_S3_BUCKETS_FOUND("No S3 buckets found."),
     NO_ENCRYPTION_CONFIGURATION_FOUND("No encryption configuration found : "),
@@ -118,6 +120,9 @@ public enum Text {
     NO_LIFECYCLE_POLICY_FOUND("No Lifecycle Policy found : "),
 
     ROUTE53_PUBLIC_HOSTED_ZONE_QUERY_LOGGING_DISABLED("Public Hosted Zone with query logging disabled : "),
+    ROUTE53_NOT_ENABLED("Route53 is not enabled."),
+    NO_HOSTED_ZONES_FOUND("No hosted zones found."),
+    NO_A_RECORDS_FOUND_IN_HOSTED_ZONES("No A records found in any hosted zone"),
 
     NO_WAF_WEB_ACLS_FOUND("No WAF WebACLs found"),
     LOGGING_ENABLED_FOR_WEBACL("Logging enabled for WebACL : "),

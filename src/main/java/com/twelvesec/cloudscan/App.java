@@ -49,6 +49,7 @@ import com.twelvesec.cloudscan.AWS.Checks.LambdaCheck;
 import com.twelvesec.cloudscan.AWS.Checks.MFACheck;
 import com.twelvesec.cloudscan.AWS.Checks.NetworkACLsCheck;
 import com.twelvesec.cloudscan.AWS.Checks.RDSInstancesCheck;
+import com.twelvesec.cloudscan.AWS.Checks.Route53Check;
 import com.twelvesec.cloudscan.AWS.Checks.S3BucketsCheck;
 import com.twelvesec.cloudscan.AWS.Checks.SNSTopicsCheck;
 import com.twelvesec.cloudscan.AWS.Checks.SupportCheck;
@@ -169,7 +170,7 @@ public class App {
         try {
             sharedDataProvider = new SharedDataProvider(
                 accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatchLogs, dynamodb, ec2, ecr, efs, 
-                elb, secretsmanager, guardduty, iam, kafka, kms, lambda, rds, resourceexplorer2, s3, sns, support);
+                elb, secretsmanager, guardduty, iam, kafka, kms, lambda, rds, route53, resourceexplorer2, s3, sns, support);
 
             List<CloudCheck> checks = getAWSChecks();
 
@@ -325,7 +326,7 @@ public class App {
             new EFSCheck(writer, sharedDataProvider, efs),
             new ELBCheck(writer, sharedDataProvider, elb, waf),
             new EnabledServicesCheck(writer, sharedDataProvider, secretsmanager, drs, 
-                                    macie2, route53, securityHub, waf),
+                                    macie2, securityHub, waf),
             new GeneralCheck(writer, sharedDataProvider, ssm_inc, accountClient, backup, codeBuild, orgs, sts),
             new GlueCheck(writer, glue),
             new GuardDutyCheck(writer, sharedDataProvider, guardduty),
@@ -337,6 +338,7 @@ public class App {
             new MFACheck(writer, sharedDataProvider, iam, sts),
             new NetworkACLsCheck(writer, sharedDataProvider, ec2),
             new RDSInstancesCheck(writer, sharedDataProvider, rds),
+            new Route53Check(writer, sharedDataProvider, route53),
             new S3BucketsCheck(writer, awsDependencyFactory, sharedDataProvider, s3, s3control, sts),
             new SNSTopicsCheck(writer, sharedDataProvider, sns),
             new SupportCheck(writer, support),

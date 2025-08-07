@@ -66,6 +66,7 @@ public enum AWSFinding {
     PUBLICLY_EXPOSED_KMS_KEYS("Publicly exposed KMS keys", Severity.MEDIUM),
 
     ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED("Route53 Public Hosted Zones with query logging disabled", Severity.LOW),
+    ROUTE53_RECORDS_WITH_DANGLING_IPS("Route53 Records containing dangling IPs", Severity.HIGH),
     
     NO_ALTERNATE_CONTACTS_FOUND("No Alternate Contacts Found", Severity.LOW),
 
@@ -134,6 +135,8 @@ public enum AWSFinding {
     RDS_CLIENT_CONNECTION_ENCRYPTION("RDS Instances client connections not encrypted", Severity.HIGH),
     RDS_CLOUDWATCH_LOGS_INTEGRATION("RDS Instances not integrated with CloudWatch Logs", Severity.LOW),
     RDS_STORAGE_ENCRYPTION("RDS Instances storage not encrypted", Severity.MEDIUM),
+    RDS_SNAPSHOTS_ENCRYPTION("RDS Snapshots not encrypted", Severity.MEDIUM),
+    RDS_CLUSTER_SNAPSHOTS_ENCRYPTION("RDS Cluster Snapshots not encrypted", Severity.MEDIUM),
 
     S3_BUCKETS_MFA_DELETE_DISABLED("S3 Buckets with MFA Delete Disabled", Severity.MEDIUM),
     S3_BUCKETS_ENCRYPTED_WITHOUT_SSE_KMS("S3 Buckets encrypted without SSE-KMS", Severity.MEDIUM),

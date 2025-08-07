@@ -19,8 +19,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import software.amazon.awssdk.services.rds.RdsAsyncClient;
+import software.amazon.awssdk.services.rds.model.DBClusterSnapshot;
 import software.amazon.awssdk.services.rds.model.DBEngineVersion;
 import software.amazon.awssdk.services.rds.model.DBInstance;
+import software.amazon.awssdk.services.rds.model.DBSnapshot;
 import software.amazon.awssdk.services.rds.model.DescribeDbEngineVersionsRequest;
 import software.amazon.awssdk.services.rds.model.DescribeDbEngineVersionsResponse;
 import software.amazon.awssdk.services.rds.model.DescribeDbParametersRequest;
@@ -30,6 +32,8 @@ import software.amazon.awssdk.services.rds.model.EventSubscription;
 
 public class RDSInstancesCheck implements CloudCheck {
     private List<DBInstance> allDbInstances;
+    private List<DBSnapshot> allDbSnapshots;
+    private List<DBClusterSnapshot> allDbClusterSnapshots;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final RdsAsyncClient rds;
@@ -89,6 +93,14 @@ public class RDSInstancesCheck implements CloudCheck {
         return sharedDataProvider.getAllDBInstances()
             .thenCompose(dbInstances -> {
                 this.allDbInstances = dbInstances;
+                return sharedDataProvider.getAllDBSnapshots();
+            })
+            .thenCompose(snapshots -> {
+                this.allDbSnapshots = snapshots;
+                return sharedDataProvider.getAllDBClusterSnapshots();
+            })
+            .thenCompose(clusterSnapshots -> {
+                this.allDbClusterSnapshots = clusterSnapshots;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkRDSInstancesWithMultiAvailabilityZoneDisabled, AWSFinding.RDS_MULTI_AZ_DISABLED, this::reportError),
                     wrapCheck(this::checkRDSInstancesWithIAMAuthenticationDisabled,     AWSFinding.RDS_IAM_AUTHENTICATION_DISABLED, this::reportError),
@@ -100,7 +112,8 @@ public class RDSInstancesCheck implements CloudCheck {
                     wrapCheck(this::checkRDSInstancesUsingDefaultMasterUsername,        AWSFinding.RDS_INSTANCES_USING_DEFAULT_MASTER_USERNAME, this::reportError),
                     wrapCheck(this::checkRDSClientConnectionEncryption,                 AWSFinding.RDS_CLIENT_CONNECTION_ENCRYPTION, this::reportError),
                     wrapCheck(this::checkRDSCloudWatchLogsIntegration,                  AWSFinding.RDS_CLOUDWATCH_LOGS_INTEGRATION, this::reportError),
-                    wrapCheck(this::checkRDSStorageEncryption,                          AWSFinding.RDS_STORAGE_ENCRYPTION, this::reportError)
+                    wrapCheck(this::checkRDSSnapshotsEncryption,                        AWSFinding.RDS_SNAPSHOTS_ENCRYPTION, this::reportError),
+                    wrapCheck(this::checkRDSClusterSnapshotsEncryption,                 AWSFinding.RDS_CLUSTER_SNAPSHOTS_ENCRYPTION, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -519,6 +532,64 @@ public class RDSInstancesCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.RDS_STORAGE_ENCRYPTION, result, status);
+        return status;
+    }
+
+    private Status checkRDSSnapshotsEncryption() {
+        if (allDbSnapshots.isEmpty()) {
+            writer.addToBuffer(AWSFinding.RDS_SNAPSHOTS_ENCRYPTION, 
+                            Text.NO_RDS_SNAPSHOTS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allDbSnapshots.stream()
+            .map(snapshot -> {
+                Status s = !snapshot.encrypted() ? Status.FAIL : Status.PASS;
+                ObjectNode r = MAPPER.createObjectNode()
+                    .put("snapshotArn", snapshot.dbSnapshotArn())
+                    .put("snapshotIdentifier", snapshot.dbSnapshotIdentifier())
+                    .put("dbInstanceIdentifier", snapshot.dbInstanceIdentifier())
+                    .put("encrypted", snapshot.encrypted())
+                    .put("snapshotType", snapshot.snapshotType())
+                    .put("snapshotCreateTime", snapshot.snapshotCreateTime().toString());
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(snapshot.dbSnapshotIdentifier(), inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.RDS_SNAPSHOTS_ENCRYPTION, result, status);
+        return status;
+    }
+
+    private Status checkRDSClusterSnapshotsEncryption() {
+        if (allDbClusterSnapshots.isEmpty()) {
+            writer.addToBuffer(AWSFinding.RDS_CLUSTER_SNAPSHOTS_ENCRYPTION, 
+                            Text.NO_RDS_CLUSTER_SNAPSHOTS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allDbClusterSnapshots.stream()
+            .map(snapshot -> {
+                Status s = !snapshot.storageEncrypted() ? Status.FAIL : Status.PASS;
+                ObjectNode r = MAPPER.createObjectNode()
+                    .put("snapshotArn", snapshot.dbClusterSnapshotArn())
+                    .put("snapshotIdentifier", snapshot.dbClusterSnapshotIdentifier())
+                    .put("dbClusterIdentifier", snapshot.dbClusterIdentifier())
+                    .put("storageEncrypted", snapshot.storageEncrypted())
+                    .put("snapshotType", snapshot.snapshotType())
+                    .put("snapshotCreateTime", snapshot.snapshotCreateTime().toString());
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(snapshot.dbClusterSnapshotIdentifier(), inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.RDS_CLUSTER_SNAPSHOTS_ENCRYPTION, result, status);
         return status;
     }
 

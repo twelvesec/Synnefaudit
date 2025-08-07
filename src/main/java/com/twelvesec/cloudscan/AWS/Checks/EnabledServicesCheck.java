@@ -9,13 +9,6 @@ import software.amazon.awssdk.services.macie2.Macie2AsyncClient;
 import software.amazon.awssdk.services.macie2.model.AccessDeniedException;
 import software.amazon.awssdk.services.macie2.model.GetMacieSessionRequest;
 import software.amazon.awssdk.services.macie2.model.GetMacieSessionResponse;
-import software.amazon.awssdk.services.route53.Route53AsyncClient;
-import software.amazon.awssdk.services.route53.model.GetQueryLoggingConfigRequest;
-import software.amazon.awssdk.services.route53.model.GetQueryLoggingConfigResponse;
-import software.amazon.awssdk.services.route53.model.HostedZone;
-import software.amazon.awssdk.services.route53.model.ListHostedZonesRequest;
-import software.amazon.awssdk.services.route53.model.ListHostedZonesResponse;
-import software.amazon.awssdk.services.route53.model.NoSuchQueryLoggingConfigException;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerAsyncClient;
 import software.amazon.awssdk.services.secretsmanager.model.DescribeSecretRequest;
 import software.amazon.awssdk.services.secretsmanager.model.DescribeSecretResponse;
@@ -53,19 +46,17 @@ public class EnabledServicesCheck implements CloudCheck {
     private final SecretsManagerAsyncClient secretsManager;
     private final DrsAsyncClient drs;
     private final Macie2AsyncClient macie2;
-    private final Route53AsyncClient route53;
     private final SecurityHubAsyncClient securityHub;
     private final Wafv2AsyncClient waf;
 
     public EnabledServicesCheck(DataWriter writer, SharedDataProvider sharedDataProvider,
             SecretsManagerAsyncClient secretsManager, DrsAsyncClient drs, Macie2AsyncClient macie2,
-            Route53AsyncClient route53, SecurityHubAsyncClient securityHub, Wafv2AsyncClient waf) {
+            SecurityHubAsyncClient securityHub, Wafv2AsyncClient waf) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.secretsManager = secretsManager;
         this.drs = drs;
         this.macie2 = macie2;
-        this.route53 = route53;
         this.securityHub = securityHub;
         this.waf = waf;
     }
@@ -80,7 +71,6 @@ public class EnabledServicesCheck implements CloudCheck {
                 wrapCheck(this::checkSecretManagerSecretsWithRotationDisabled,          AWSFinding.SECRETS_MANAGER_SECRETS_ROTATION_DISABLED, this::reportError),
                 wrapCheck(this::checkDRSDisabled,                                       AWSFinding.DRS_NOT_ENABLED, this::reportError),
                 wrapCheck(this::checkMacieIsDisabled,                                   AWSFinding.MACIE_NOT_ENABLED, this::reportError),
-                wrapCheck(this::checkRoute53PublicHostedZonesWithQueryLoggingDisabled,  AWSFinding.ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED, this::reportError),
                 wrapCheck(this::checkSecurityHubIsDisabled,                             AWSFinding.SECURITY_HUB_NOT_ENABLED, this::reportError),
                 wrapCheck(this::checkWafv2WebAclLoggingEnabled,                         AWSFinding.WAFV2_WEB_ACL_LOGGING_ENABLED, this::reportError)
             )
@@ -98,7 +88,6 @@ public class EnabledServicesCheck implements CloudCheck {
                     wrapCheck(this::checkSecretManagerSecretsWithRotationDisabled,          AWSFinding.SECRETS_MANAGER_SECRETS_ROTATION_DISABLED, this::reportError),
                     wrapCheck(this::checkDRSDisabled,                                       AWSFinding.DRS_NOT_ENABLED, this::reportError),
                     wrapCheck(this::checkMacieIsDisabled,                                   AWSFinding.MACIE_NOT_ENABLED, this::reportError),
-                    wrapCheck(this::checkRoute53PublicHostedZonesWithQueryLoggingDisabled,  AWSFinding.ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED, this::reportError),
                     wrapCheck(this::checkSecurityHubIsDisabled,                             AWSFinding.SECURITY_HUB_NOT_ENABLED, this::reportError),
                     wrapCheck(this::checkWafv2WebAclLoggingEnabled,                         AWSFinding.WAFV2_WEB_ACL_LOGGING_ENABLED, this::reportError)
                 );
@@ -186,52 +175,6 @@ public class EnabledServicesCheck implements CloudCheck {
                                                 Text.EXCEPTION.toString().concat(e.getMessage()));
         }
         writer.addToBuffer(AWSFinding.MACIE_NOT_ENABLED, result, status);
-        return status;
-    }
-
-    private Status checkRoute53PublicHostedZonesWithQueryLoggingDisabled() {
-        ListHostedZonesResponse hostedZonesResponse = route53.listHostedZones(
-            ListHostedZonesRequest.builder().build()
-        ).join();
-        List<String> publicZones = hostedZonesResponse.hostedZones().stream()
-            .filter(z -> !z.config().privateZone())
-            .map(HostedZone::id)
-            .toList();
-
-        if (publicZones.isEmpty()) {
-            writer.addToBuffer(AWSFinding.ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED,
-                            Text.NO_PUBLIC_HOSTED_ZONES_FOUND.toString(), Status.NOT_APPLICABLE);
-            return Status.NOT_APPLICABLE;
-        }
-
-        List<Map<String,Object>> result = publicZones.stream()
-            .map(zoneId -> {
-                Status s;
-                ObjectNode r;
-                try {
-                    GetQueryLoggingConfigResponse configResponse = route53.getQueryLoggingConfig(
-                        GetQueryLoggingConfigRequest.builder().id(zoneId).build()
-                    ).join();
-                    s = Status.PASS;
-                    r = MAPPER.valueToTree(configResponse.toBuilder());
-                } catch (NoSuchQueryLoggingConfigException e) {
-                    s = Status.FAIL;
-                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
-                                                    Text.ROUTE53_PUBLIC_HOSTED_ZONE_QUERY_LOGGING_DISABLED.toString().concat(e.getMessage()));
-                } catch (Exception e) {
-                    s = Status.FAIL_EXCEPTION;
-                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
-                                                Text.EXCEPTION.toString().concat(e.getMessage()));
-                }
-                Map<String,Object> inner = new HashMap<>();
-                inner.put(Text.STATUS.toString(), s);
-                inner.put(Text.RESULT.toString(), r);
-                return Map.<String,Object>of(zoneId, inner);
-            })
-            .toList();
-
-        Status status = getOverallStatus(result);
-        writer.addToBuffer(AWSFinding.ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED, result, status);
         return status;
     }
 
