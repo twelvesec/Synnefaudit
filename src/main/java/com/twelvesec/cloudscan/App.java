@@ -222,10 +222,10 @@ public class App {
                 .required()
                 .build());
         options.addOption(Option.builder()
-                .longOpt("outfile")
+                .longOpt("outdir")
                 .hasArg()
-                .argName("OUTFILE")
-                .desc("Output file name (with full path)")
+                .argName("OUTDIR")
+                .desc("Output directory path")
                 .required()
                 .build());
         options.addOption(Option.builder()
@@ -252,7 +252,7 @@ public class App {
         }
 
         String regionInput  = cmd.getOptionValue("region");
-        String outfileInput = cmd.getOptionValue("outfile");
+        String outdirInput  = cmd.getOptionValue("outdir");
         profileInput        = cmd.getOptionValue("profile");
         useEnv              = cmd.hasOption("env");
 
@@ -266,21 +266,21 @@ public class App {
         try {
             region = Region.of(regionInput);
         } catch (IllegalArgumentException iae) {
-            System.err.printf("Error: '%s' is not a valid AWS region.%n", regionInput);
+            System.err.print("Error: please provide a valid AWS region.\n");
             System.exit(3);
             return;
         }
 
         try {
-            outfilePath = Paths.get(outfileInput);
-            Path dirPath = outfilePath.getParent();
-            if (dirPath == null || !Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
-                System.err.printf("Error: '%s' does not exist or is not a directory.%n", dirPath);
+            Path dirPath = Paths.get(outdirInput);
+            if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
+                System.err.print("Error: path in outdir parameter does not exist or is not a directory.\n");
                 System.exit(4);
                 return;
             }
+            outfilePath = dirPath;
         } catch (InvalidPathException ipe) {
-            System.err.printf("Error: '%s' is not a valid file path.%n", outfileInput);
+            System.err.print("Error: path in outdir parameter is not a valid directory path.\n");
             System.exit(5);
             return;
         }
@@ -303,7 +303,7 @@ public class App {
 
             Map<String, Profile> profileMap = combined.profiles();
             if (!profileMap.containsKey(profileInput)) {
-                System.err.printf("Error: AWS profile '%s' not found in ~/.aws/credentials.%n", profileInput);
+                System.err.print("Error: AWS profile was not found in ~/.aws/credentials.\n");
                 System.exit(6);
                 return;
             }
@@ -351,9 +351,7 @@ public class App {
             awsDependencyFactory = new AWSDependencyFactory(region, profileInput);
         }
 
-        s3 = awsDependencyFactory.getClient(S3AsyncClient.class);
-        System.out.printf("Success! Using region=%s, profile=%s%n", region, profileInput);
-
+        s3                  = awsDependencyFactory.getClient(S3AsyncClient.class);
         s3control           = awsDependencyFactory.getClient(S3ControlAsyncClient.class);
         iam                 = awsDependencyFactory.getClient(IamAsyncClient.class);
         cf                  = awsDependencyFactory.getClient(CloudFrontAsyncClient.class);
