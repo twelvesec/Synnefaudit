@@ -12,11 +12,19 @@ import com.twelvesec.cloudscan.messages.Text;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
+import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsRequest;
+import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsResponse;
+import software.amazon.awssdk.services.cloudtrail.model.ReadWriteType;
+import software.amazon.awssdk.services.cloudtrail.model.TrailInfo;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetBucketAclRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketAclResponse;
@@ -40,7 +48,8 @@ import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
 public class S3BucketsCheck implements CloudCheck {
-    List<String> allS3BucketNames;
+    private List<String> allS3BucketNames;
+    private List<TrailInfo> allTrails;
     private final DataWriter writer;
     private final AWSDependencyFactory awsDependencyFactory;
     private final SharedDataProvider sharedDataProvider;
@@ -84,6 +93,10 @@ public class S3BucketsCheck implements CloudCheck {
         return sharedDataProvider.getAllS3BucketNames()
             .thenCompose(s3Buckets -> {
                 this.allS3BucketNames = s3Buckets;
+                return sharedDataProvider.getAllTrails();
+            })
+            .thenCompose(trails -> {
+                this.allTrails = trails;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::S3BucketsWithMFADeleteDisabled,             AWSFinding.S3_BUCKETS_MFA_DELETE_DISABLED, this::reportError),
                     wrapCheck(this::S3BucketsEncryptedWithoutSSEKMS,            AWSFinding.S3_BUCKETS_ENCRYPTED_WITHOUT_SSE_KMS, this::reportError),
@@ -92,7 +105,9 @@ public class S3BucketsCheck implements CloudCheck {
                     wrapCheck(this::S3BucketsWithBucketVersioningDisabled,      AWSFinding.S3_BUCKETS_WITH_BUCKET_VERSIONING_DISABLED, this::reportError),
                     wrapCheck(this::S3BucketsWithServerAccessLoggingDisabled,   AWSFinding.S3_BUCKETS_WITH_SERVER_ACCESS_LOGGING_DISABLED, this::reportError),
                     wrapCheck(this::S3BucketsWithACLsEnabled,                   AWSFinding.S3_BUCKETS_WITH_ACL_ENABLED, this::reportError),
-                    wrapCheck(this::BlockPublicAccessForS3NotEnabled,           AWSFinding.BLOCK_PUBLIC_ACCESS_S3_DISABLED, this::reportError)
+                    wrapCheck(this::BlockPublicAccessForS3NotEnabled,           AWSFinding.BLOCK_PUBLIC_ACCESS_S3_DISABLED, this::reportError),
+                    wrapCheck(this::S3BucketsWithDefaultEncryptionDisabled,     AWSFinding.S3_BUCKETS_WITH_DEFAULT_ENCRYPTION_DISABLED, this::reportError),
+                    wrapCheck(this::S3BucketsWithWriteAccessAllowed,            AWSFinding.S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -450,5 +465,171 @@ public class S3BucketsCheck implements CloudCheck {
 
         writer.addToBuffer(AWSFinding.BLOCK_PUBLIC_ACCESS_S3_DISABLED, result, status);
         return status;
+    }
+
+    private Status S3BucketsWithDefaultEncryptionDisabled() {
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(AWSFinding.S3_BUCKETS_WITH_DEFAULT_ENCRYPTION_DISABLED, 
+                            Text.NO_S3_BUCKETS_FOUND, Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+            .map(bucket -> {
+                Status s;
+                ObjectNode r;
+                try {
+                    S3AsyncClient regionalS3 = getCorrectRegionClient(bucket);
+                    
+                    boolean hasDirectEncryption = false;
+                    try {
+                        GetBucketEncryptionResponse encryptionResponse = regionalS3.getBucketEncryption(
+                            GetBucketEncryptionRequest.builder().bucket(bucket).build()).join();
+                        hasDirectEncryption = !encryptionResponse.serverSideEncryptionConfiguration().rules().isEmpty();
+                        r = MAPPER.valueToTree(encryptionResponse.toBuilder());
+                    } catch (S3Exception e) {
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                            Text.NO_ENCRYPTION_CONFIGURATION_FOUND.toString().concat(e.getMessage()));
+                    }
+                    
+                    boolean hasPolicyEnforcement = false;
+                    try {
+                        GetBucketPolicyResponse policyResponse = regionalS3.getBucketPolicy(
+                            GetBucketPolicyRequest.builder().bucket(bucket).build()).join();
+                        String policyText = policyResponse.policy();
+                        JsonNode policyNode = MAPPER.readTree(policyText);
+                        
+                        hasPolicyEnforcement = StreamSupport.stream(policyNode.get("Statement").spliterator(), false)
+                            .anyMatch(stmt -> {
+                                JsonNode node = (JsonNode) stmt;
+                                boolean isDeny = "Deny".equalsIgnoreCase(node.path("Effect").asText());
+                                JsonNode condition = node.path("Condition");
+                                
+                                boolean requiresEncryption = 
+                                    condition.path("Null").path("s3:x-amz-server-side-encryption").asText().equalsIgnoreCase("false") 
+                                    || condition.path("StringNotEquals").path("s3:x-amz-server-side-encryption").asText() != null;
+                                
+                                return isDeny && requiresEncryption;
+                            });
+                        
+                        if (r == null) {
+                            r = MAPPER.createObjectNode();
+                        }
+                        r.set("Policy", MAPPER.readTree(policyText));
+                    } catch (S3Exception e) {
+                        if (r == null) {
+                            r = MAPPER.createObjectNode();
+                        }
+                        r.put(Text.EXCEPTION.toString(), 
+                            Text.NO_BUCKET_POLICY_FOUND.toString().concat(e.getMessage()));
+                    }
+                    s = (hasDirectEncryption || hasPolicyEnforcement) ? Status.PASS : Status.FAIL;
+                    
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                            Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(bucket, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.S3_BUCKETS_WITH_DEFAULT_ENCRYPTION_DISABLED, result, status);
+        return status;
+    }
+
+    private Status S3BucketsWithWriteAccessAllowed() {
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(AWSFinding.S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED, 
+                            Text.NO_S3_BUCKETS_FOUND, Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+            .map(bucket -> {
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                
+                try {
+                    S3AsyncClient regionalS3 = getCorrectRegionClient(bucket);
+                    GetBucketPolicyResponse response = regionalS3.getBucketPolicy(
+                        GetBucketPolicyRequest.builder().bucket(bucket).build()
+                    ).join();
+                    
+                    String policyText = response.policy();
+                    JsonNode policyNode = MAPPER.readTree(policyText);
+                    
+                    boolean allowsWriteAccess = StreamSupport.stream(
+                        policyNode.path("Statement").spliterator(), false)
+                        .anyMatch(stmt -> {
+                            JsonNode statement = (JsonNode) stmt;
+                            String effect = statement.path("Effect").asText("");
+                            String action = statement.path("Action").asText("");
+                            JsonNode actions = statement.path("Action");
+                            
+                            boolean hasWriteAction = false;
+                            if (actions.isArray()) {
+                                hasWriteAction = StreamSupport.stream(actions.spliterator(), false)
+                                    .anyMatch(a -> isWriteAction(a.asText("")));
+                            } else {
+                                hasWriteAction = isWriteAction(action);
+                            }
+                            
+                            return "Allow".equalsIgnoreCase(effect) && hasWriteAction;
+                        });
+                    
+                    s = allowsWriteAccess ? Status.FAIL : Status.PASS;
+                    r.set("Policy", policyNode);
+                    
+                } catch (S3Exception e) {
+                    if ("NoSuchBucketPolicy".equals(e.awsErrorDetails().errorCode())) {
+                        s = Status.PASS;
+                        r.put(Text.ERROR.toString(), 
+                            Text.NO_BUCKET_POLICY_FOUND.toString().concat(e.getMessage()));
+                    } else {
+                        s = Status.FAIL_EXCEPTION;
+                        r.put(Text.ERROR.toString(),
+                            Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(),
+                        Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(bucket, inner);
+            })
+            .collect(Collectors.toList());
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED, result, status);
+        return status;
+    }
+
+    private boolean isWriteAction(String action) {
+        if (action == null || action.isEmpty()) {
+            return false;
+        }
+
+        String normalizedAction = action.toLowerCase();
+        
+        return normalizedAction.equals("s3:*") 
+            || normalizedAction.startsWith("s3:put")
+            || normalizedAction.startsWith("s3:delete")
+            || normalizedAction.equals("s3:putobject")
+            || normalizedAction.equals("s3:deleteobject")
+            || normalizedAction.equals("*")
+            || normalizedAction.equals("s3:putobjectacl")
+            || normalizedAction.equals("s3:putobjectversionacl")
+            || normalizedAction.equals("s3:putbucketpolicy")
+            || normalizedAction.equals("s3:putbucketacl");
     }
 }
