@@ -31,7 +31,7 @@ import software.amazon.awssdk.services.wafv2.model.WafNonexistentItemException;
 
 
 public class ELBCheck implements CloudCheck {
-    List<LoadBalancer> allLoadBalancers;
+    private List<LoadBalancer> allLoadBalancers;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final ElasticLoadBalancingV2AsyncClient elb;

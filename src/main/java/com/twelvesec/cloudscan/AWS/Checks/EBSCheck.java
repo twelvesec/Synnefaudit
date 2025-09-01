@@ -24,7 +24,7 @@ import software.amazon.awssdk.services.ec2.model.Snapshot;
 import software.amazon.awssdk.services.ec2.model.Volume;
 
 public class EBSCheck implements CloudCheck {
-    List<Volume> allVolumes;
+    private List<Volume> allVolumes;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final Ec2AsyncClient ec2;

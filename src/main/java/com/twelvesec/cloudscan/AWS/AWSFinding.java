@@ -147,7 +147,6 @@ public enum AWSFinding {
     S3_BUCKETS_WITH_ACL_ENABLED("S3 Buckets with ACL enabled", Severity.LOW),
     BLOCK_PUBLIC_ACCESS_S3_DISABLED("Block Public Access for S3 not Enabled", Severity.LOW),
     S3_BUCKETS_WITH_DEFAULT_ENCRYPTION_DISABLED("S3 Buckets with Default Encryption disabled", Severity.MEDIUM),
-    S3_BUCKETS_WITH_OBJECT_LEVEL_READ_LOGGING_DISABLED("S3 Buckets with Object Level Read Logging disabled", Severity.LOW),
     S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED("S3 Buckets with Write Access allowed", Severity.HIGH),
 
     SNS_ENCRYPTION_WITHOUT_AWS_KMS("SNS Topics Encrypted without AWS KMS", Severity.HIGH),

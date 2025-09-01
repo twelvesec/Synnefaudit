@@ -52,7 +52,7 @@ public class VPCsCheck implements CloudCheck {
     private Map<String, List<Subnet>> subnetsByVpc;
     private List<RouteTable> allRouteTables;
     private final DataWriter writer;
-    private SharedDataProvider sharedDataProvider;
+    private final SharedDataProvider sharedDataProvider;
     private final Ec2AsyncClient ec2;
     private final NetworkFirewallAsyncClient networkFirewall;
     private final IamAsyncClient iam;

@@ -112,7 +112,7 @@ public class Inspector2Check implements CloudCheck {
         resourceStateNode.putObject("lambdaCode").put("status", account.resourceState().lambdaCode().status().toString());
         resultNode.putObject("state").put("status", account.state().status().toString());
 
-        inspector2enabled = status.equals(Status.PASS) ? true : false;
+        inspector2enabled = status.equals(Status.PASS) ? false : true;
         writer.addToBuffer(AWSFinding.INSPECTOR2_NOT_ENABLED, resultNode, status);
         return status;
     }

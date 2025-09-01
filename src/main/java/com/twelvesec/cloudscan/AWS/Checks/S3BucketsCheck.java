@@ -49,7 +49,6 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
 public class S3BucketsCheck implements CloudCheck {
     private List<String> allS3BucketNames;
-    private List<TrailInfo> allTrails;
     private final DataWriter writer;
     private final AWSDependencyFactory awsDependencyFactory;
     private final SharedDataProvider sharedDataProvider;
@@ -93,10 +92,6 @@ public class S3BucketsCheck implements CloudCheck {
         return sharedDataProvider.getAllS3BucketNames()
             .thenCompose(s3Buckets -> {
                 this.allS3BucketNames = s3Buckets;
-                return sharedDataProvider.getAllTrails();
-            })
-            .thenCompose(trails -> {
-                this.allTrails = trails;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::S3BucketsWithMFADeleteDisabled,             AWSFinding.S3_BUCKETS_MFA_DELETE_DISABLED, this::reportError),
                     wrapCheck(this::S3BucketsEncryptedWithoutSSEKMS,            AWSFinding.S3_BUCKETS_ENCRYPTED_WITHOUT_SSE_KMS, this::reportError),

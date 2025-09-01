@@ -32,8 +32,8 @@ import software.amazon.awssdk.services.ssm.model.DescribeInstanceInformationResp
 import software.amazon.awssdk.services.ssm.model.InstanceInformationStringFilter;
 
 public class EC2Check implements CloudCheck {
-    List<Instance> allEC2Instances;
-    List<String> allGroupIds;
+    private List<Instance> allEC2Instances;
+    private List<String> allGroupIds;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final Ec2AsyncClient ec2;

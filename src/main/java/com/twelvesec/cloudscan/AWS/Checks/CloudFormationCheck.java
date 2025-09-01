@@ -19,7 +19,7 @@ import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
 public class CloudFormationCheck implements CloudCheck {
-    List<StackSummary> allStacks;
+    private List<StackSummary> allStacks;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final CloudFormationAsyncClient cloudformation;

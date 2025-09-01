@@ -23,7 +23,6 @@ import software.amazon.awssdk.services.glue.model.GetDatabasesRequest;
 import software.amazon.awssdk.services.glue.model.GetTablesRequest;
 
 public class GlueCheck implements CloudCheck {
-    List<String> allUsernames;
     private final DataWriter writer;
     private final GlueAsyncClient glue;
     private boolean glueDataCatalogUsed;

@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.athena.model.WorkGroupConfiguration;
 import software.amazon.awssdk.services.athena.model.WorkGroupSummary;
 
 public class AthenaCheck implements CloudCheck {
-    List<WorkGroupSummary> allWorkGroups;
+    private List<WorkGroupSummary> allWorkGroups;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final AthenaAsyncClient athena;

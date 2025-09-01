@@ -25,7 +25,7 @@ import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
 public class MFACheck implements CloudCheck {
-    List<User> allUsers;
+    private List<User> allUsers;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final IamAsyncClient iam;

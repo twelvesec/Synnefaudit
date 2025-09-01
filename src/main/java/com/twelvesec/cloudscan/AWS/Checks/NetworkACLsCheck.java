@@ -16,20 +16,17 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
 import software.amazon.awssdk.services.ec2.model.NetworkAcl;
 import software.amazon.awssdk.services.ec2.model.RuleAction;
 
 public class NetworkACLsCheck implements CloudCheck {
-    List<NetworkAcl> allNetworkACLs;
+    private List<NetworkAcl> allNetworkACLs;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
-    private final Ec2AsyncClient ec2;
 
-    public NetworkACLsCheck(DataWriter writer, SharedDataProvider sharedDataProvider, Ec2AsyncClient ec2) {
+    public NetworkACLsCheck(DataWriter writer, SharedDataProvider sharedDataProvider) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
-        this.ec2 = ec2;
     }
 
     @Override

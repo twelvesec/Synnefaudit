@@ -29,7 +29,7 @@ import software.amazon.awssdk.services.cloudtrail.model.LookupEventsRequest;
 import software.amazon.awssdk.services.cloudtrail.model.TrailInfo;
 
 public class CloudTrailCheck implements CloudCheck {
-    List<TrailInfo> allTrails;
+    private List<TrailInfo> allTrails;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final CloudTrailAsyncClient cloudTrail;

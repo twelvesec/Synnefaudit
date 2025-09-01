@@ -336,7 +336,7 @@ public class App {
             new KMSCheck(writer, sharedDataProvider, kms),
             new LambdaCheck(writer, sharedDataProvider, lambda),
             new MFACheck(writer, sharedDataProvider, iam, sts),
-            new NetworkACLsCheck(writer, sharedDataProvider, ec2),
+            new NetworkACLsCheck(writer, sharedDataProvider),
             new RDSInstancesCheck(writer, sharedDataProvider, rds),
             new Route53Check(writer, sharedDataProvider, route53),
             new S3BucketsCheck(writer, awsDependencyFactory, sharedDataProvider, s3, s3control, sts),

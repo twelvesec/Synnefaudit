@@ -22,7 +22,7 @@ public class SNSTopicsCheck implements CloudCheck {
     private List<String> allSNSArns;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
-    protected final SnsAsyncClient sns;
+    private final SnsAsyncClient sns;
 
     public SNSTopicsCheck(DataWriter writer, SharedDataProvider sharedDataProvider, SnsAsyncClient sns) {
         this.writer = writer;

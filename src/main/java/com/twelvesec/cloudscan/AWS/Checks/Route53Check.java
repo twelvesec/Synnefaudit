@@ -29,11 +29,11 @@ import software.amazon.awssdk.services.route53.model.NoSuchQueryLoggingConfigExc
 import software.amazon.awssdk.services.route53.model.ResourceRecord;
 
 public class Route53Check implements CloudCheck {
+    private List<HostedZone> allHostedZones;
+    private List<Instance> allEC2Instances;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final Route53AsyncClient route53;
-    private List<HostedZone> allHostedZones;
-    private List<Instance> allEC2Instances;
 
     public Route53Check(DataWriter writer, SharedDataProvider sharedDataProvider,
             Route53AsyncClient route53) {

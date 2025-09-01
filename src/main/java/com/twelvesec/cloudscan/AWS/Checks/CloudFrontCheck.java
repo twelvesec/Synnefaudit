@@ -26,7 +26,7 @@ import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
 public class CloudFrontCheck implements CloudCheck {
-    List<DistributionSummary> allDistributions;
+    private List<DistributionSummary> allDistributions;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final CloudFrontAsyncClient cf;

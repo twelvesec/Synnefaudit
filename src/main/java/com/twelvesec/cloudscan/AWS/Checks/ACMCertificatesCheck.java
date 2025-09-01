@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.acm.model.CertificateTransparencyLoggingP
 import software.amazon.awssdk.services.acm.model.DescribeCertificateResponse;
 
 public class ACMCertificatesCheck implements CloudCheck {
-    List<CertificateSummary> allCertificateDetails;
+    private List<CertificateSummary> allCertificateDetails;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final AcmAsyncClient acm;

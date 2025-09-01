@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.kafka.model.KafkaVersion;
 import software.amazon.awssdk.services.kafka.model.ListKafkaVersionsRequest;
 
 public class KafkaCheck implements CloudCheck {
-    List<ClusterInfo> allClusters;
+    private List<ClusterInfo> allClusters;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final KafkaAsyncClient kafka;

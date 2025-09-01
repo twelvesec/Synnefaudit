@@ -47,7 +47,7 @@ import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
 public class GeneralCheck implements CloudCheck {
-    List<Index> allIndexes;
+    private List<Index> allIndexes;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final SsmIncidentsAsyncClient ssmIncidents;

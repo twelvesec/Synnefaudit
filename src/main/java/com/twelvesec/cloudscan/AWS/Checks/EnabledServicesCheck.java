@@ -40,7 +40,7 @@ import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
 public class EnabledServicesCheck implements CloudCheck {
-    List<SecretListEntry> allSecrets;
+    private List<SecretListEntry> allSecrets;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final SecretsManagerAsyncClient secretsManager;

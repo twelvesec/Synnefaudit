@@ -62,10 +62,10 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 public class IAMCheck implements CloudCheck {
     private static final long MAX_KEY_AGE_DAYS = 90;
 
-    List<AnalyzerSummary> allAnalyzers;
-    List<Role> allRoles;
-    List<User> allUsers;
-    List<Policy> allPolicies;
+    private List<AnalyzerSummary> allAnalyzers;
+    private List<Role> allRoles;
+    private List<User> allUsers;
+    private List<Policy> allPolicies;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final IamAsyncClient iam;
