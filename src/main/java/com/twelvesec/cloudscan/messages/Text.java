@@ -107,7 +107,8 @@ public enum Text {
     ACLS_DISABLED("ACLs disabled (Bucket owner enforced) : "),
     NO_PUBLIC_ACCESS_BLOCK_CONFIGURATION_FOUND("No public access block configuration found : "),
 
-    NO_SNS_TOPICS_FOUND("No SNS Topics Found."),
+    NO_SNS_TOPICS_FOUND("No SNS Topics found."),
+    NO_HTTP_SUBSCRIPTIONS_FOUND("No HTTP Subscriptions found."),
 
     NO_VPCS_FOUND("No VPCs found."),
     NO_VPC_SUBNETS_FOUND("No VPC subnets found."),
@@ -166,6 +167,7 @@ public enum Text {
     EVENTS("events"),
     USERCREATIONDATE("userCreationDate"),
     AWSACCOUNTID("AWSAccountId"),
+    LAST_USED_DATE("lastUsedDate"),
     NULL_VALUE("Value is null.")
     ;
 

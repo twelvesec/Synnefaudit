@@ -19,8 +19,11 @@ import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
 import software.amazon.awssdk.services.iam.IamAsyncClient;
+import software.amazon.awssdk.services.iam.model.AccessKeyLastUsed;
 import software.amazon.awssdk.services.iam.model.AccessKeyMetadata;
 import software.amazon.awssdk.services.iam.model.AttachedPolicy;
+import software.amazon.awssdk.services.iam.model.GetAccessKeyLastUsedRequest;
+import software.amazon.awssdk.services.iam.model.GetAccessKeyLastUsedResponse;
 import software.amazon.awssdk.services.iam.model.GetLoginProfileRequest;
 import software.amazon.awssdk.services.iam.model.GetLoginProfileResponse;
 import software.amazon.awssdk.services.iam.model.ListAccessKeysRequest;
@@ -50,7 +53,8 @@ public class AccessKeysCheck implements CloudCheck {
                     wrapCheck(this::checkIAMUsersWithMultipleActiveAccessKeys,                  AWSFinding.IAM_USERS_WITH_MULTIPLE_ACTIVE_ACCESS_KEYS, this::reportError),
                     wrapCheck(this::checkAccessKeysNotRotated90Days,                            AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED, this::reportError),
                     wrapCheck(this::checkAccessKeysNotRotatedForUsersWithNonIAMorSTSPolicies,   AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED_PRIVILEGED, this::reportError),
-                    wrapCheck(this::checkNoAccessKeysDuringUserSetup,                           AWSFinding.IAM_NO_ACCESS_KEYS_DURING_SETUP, this::reportError)
+                    wrapCheck(this::checkNoAccessKeysDuringUserSetup,                           AWSFinding.IAM_NO_ACCESS_KEYS_DURING_SETUP, this::reportError),
+                    wrapCheck(this::checkUnusedAccessKeys,                                      AWSFinding.IAM_UNUSED_ACCESS_KEYS, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -285,4 +289,76 @@ public class AccessKeysCheck implements CloudCheck {
         return status;
     }
     
+    private Status checkUnusedAccessKeys() {
+        if (allUsers.isEmpty()) {
+            writer.addToBuffer(AWSFinding.IAM_UNUSED_ACCESS_KEYS,
+                    Text.NO_IAM_USERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        Instant cutoff = Instant.now().minus(45, ChronoUnit.DAYS);
+
+        List<Map<String, Object>> result = allUsers.stream()
+            .map(user -> {
+                String username = user.userName();
+                Status s = Status.PASS;
+                ObjectNode r;
+                try {
+                    List<AccessKeyMetadata> keys = iam.listAccessKeys(
+                            ListAccessKeysRequest.builder().userName(user.userName()).build()
+                        ).join().accessKeyMetadata();
+
+                    if (keys.isEmpty()) {
+                        r = MAPPER.valueToTree(Map.of(
+                            Text.RESULT.toString(), Text.NO_ACCESS_KEYS_FOUND.toString()
+                        ));
+                    } else {
+                        List<ObjectNode> keyNodes = keys.stream()
+                            .map(key -> {
+                                ObjectNode kn = MAPPER.valueToTree(key.toBuilder());
+                                try {
+                                    GetAccessKeyLastUsedResponse lastUsedResp = iam.getAccessKeyLastUsed(
+                                            GetAccessKeyLastUsedRequest.builder().accessKeyId(key.accessKeyId()).build()
+                                        ).join();
+
+                                    AccessKeyLastUsed lastUsed = lastUsedResp.accessKeyLastUsed();
+
+                                    if (lastUsed == null || lastUsed.lastUsedDate() == null) {
+                                        kn.put(Text.STATUS.toString(), Status.FAIL.toString());
+                                    } else {
+                                        Instant lastUsedInstant = lastUsed.lastUsedDate();
+                                        long days = ChronoUnit.DAYS.between(lastUsedInstant, Instant.now());
+                                        Status keyStatus = lastUsedInstant.isBefore(cutoff) ? Status.FAIL : Status.PASS;
+                                        kn.put(Text.LAST_USED_DATE.toString(), lastUsedInstant.toString());
+                                        kn.put(Text.AGEINDAYS.toString(), days);
+                                        kn.put(Text.STATUS.toString(), keyStatus.toString());
+                                    }
+                                } catch (Exception e) {
+                                    kn.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                                }
+                                return kn;
+                            })
+                            .toList();
+
+                        r = MAPPER.valueToTree(Map.of(Text.ACCESSKEYS.toString(), keyNodes));
+                        s = getOverallStatus(keyNodes);
+                    }
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.valueToTree(Map.of(
+                        Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage())
+                    ));
+                }
+
+                ObjectNode inner = MAPPER.createObjectNode();
+                inner.put(Text.STATUS.toString(), s.toString());
+                inner.set(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(username, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.IAM_UNUSED_ACCESS_KEYS, result, status);
+        return status;
+    }
 }

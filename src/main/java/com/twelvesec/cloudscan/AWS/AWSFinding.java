@@ -114,6 +114,7 @@ public enum AWSFinding {
     IAM_ACCESS_KEYS_NOT_ROTATED("Access Keys not Rotated in the last 90 days", Severity.INFO),
     IAM_ACCESS_KEYS_NOT_ROTATED_PRIVILEGED("Access Keys not rotated for users with access to services different than IAM or STS", Severity.MEDIUM),
     IAM_NO_ACCESS_KEYS_DURING_SETUP("Access Keys set up during initial user setup", Severity.LOW),
+    IAM_UNUSED_ACCESS_KEYS("Unused access keys found", Severity.INFO),
 
     KAFKA_BROKERS_WITHOUT_ENHANCED_MONITORING("MSK (Kafka) Brokers with enhanced monitoring disabled", Severity.LOW),
     KAFKA_CLUSTERS_WITHOUT_MTLS("MSK (Kafka) clusters with mutual TLS Authentication disabled", Severity.LOW),
@@ -150,6 +151,8 @@ public enum AWSFinding {
     S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED("S3 Buckets with Write Access allowed", Severity.HIGH),
 
     SNS_ENCRYPTION_WITHOUT_AWS_KMS("SNS Topics Encrypted without AWS KMS", Severity.HIGH),
+    SNS_PUBLIC_TOPIC_POLICY("SNS Topics with public policy found", Severity.MEDIUM),
+    SNS_HTTP_SUBSCRIPTIONS("SNS Subscriptions using HTTP endpoints", Severity.MEDIUM),
     
     VPC_FIREWALL_DISABLED("VPCs without Network Firewall enabled", Severity.MEDIUM),
     VPC_FLOW_LOGGING_DISABLED("VPCs with Flow Logging disabled", Severity.LOW),

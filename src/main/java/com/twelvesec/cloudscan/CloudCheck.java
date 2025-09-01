@@ -119,19 +119,23 @@ public interface CloudCheck {
         );
     }
 
-    default Status getOverallStatus(List<Map<String,Object>> data) {
-        return data.stream()
-            .flatMap(bucketMap -> bucketMap.values().stream())
-            .map(inner -> {
-                if (inner instanceof ObjectNode on) {
+    default Status getOverallStatus(List<?> data) {
+        boolean hasFailure = data.stream()
+            .map(item -> {
+                if (item instanceof ObjectNode on) {
                     return Status.valueOf(on.get(Text.STATUS.toString()).asText());
-                } else if (inner instanceof Map<?,?> m) {
-                    return (Status) m.get(Text.STATUS.toString());
+                } else if (item instanceof Map<?,?> m) {
+                    Object value = m.values().iterator().next();
+                    if (value instanceof ObjectNode inner) {
+                        return Status.valueOf(inner.get(Text.STATUS.toString()).asText());
+                    }
+                    return Status.FAIL_EXCEPTION;
                 } else {
                     return Status.FAIL_EXCEPTION;
                 }
             })
-            .anyMatch(s -> s == Status.FAIL || s == Status.FAIL_EXCEPTION) ? Status.FAIL : Status.PASS;
+            .anyMatch(s -> s == Status.FAIL || s == Status.FAIL_EXCEPTION);
+        return hasFailure ? Status.FAIL : Status.PASS;
     }
 
     default Supplier<CheckResult> wrapCheck(Supplier<Status> check, AWSFinding title, Consumer<ErrorReport> errorReporter) {
