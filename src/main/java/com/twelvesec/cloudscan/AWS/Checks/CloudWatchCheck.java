@@ -35,22 +35,6 @@ public class CloudWatchCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allGroups = sharedDataProvider.getAllLogGroups().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkCloudWatchAlarmsForSensitiveOperations,    AWSFinding.CLOUDWATCH_ALARMS_FOR_SENSITIVE_OPERATIONS, this::reportError),
-                wrapCheck(this::checkLogGroupsWithNoAWSKMSKeysAssociated,       AWSFinding.CLOUDWATCH_LOG_GROUPS_WITH_NO_KMS_KEYS_ASSOCIATED, this::reportError),
-                wrapCheck(this::checkLogGroupsWithLowRetentionPolicy,           AWSFinding.CLOUDWATCH_LOG_GROUPS_WITH_LOW_RETENTION_POLICY, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllLogGroups()
             .thenCompose(logGroups -> {

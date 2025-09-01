@@ -62,24 +62,6 @@ public class EnabledServicesCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allSecrets = sharedDataProvider.getAllSecrets().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkSecretManagerSecretsWithRotationDisabled,          AWSFinding.SECRETS_MANAGER_SECRETS_ROTATION_DISABLED, this::reportError),
-                wrapCheck(this::checkDRSDisabled,                                       AWSFinding.DRS_NOT_ENABLED, this::reportError),
-                wrapCheck(this::checkMacieIsDisabled,                                   AWSFinding.MACIE_NOT_ENABLED, this::reportError),
-                wrapCheck(this::checkSecurityHubIsDisabled,                             AWSFinding.SECURITY_HUB_NOT_ENABLED, this::reportError),
-                wrapCheck(this::checkWafv2WebAclLoggingEnabled,                         AWSFinding.WAFV2_WEB_ACL_LOGGING_ENABLED, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllSecrets()
             .thenCompose(secrets -> {

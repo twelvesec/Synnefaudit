@@ -33,19 +33,6 @@ public class GlueCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkGlueDataCatalogEncryption, AWSFinding.GLUE_DATA_CATALOG_UNENCRYPTED_PASSWORDS, this::reportError),
-                wrapCheck(this::checkGlueMetadataEncryption,    AWSFinding.GLUE_DATA_CATALOG_UNENCRYPTED_PASSWORDS, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         glueDataCatalogUsed = isGlueDataCatalogUsed();
         List<Supplier<CheckResult>> checksList = List.of(

@@ -33,21 +33,6 @@ public class AthenaCheck implements CloudCheck {
         this.sharedDataProvider = sharedDataProvider;
         this.athena = athena;
     }
-    
-    @Override
-    public void runAllChecks() {
-        allWorkGroups = sharedDataProvider.getAllWorkGroups().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkAthenaWorkGroupEncryption,             AWSFinding.ATHENA_WORKGROUPS_WITHOUT_ENCRYPTION, this::reportError),
-                wrapCheck(this::checkAthenaWorkgroupsEnforceConfiguration,  AWSFinding.ATHENA_WORKGROUPS_ENFORCE_CONFIGURATION_DISABLED, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {

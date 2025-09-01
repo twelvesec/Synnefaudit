@@ -33,19 +33,6 @@ public class SupportCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkAmazonWebServicesPremiumSupportPlanIsNotSubscribed,    AWSFinding.WEB_SERVICES_PREMIUM_SUPPORT_PLAN_NOT_SUBSCRIBED, this::reportError),
-                wrapCheck(this::checkTrustedAdvisorWarnings,                                AWSFinding.TRUSTED_ADVISOR_WARNINGS, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         List<Supplier<CheckResult>> checksList = List.of(
             wrapCheck(this::checkAmazonWebServicesPremiumSupportPlanIsNotSubscribed,    AWSFinding.WEB_SERVICES_PREMIUM_SUPPORT_PLAN_NOT_SUBSCRIBED, this::reportError),

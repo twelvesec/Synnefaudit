@@ -36,21 +36,6 @@ public class EBSCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allVolumes = sharedDataProvider.getAllVolumes().join();
-        
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkNoSnapshotsForEBSVolumes,              AWSFinding.NO_SNAPSHOTS_FOR_EBS_VOLUMES, this::reportError),
-                wrapCheck(this::checkEBSDefaultEncryptionIsNotActivated,    AWSFinding.EBS_DEFAULT_ENCRYPTION_NOT_ACTIVATED, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllVolumes()
             .thenCompose(volumes -> {

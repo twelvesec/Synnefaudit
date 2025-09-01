@@ -67,27 +67,6 @@ public class S3BucketsCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allS3BucketNames = sharedDataProvider.getAllS3BucketNames().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::S3BucketsWithMFADeleteDisabled,             AWSFinding.S3_BUCKETS_MFA_DELETE_DISABLED, this::reportError),
-                wrapCheck(this::S3BucketsEncryptedWithoutSSEKMS,            AWSFinding.S3_BUCKETS_ENCRYPTED_WITHOUT_SSE_KMS, this::reportError),
-                wrapCheck(this::S3BucketsWithNoSecureTransportPolicySet,    AWSFinding.S3_BUCKETS_WITH_NO_SECURE_TRANSPORT_POLICY_SET, this::reportError),
-                wrapCheck(this::S3BucketsWithObjectLockDisabled,            AWSFinding.S3_BUCKETS_WITH_OBJECT_LOCK_DISABLED, this::reportError),
-                wrapCheck(this::S3BucketsWithBucketVersioningDisabled,      AWSFinding.S3_BUCKETS_WITH_BUCKET_VERSIONING_DISABLED, this::reportError),
-                wrapCheck(this::S3BucketsWithServerAccessLoggingDisabled,   AWSFinding.S3_BUCKETS_WITH_SERVER_ACCESS_LOGGING_DISABLED, this::reportError),
-                wrapCheck(this::S3BucketsWithACLsEnabled,                   AWSFinding.S3_BUCKETS_WITH_ACL_ENABLED, this::reportError),
-                wrapCheck(this::BlockPublicAccessForS3NotEnabled,           AWSFinding.BLOCK_PUBLIC_ACCESS_S3_DISABLED, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllS3BucketNames()
             .thenCompose(s3Buckets -> {

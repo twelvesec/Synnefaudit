@@ -31,20 +31,6 @@ public class CloudFormationCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allStacks = sharedDataProvider.getAllStacks().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkCloudFormationStacksWithoutTerminationProtection, AWSFinding.CLOUDFORMATION_STACKS_WITHOUT_TERMINATION_PROTECTION, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllStacks()
             .thenCompose(stacks -> {

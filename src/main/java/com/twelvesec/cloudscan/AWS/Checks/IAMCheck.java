@@ -83,36 +83,6 @@ public class IAMCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allAnalyzers = sharedDataProvider.getAllAnalyzers().join();
-        allRoles = sharedDataProvider.getAllRoles().join();
-        allUsers = sharedDataProvider.getAllUsers().join();
-        allPolicies = sharedDataProvider.getAllPolicies().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkIAMRolesWithAdministratorAccessPolicyAttached,         AWSFinding.IAM_ROLES_WITH_ADMINISTRATORACCESS_POLICY_ATTACHED, this::reportError),
-                wrapCheck(this::checkIAMAccessAnalyzerDisabled,                             AWSFinding.IAM_ACCESS_ANALYZER_DISABLED, this::reportError),
-                wrapCheck(this::checkIAMAccessAnalyzerWithFindings,                         AWSFinding.IAM_ACCESS_ANALYZER_WITH_FINDINGS, this::reportError),
-                wrapCheck(this::checkIAMUsersWithMultipleActiveAccessKeys,                  AWSFinding.IAM_USERS_WITH_MULTIPLE_ACTIVE_ACCESS_KEYS, this::reportError),
-                wrapCheck(this::checkIAMPasswordPolicyIsNotSet,                             AWSFinding.IAM_PASSWORD_POLICY_NOT_SET, this::reportError),
-                wrapCheck(this::checkShortIAMPasswordPolicyReuse,                           AWSFinding.IAM_SHORT_PASSWORD_POLICY_REUSE, this::reportError),
-                wrapCheck(this::checkIAMPolicyAllowsPrivilegeEscalation,                    AWSFinding.IAM_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
-                wrapCheck(this::checkCrossAccountRoleAssumption,                            AWSFinding.IAM_CROSS_ACCOUNT_READ_ONLY_ROLES, this::reportError),
-                wrapCheck(this::checkOverlyPermissiveManagedPolicies,                       AWSFinding.IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES, this::reportError),
-                wrapCheck(this::checkIamUsersWithLongTermCredentials,                       AWSFinding.IAM_USERS_WITH_LONG_TERM_CREDENTIALS, this::reportError),
-                wrapCheck(this::checkIamUsersWithAttachedPolicies,                          AWSFinding.IAM_USERS_WITH_ATTACHED_POLICIES, this::reportError),
-                wrapCheck(this::checkAccessKeysNotRotated90Days,                            AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED, this::reportError),
-                wrapCheck(this::checkAccessKeysNotRotatedForUsersWithNonIAMorSTSPolicies,   AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED_PRIVILEGED, this::reportError),
-                wrapCheck(this::checkNoAccessKeysDuringUserSetup,                           AWSFinding.IAM_NO_ACCESS_KEYS_DURING_SETUP, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllAnalyzers()
             .thenCompose(analyzers -> {

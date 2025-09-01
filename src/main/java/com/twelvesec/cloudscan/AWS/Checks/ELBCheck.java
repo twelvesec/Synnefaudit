@@ -45,25 +45,6 @@ public class ELBCheck implements CloudCheck {
         this.waf = waf;
     }
 
-    public void runAllChecks() {
-        allLoadBalancers = sharedDataProvider.getAllLoadBalancers().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkELBWithNoWAFACLAttached,                               AWSFinding.ELB_WITHOUT_WAF_ACL_ATTACHED, this::reportError),
-                wrapCheck(this::checkELBALBWithAccessLoggingDisabled,                       AWSFinding.ELB_ALBS_ACCESS_LOGGING_DISABLED, this::reportError),
-                wrapCheck(this::checkELBWithDeletionProtectionDisabled,                     AWSFinding.ELB_DELETION_PROTECTION_DISABLED, this::reportError),
-                wrapCheck(this::checkELBListenerWithoutSSLFound,                            AWSFinding.ELB_LISTENER_WITHOUT_SSL, this::reportError),
-                wrapCheck(this::checkPubliclyAccessibleLoadBalancers,                       AWSFinding.PUBLICLY_ACCESSIBLE_LOAD_BALANCERS, this::reportError),
-                wrapCheck(this::checkAlbsDefensiveMitigationButNotDroppingInvalidHeaders,   AWSFinding.ELB_ALBS_DEFENSIVE_MITIGATION_NOT_DROPPING_HEADERS, this::reportError),
-                wrapCheck(this::checkELBInsecureSSLCiphers,                                 AWSFinding.ELB_INSECURE_SSL_CIPHERS, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllLoadBalancers()

@@ -34,21 +34,6 @@ public class ACMCertificatesCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allCertificateDetails = sharedDataProvider.getAllACMCertificates().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkExpiringAcmCertificates,                   AWSFinding.ACM_CERTIFICATES_EXPIRING_SOON, this::reportError),
-                wrapCheck(this::checkAcmCertificateTransparencyLoggingEnabled,  AWSFinding.ACM_CERTIFICATE_TRANSPARENCY_LOGGING_DISABLED, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllACMCertificates()
             .thenCompose(acmCertificates -> {

@@ -67,30 +67,6 @@ public class VPCsCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allVPCs = sharedDataProvider.getAllVPCs().join();
-        allVPCEndpoints = sharedDataProvider.getAllVPCEndpoints().join();
-        allVPCSubnets = sharedDataProvider.getAllVPCSubnets().join();
-        allRouteTables = sharedDataProvider.getAllRouteTables().join();
-        
-        subnetsByVpc = allVPCSubnets.stream()
-            .collect(Collectors.groupingBy(Subnet::vpcId));
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::VPCFirewallDisabled,            AWSFinding.VPC_FIREWALL_DISABLED, this::reportError),
-                wrapCheck(this::VPCFlowLoggingDisabled,         AWSFinding.VPC_FLOW_LOGGING_DISABLED, this::reportError),
-                wrapCheck(this::VPCSubnetsAssignPublicIP,       AWSFinding.VPC_SUBNETS_PUBLIC_IP_ON_LAUNCH, this::reportError),
-                wrapCheck(this::VPCEndpointsAllowFullAccess,    AWSFinding.VPC_ENDPOINTS_ALLOW_FULL_ACCESS, this::reportError),
-                wrapCheck(this::checkVpcsWithOnlyPublicSubnets, AWSFinding.VPCS_WITH_ONLY_PUBLIC_SUBNETS, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllVPCs()
             .thenCompose(vpcs -> {

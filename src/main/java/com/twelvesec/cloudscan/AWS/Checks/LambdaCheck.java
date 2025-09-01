@@ -31,20 +31,6 @@ public class LambdaCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        AllLambdaFunctionNames = sharedDataProvider.getAllLambdaFunctionNames().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkLambdaFunctionSecrets, AWSFinding.LAMBDA_FUNCTIONS_WITH_POTENTIAL_SECRETS, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllLambdaFunctionNames()
             .thenCompose(lambdaFunctionNames -> {

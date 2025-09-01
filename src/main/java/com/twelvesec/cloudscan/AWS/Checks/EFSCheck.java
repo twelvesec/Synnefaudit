@@ -36,21 +36,6 @@ public class EFSCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allFileSystems = sharedDataProvider.getAllFileSystems().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkEFSFileSystemsWithBackupDisabled, AWSFinding.EFS_FILE_SYSTEMS_WITH_BACKUP_DISABLED, this::reportError),
-                wrapCheck(this::checkEFSFileSystemWithNoPolicy,        AWSFinding.EFS_WITHOUT_POLICY, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllFileSystems()
             .thenCompose(fileSystems -> {

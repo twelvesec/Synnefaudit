@@ -73,7 +73,6 @@ public interface CloudCheck {
         return Collections.synchronizedList(new ArrayList<>());
     }
     
-    public void runAllChecks();
     public CompletableFuture<Void> runAllChecksAsync();
 
     public void reportError(CloudCheck.ErrorReport report);

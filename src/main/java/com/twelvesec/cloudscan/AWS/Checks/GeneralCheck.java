@@ -72,25 +72,6 @@ public class GeneralCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allIndexes = sharedDataProvider.getAllIndexes().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkSSMIncidentsWithNoResponsePlans,       AWSFinding.SSM_INCIDENTS_WITHOUT_RESPONSE_PLANS, this::reportError),
-                wrapCheck(this::checkNoAlternateContactsFound,              AWSFinding.NO_ALTERNATE_CONTACTS_FOUND, this::reportError),
-                wrapCheck(this::checkNoBackupReportPlanExists,              AWSFinding.NO_BACKUP_REPORT_PLAN_EXISTS, this::reportError),
-                wrapCheck(this::checkResourceExplorerIndexes,               AWSFinding.RESOURCE_EXPLORER_NO_INDEXES_FOUND, this::reportError),
-                wrapCheck(this::checkCodeBuildProjectsNotInvokedLast90Days, AWSFinding.CODEBUILD_PROJECTS_NOT_INVOKED_90_DAYS, this::reportError),
-                wrapCheck(this::checkAccountInOrganizations,                AWSFinding.ACCOUNT_IS_NOT_PART_OF_ORGANIZATIONS, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllIndexes()
             .thenCompose(indexes -> {

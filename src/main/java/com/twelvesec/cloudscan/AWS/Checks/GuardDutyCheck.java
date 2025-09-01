@@ -32,21 +32,6 @@ public class GuardDutyCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allDetectorIds = sharedDataProvider.getAllDetectorIds().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkGuardDutyNotEnabled,                   AWSFinding.GUARDDUTY_NOT_ENABLED, this::reportError),
-                wrapCheck(this::checkGuardDutyDetectorIsNotCetrallyManaged, AWSFinding.GUARDDUTY_DETECTOR_NOT_CENTRALLY_MANAGED, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllDetectorIds()
             .thenCompose(detectorIds -> {

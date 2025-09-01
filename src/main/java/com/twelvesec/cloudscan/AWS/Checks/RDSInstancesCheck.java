@@ -65,30 +65,6 @@ public class RDSInstancesCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allDbInstances = sharedDataProvider.getAllDBInstances().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkRDSInstancesWithMultiAvailabilityZoneDisabled, AWSFinding.RDS_MULTI_AZ_DISABLED, this::reportError),
-                wrapCheck(this::checkRDSInstancesWithIAMAuthenticationDisabled,     AWSFinding.RDS_IAM_AUTHENTICATION_DISABLED, this::reportError),
-                wrapCheck(this::checkRDSInstancesWithAutomatedBackupsDisabled,      AWSFinding.RDS_AUTOMATED_BACKUPS_DISABLED, this::reportError),
-                wrapCheck(this::checkRDSInstancesWithDeletionProtectionDisabled,    AWSFinding.RDS_DELETION_PROTECTION_DISABLED, this::reportError),
-                wrapCheck(this::checkRDSInstancesWithEnhancedMonitoringDisabled,    AWSFinding.RDS_ENHANCED_MONITORING_DISABLED, this::reportError),
-                wrapCheck(this::checkRDSDeprecatedEngineVersions,                   AWSFinding.RDS_DEPRECATED_ENGINE_VERSIONS, this::reportError),
-                wrapCheck(this::checkRDSMissingEventCategories,                     AWSFinding.RDS_EVENT_SUBSCRIPTIONS_MISSING_CATEGORIES, this::reportError),
-                wrapCheck(this::checkRDSInstancesUsingDefaultMasterUsername,        AWSFinding.RDS_INSTANCES_USING_DEFAULT_MASTER_USERNAME, this::reportError),
-                wrapCheck(this::checkRDSClientConnectionEncryption,                 AWSFinding.RDS_CLIENT_CONNECTION_ENCRYPTION, this::reportError),
-                wrapCheck(this::checkRDSCloudWatchLogsIntegration,                  AWSFinding.RDS_CLOUDWATCH_LOGS_INTEGRATION, this::reportError),
-                wrapCheck(this::checkRDSStorageEncryption,                          AWSFinding.RDS_STORAGE_ENCRYPTION, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllDBInstances()
             .thenCompose(dbInstances -> {

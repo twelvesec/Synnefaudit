@@ -51,22 +51,6 @@ public class ECRCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allRepositoryNames = sharedDataProvider.getAllRepositoryNames().join();
-            
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkRegistryScanningConfiguration,             AWSFinding.ECR_REGISTRY_WITHOUT_SCAN_ON_PUSH, this::reportError),
-                wrapCheck(this::checkRepositoriesWithoutLifecyclePolicy,        AWSFinding.ECR_REGISTRY_WITHOUT_LIFECYCLE_POLICY, this::reportError),
-                wrapCheck(this::checkRepositoriesWithLatestImageTagFindings,    AWSFinding.ECR_LATEST_IMAGE_WITH_FINDINGS, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllRepositoryNames()
             .thenCompose(repositoryNames -> {

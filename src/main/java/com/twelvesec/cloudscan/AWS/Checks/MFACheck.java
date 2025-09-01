@@ -40,23 +40,6 @@ public class MFACheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allUsers = sharedDataProvider.getAllUsers().join();
-        
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkRootAccountWithoutHardwareMFA,     AWSFinding.ROOT_ACCOUNT_WITHOUT_HARDWARE_MFA, this::reportError),
-                wrapCheck(this::checkRootAccountWithVirtualMFA,         AWSFinding.ROOT_ACCOUNT_WITH_VIRTUAL_MFA, this::reportError),
-                wrapCheck(this::checkUsersWithNoMFA,                    AWSFinding.USERS_WITH_NO_MFA, this::reportError),
-                wrapCheck(this::checkUsersWithoutHardwareMFA,           AWSFinding.USERS_WITHOUT_HARDWARE_MFA, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllUsers()
             .thenCompose(users -> {

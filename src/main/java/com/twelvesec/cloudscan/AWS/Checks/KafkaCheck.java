@@ -39,22 +39,6 @@ public class KafkaCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allClusters = sharedDataProvider.getAllKafkaClusters().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::KafkaBrokersWithEnhancedMonitoringDisabled,     AWSFinding.KAFKA_BROKERS_WITHOUT_ENHANCED_MONITORING, this::reportError),
-                wrapCheck(this::KafkaClustersWithMTLSAuthenticationDisabled,    AWSFinding.KAFKA_CLUSTERS_WITHOUT_MTLS, this::reportError),
-                wrapCheck(this::KafkaClustersUsingOutdatedVersion,              AWSFinding.KAFKA_CLUSTERS_USING_OUTDATED_VERSION, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllKafkaClusters()
             .thenCompose(clusters -> {

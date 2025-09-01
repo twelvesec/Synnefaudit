@@ -48,28 +48,6 @@ public class EC2Check implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allEC2Instances = sharedDataProvider.getAllEC2Instances().join();
-        allGroupIds = sharedDataProvider.getAllSecurityGroupIds().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkEC2InstancesWithPublicIPs,                         AWSFinding.EC2_INSTANCES_WTH_PUBLIC_IPS, this::reportError),
-                wrapCheck(this::checkEC2InstancesWithDetailedMonitoringDisabled,        AWSFinding.EC2_INSTANCES_WITH_DETAILED_MONITORING_DISABLED, this::reportError),
-                wrapCheck(this::checkEC2InstancesNotManagedBySystemsManager,            AWSFinding.EC2_INSTANCES_NOT_MANAGED_BY_SYSTEM_MANAGER, this::reportError),
-                wrapCheck(this::checkSecurityGroupAllowIngressFromNonRFC1918Address,    AWSFinding.EC2_SECURITY_GROUP_NON_RFC1918_INGRESS, this::reportError),
-                wrapCheck(this::checkPublicInstancesWithIamProfilesAttached,            AWSFinding.PUBLIC_INSTANCES_WITH_IAM_PROFILES_ATTACHED, this::reportError),
-                wrapCheck(this::checkEC2InstancesOlderThan180Days,                      AWSFinding.EC2_INSTANCES_OLDER_THAN_180_DAYS, this::reportError),
-                wrapCheck(this::checkSecurityGroupsNotUsed,                             AWSFinding.SECURITY_GROUPS_NOT_USED, this::reportError),
-                wrapCheck(this::checkEC2IMDSv2Configuration,                            AWSFinding.EC2_IMDSV2_CONFIGURATION, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllEC2Instances()
             .thenCompose(instances -> {

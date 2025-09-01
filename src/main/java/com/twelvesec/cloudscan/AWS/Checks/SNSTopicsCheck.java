@@ -31,20 +31,6 @@ public class SNSTopicsCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allSNSArns = sharedDataProvider.getAllSNSTopicArns().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::SNSTopicsEncryptedWithoutAWSKMS, AWSFinding.SNS_ENCRYPTION_WITHOUT_AWS_KMS, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllSNSTopicArns()
             .thenCompose(snsArns -> {

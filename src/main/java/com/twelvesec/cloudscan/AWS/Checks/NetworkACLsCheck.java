@@ -30,21 +30,6 @@ public class NetworkACLsCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allNetworkACLs = sharedDataProvider.getAllNetworkACLs().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::NetworkACLWithAllPortsOpenToTheInternet,        AWSFinding.NETWORK_ACL_WITH_ALL_PORTS_OPEN_TO_INTERNET, this::reportError),
-                wrapCheck(this::NetworkACLAllowIngressFromTheInternetToPorts,   AWSFinding.NETWORK_ACL_WITH_SOME_PORTS_OPEN_TO_INTERNET, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllNetworkACLs()
             .thenCompose(NetworkACLs -> {

@@ -34,21 +34,6 @@ public class DynamoDBCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allTableNames = sharedDataProvider.getAllTableNames().join();
-
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkDynamoDBTableWithPointInTimeRecoveryDisabled,    AWSFinding.DYNAMODB_POINT_IN_TIME_RECOVERY_DISABLED, this::reportError),
-                wrapCheck(this::checkDynamoDBTableWithDefaultEncryptionEnabled,       AWSFinding.DYNAMODB_TABLE_DEFAULT_ENCRYPTION_ENABLED, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllTableNames()
             .thenCompose(tableNames -> {

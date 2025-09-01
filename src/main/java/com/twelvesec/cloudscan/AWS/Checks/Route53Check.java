@@ -43,11 +43,6 @@ public class Route53Check implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        throw new UnsupportedOperationException("Unimplemented method 'runAllChecks'");
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllRoute53HostedZones()
             .thenCompose(allHostedZones -> {

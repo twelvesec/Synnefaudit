@@ -41,21 +41,6 @@ public class CloudTrailCheck implements CloudCheck {
     }
 
     @Override
-    public void runAllChecks() {
-        allTrails = sharedDataProvider.getAllTrails().join();
-        
-        subCheckResults.clear();
-        subCheckResults.addAll(
-            Stream.of(
-                wrapCheck(this::checkTrailWithNoInsightSelectors,   AWSFinding.CLOUDTRAIL_WITH_NO_INSIGHT_SELECTORS, this::reportError),
-                wrapCheck(this::checkRecentRootAccountUsage,        AWSFinding.CLOUDTRAIL_RECENT_ROOT_ACCOUNT_USAGE, this::reportError)
-            )
-            .map(Supplier::get)
-            .toList()
-        );
-    }
-
-    @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllTrails()
             .thenCompose(trails -> {
