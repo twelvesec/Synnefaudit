@@ -26,6 +26,7 @@ import org.apache.commons.cli.ParseException;
 import com.twelvesec.cloudscan.CloudCheck.CheckSummary;
 import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
 import com.twelvesec.cloudscan.AWS.Checks.ACMCertificatesCheck;
+import com.twelvesec.cloudscan.AWS.Checks.AccessKeysCheck;
 import com.twelvesec.cloudscan.AWS.Checks.AthenaCheck;
 import com.twelvesec.cloudscan.AWS.Checks.CloudFormationCheck;
 import com.twelvesec.cloudscan.AWS.Checks.CloudFrontCheck;
@@ -313,6 +314,7 @@ public class App {
 
     private List<CloudCheck> getAWSChecks() {
         return List.of(
+            new AccessKeysCheck(writer, sharedDataProvider, iam),
             new ACMCertificatesCheck(writer, sharedDataProvider, acm),
             new AthenaCheck(writer, sharedDataProvider, athena),
             new CloudFormationCheck(writer, sharedDataProvider, cloudformation),

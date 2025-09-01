@@ -100,20 +100,16 @@ public class IAMCheck implements CloudCheck {
             .thenCompose(policies -> {
                 this.allPolicies = policies;
                 List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkIAMRolesWithAdministratorAccessPolicyAttached,         AWSFinding.IAM_ROLES_WITH_ADMINISTRATORACCESS_POLICY_ATTACHED, this::reportError),
-                    wrapCheck(this::checkIAMAccessAnalyzerDisabled,                             AWSFinding.IAM_ACCESS_ANALYZER_DISABLED, this::reportError),
-                    wrapCheck(this::checkIAMAccessAnalyzerWithFindings,                         AWSFinding.IAM_ACCESS_ANALYZER_WITH_FINDINGS, this::reportError),
-                    wrapCheck(this::checkIAMUsersWithMultipleActiveAccessKeys,                  AWSFinding.IAM_USERS_WITH_MULTIPLE_ACTIVE_ACCESS_KEYS, this::reportError),
-                    wrapCheck(this::checkIAMPasswordPolicyIsNotSet,                             AWSFinding.IAM_PASSWORD_POLICY_NOT_SET, this::reportError),
-                    wrapCheck(this::checkShortIAMPasswordPolicyReuse,                           AWSFinding.IAM_SHORT_PASSWORD_POLICY_REUSE, this::reportError),
-                    wrapCheck(this::checkIAMPolicyAllowsPrivilegeEscalation,                    AWSFinding.IAM_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
-                    wrapCheck(this::checkCrossAccountRoleAssumption,                            AWSFinding.IAM_CROSS_ACCOUNT_READ_ONLY_ROLES, this::reportError),
-                    wrapCheck(this::checkOverlyPermissiveManagedPolicies,                       AWSFinding.IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES, this::reportError),
-                    wrapCheck(this::checkIamUsersWithLongTermCredentials,                       AWSFinding.IAM_USERS_WITH_LONG_TERM_CREDENTIALS, this::reportError),
-                    wrapCheck(this::checkIamUsersWithAttachedPolicies,                          AWSFinding.IAM_USERS_WITH_ATTACHED_POLICIES, this::reportError),
-                    wrapCheck(this::checkAccessKeysNotRotated90Days,                            AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED, this::reportError),
-                    wrapCheck(this::checkAccessKeysNotRotatedForUsersWithNonIAMorSTSPolicies,   AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED_PRIVILEGED, this::reportError),
-                    wrapCheck(this::checkNoAccessKeysDuringUserSetup,                           AWSFinding.IAM_NO_ACCESS_KEYS_DURING_SETUP, this::reportError)
+                    wrapCheck(this::checkIAMRolesWithAdministratorAccessPolicyAttached, AWSFinding.IAM_ROLES_WITH_ADMINISTRATORACCESS_POLICY_ATTACHED, this::reportError),
+                    wrapCheck(this::checkIAMAccessAnalyzerDisabled,                     AWSFinding.IAM_ACCESS_ANALYZER_DISABLED, this::reportError),
+                    wrapCheck(this::checkIAMAccessAnalyzerWithFindings,                 AWSFinding.IAM_ACCESS_ANALYZER_WITH_FINDINGS, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyIsNotSet,                     AWSFinding.IAM_PASSWORD_POLICY_NOT_SET, this::reportError),
+                    wrapCheck(this::checkShortIAMPasswordPolicyReuse,                   AWSFinding.IAM_SHORT_PASSWORD_POLICY_REUSE, this::reportError),
+                    wrapCheck(this::checkIAMPolicyAllowsPrivilegeEscalation,            AWSFinding.IAM_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
+                    wrapCheck(this::checkCrossAccountRoleAssumption,                    AWSFinding.IAM_CROSS_ACCOUNT_READ_ONLY_ROLES, this::reportError),
+                    wrapCheck(this::checkOverlyPermissiveManagedPolicies,               AWSFinding.IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES, this::reportError),
+                    wrapCheck(this::checkIamUsersWithLongTermCredentials,               AWSFinding.IAM_USERS_WITH_LONG_TERM_CREDENTIALS, this::reportError),
+                    wrapCheck(this::checkIamUsersWithAttachedPolicies,                  AWSFinding.IAM_USERS_WITH_ATTACHED_POLICIES, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -232,45 +228,6 @@ public class IAMCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.IAM_ACCESS_ANALYZER_WITH_FINDINGS, result, status);
-        return status;
-    }
-
-    private Status checkIAMUsersWithMultipleActiveAccessKeys() {
-        if (allUsers.isEmpty()) {
-            writer.addToBuffer(AWSFinding.IAM_USERS_WITH_MULTIPLE_ACTIVE_ACCESS_KEYS, 
-                        Text.NO_IAM_USERS_FOUND.toString(), Status.NOT_APPLICABLE);
-            return Status.NOT_APPLICABLE;
-        }
-
-        List<Map<String,Object>> result = allUsers.stream()
-            .map(user -> {
-                String username = user.userName();
-                Status s;
-                String r;
-                try {
-                    ListAccessKeysResponse response = iam.listAccessKeys(
-                        ListAccessKeysRequest.builder().userName(username).build()
-                    ).join();
-                    List<String> active = response.accessKeyMetadata().stream()
-                        .filter(k -> "Active".equalsIgnoreCase(k.statusAsString()))
-                        .map(AccessKeyMetadata::accessKeyId)
-                        .toList();
-                    s = active.size() > 1 ? Status.FAIL : Status.PASS;
-                    r = active.isEmpty() ? Text.NO_ACTIVE_ACCESS_KEYS_FOR_USER.toString() : String.join(", ", active);
-                } catch (Exception e) {
-                    s = Status.FAIL_EXCEPTION;
-                    r = Text.EXCEPTION.toString().concat(e.getMessage());
-                }
-                
-                Map<String,Object> inner = new HashMap<>();
-                inner.put(Text.STATUS.toString(), s);
-                inner.put(Text.RESULT.toString(), r);
-                return Map.<String,Object>of(username, inner);
-            })
-            .toList();
-
-        Status status = getOverallStatus(result);
-        writer.addToBuffer(AWSFinding.IAM_USERS_WITH_MULTIPLE_ACTIVE_ACCESS_KEYS, result, status);
         return status;
     }
 
@@ -675,191 +632,6 @@ public class IAMCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.IAM_USERS_WITH_ATTACHED_POLICIES, result, status);
-        return status;
-    }
-
-    private Status checkAccessKeysNotRotated90Days() {
-        if (allUsers.isEmpty()) {
-            writer.addToBuffer(AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED,
-                            Text.NO_IAM_USERS_FOUND.toString(), Status.NOT_APPLICABLE);
-            return Status.NOT_APPLICABLE;
-        }
-
-        Instant cutoff = Instant.now().minus(90, ChronoUnit.DAYS);
-        List<Map<String,Object>> result = allUsers.stream()
-            .map(user -> {
-                Status s = Status.PASS;
-                ObjectNode r;
-                try {
-                    List<AccessKeyMetadata> keys = iam.listAccessKeys(
-                        ListAccessKeysRequest.builder().userName(user.userName()).build()
-                    ).join().accessKeyMetadata();
-
-                    if (keys.isEmpty()) {
-                        r = MAPPER.createObjectNode().put(Text.RESULT.toString(), 
-                                                    Text.NO_ACCESS_KEYS_FOUND.toString());
-                        s = Status.PASS;
-                    } else {
-                        ArrayNode keyArr = MAPPER.createArrayNode();
-                        for (AccessKeyMetadata key : keys) {
-                            boolean oldKey = key.createDate().isBefore(cutoff);
-                            if (oldKey) { s = Status.FAIL; }
-
-                            ObjectNode keyNode = (ObjectNode) MAPPER.valueToTree(key.toBuilder());
-                            long daysOld = ChronoUnit.DAYS.between(key.createDate(), Instant.now());
-                            keyNode.put(Text.AGEINDAYS.toString(), daysOld);
-                            keyArr.add(keyNode);
-                        }
-                        r = MAPPER.createObjectNode().set(Text.RESULT.toString(), keyArr);
-                    }
-                } catch (Exception e) {
-                    s = Status.FAIL_EXCEPTION;
-                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
-                                                    Text.EXCEPTION.toString().concat(e.getMessage()));
-                }
-
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
-                return Map.<String,Object>of(user.userName(), inner);
-            })
-            .toList();
-
-        Status status = getOverallStatus(result);
-        writer.addToBuffer(AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED, result, status);
-        return status;
-    }
-
-    private Status checkAccessKeysNotRotatedForUsersWithNonIAMorSTSPolicies() {
-        if (allUsers.isEmpty()) {
-            writer.addToBuffer(AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED_PRIVILEGED,
-                            Text.NO_IAM_USERS_FOUND.toString(), Status.NOT_APPLICABLE);
-            return Status.NOT_APPLICABLE;
-        }
-
-        Instant cutoff = Instant.now().minus(90, ChronoUnit.DAYS);
-        List<Map<String, Object>> result = allUsers.stream()
-            .map(user -> {
-                String userName = user.userName();
-                ObjectNode r = MAPPER.createObjectNode();
-                Status s;
-                try {
-                    List<String> privilegedPolicies = iam.listAttachedUserPolicies(
-                            ListAttachedUserPoliciesRequest.builder().userName(userName).build()
-                        ).join()
-                        .attachedPolicies().stream()
-                        .map(AttachedPolicy::policyName)
-                        .filter(name -> {
-                            String up = name.toUpperCase(Locale.ROOT);
-                            return !up.contains("IAM") && !up.contains("STS");
-                        })
-                        .toList();
-
-                    List<ObjectNode> keyNodes = iam.listAccessKeys(
-                            ListAccessKeysRequest.builder().userName(userName).build()
-                        ).join()
-                        .accessKeyMetadata().stream()
-                        .map(key -> {
-                            ObjectNode keyNode = (ObjectNode) MAPPER.valueToTree(key.toBuilder());
-                            long ageDays = ChronoUnit.DAYS.between(key.createDate(), Instant.now());
-                            keyNode.put(Text.AGEINDAYS.toString(), ageDays);
-                            keyNode.put(Text.AGESTATUS.toString(), (key.createDate().isBefore(cutoff) ? Status.FAIL : Status.PASS).toString());
-                            return keyNode;
-                        })
-                        .toList();
-                    
-                    ArrayNode policiesArray = r.putArray(Text.ATTACHEDPOLICIES.toString());
-                    if (privilegedPolicies.isEmpty()) {
-                        r.put(Text.ATTACHEDPOLICIES.toString(), Text.NO_NON_IAM_STS_POLICIES_ATTACHED.toString());
-                    } else {
-                        privilegedPolicies.forEach(policiesArray::add);
-                    }
-                    
-                    ArrayNode keysArray = r.putArray(Text.ACCESSKEYS.toString());
-                    if (keyNodes.isEmpty()) {
-                        r.put(Text.ACCESSKEYS.toString(), Text.NO_ACCESS_KEYS_FOUND.toString());
-                    } else {
-                        keyNodes.forEach(keysArray::add);
-                    }
-
-                    boolean hasPrivilegedPolicies = !privilegedPolicies.isEmpty();
-                    boolean hasOldKey = keyNodes.stream()
-                        .anyMatch(kn -> Status.valueOf(kn.get(Text.AGESTATUS.toString()).asText()) == Status.FAIL);
-                    
-                    s = (hasPrivilegedPolicies && hasOldKey) ? Status.FAIL : Status.PASS;
-                } catch (Exception e) {
-                    s = Status.FAIL_EXCEPTION;
-                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
-                }
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
-                return Map.<String, Object>of(userName, inner);
-            })
-            .toList();
-
-        Status status = getOverallStatus(result);
-        writer.addToBuffer(AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED_PRIVILEGED, result, status);
-        return status;
-    }
-
-    private Status checkNoAccessKeysDuringUserSetup() {
-        if (allUsers.isEmpty()) {
-            writer.addToBuffer(AWSFinding.IAM_NO_ACCESS_KEYS_DURING_SETUP,
-                            Text.NO_IAM_USERS_FOUND.toString(), Status.NOT_APPLICABLE);
-            return Status.NOT_APPLICABLE;
-        }
-
-        List<Map<String, Object>> result = allUsers.stream()
-            .filter(user -> {
-                try {
-                    GetLoginProfileResponse loginProfile = iam.getLoginProfile(
-                        GetLoginProfileRequest.builder().userName(user.userName()).build())
-                        .join();
-                    return loginProfile != null;
-                } catch (Exception e) {
-                    return false;
-                }
-            })
-            .map(user -> {
-                String username = user.userName();
-                Status s;
-                ObjectNode r = MAPPER.createObjectNode();
-                
-                try {
-                    ListAccessKeysResponse keysResponse = iam.listAccessKeys(
-                        ListAccessKeysRequest.builder().userName(username).build())
-                        .join();
-                    
-                    boolean hasEarlyKeys = false;
-                    ArrayNode accessKeysArray = MAPPER.createArrayNode();
-
-                    hasEarlyKeys = keysResponse.accessKeyMetadata().stream()
-                        .map(key -> {
-                            ObjectNode keyNode = MAPPER.valueToTree(key.toBuilder());
-                            accessKeysArray.add(keyNode);
-                            return key;
-                        })
-                        .anyMatch(key -> Duration.between(user.createDate(), key.createDate()).toDays() <= 1);
-                    
-                    s = hasEarlyKeys ? Status.FAIL : Status.PASS;
-                    r.put(Text.USERCREATIONDATE.toString(), user.createDate().toString());
-                    r.set(Text.ACCESSKEYS.toString(), accessKeysArray); 
-                    
-                }  catch (Exception e) {
-                    s = Status.FAIL_EXCEPTION;
-                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
-                }
-                
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
-                return Map.<String, Object>of(username, inner);
-            })
-            .toList();
-
-        Status status = getOverallStatus(result);
-        writer.addToBuffer(AWSFinding.IAM_NO_ACCESS_KEYS_DURING_SETUP, result, status);
         return status;
     }
 
