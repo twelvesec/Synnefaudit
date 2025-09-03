@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.CloudCheck;
@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.dynamodb.model.DescribeContinuousBackupsR
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.SSEDescription;
+import software.amazon.awssdk.services.dynamodb.model.TableDescription;
 
 public class DynamoDBCheck implements CloudCheck {
     private List<String> allTableNames;
@@ -39,8 +40,9 @@ public class DynamoDBCheck implements CloudCheck {
             .thenCompose(tableNames -> {
                 this.allTableNames = tableNames;
                 List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkDynamoDBTableWithPointInTimeRecoveryDisabled,    AWSFinding.DYNAMODB_POINT_IN_TIME_RECOVERY_DISABLED, this::reportError),
-                    wrapCheck(this::checkDynamoDBTableWithDefaultEncryptionEnabled,       AWSFinding.DYNAMODB_TABLE_DEFAULT_ENCRYPTION_ENABLED, this::reportError)
+                    wrapCheck(this::checkDynamoDBTableWithPointInTimeRecoveryDisabled,  AWSFinding.DYNAMODB_POINT_IN_TIME_RECOVERY_DISABLED, this::reportError),
+                    wrapCheck(this::checkDynamoDBTableWithDefaultEncryptionEnabled,     AWSFinding.DYNAMODB_TABLE_DEFAULT_ENCRYPTION_ENABLED, this::reportError),
+                    wrapCheck(this::checkDynamoDBEncryptionWithCMK,                     AWSFinding.DYNAMODB_ENCRYPTION_WITH_CMK, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -130,6 +132,62 @@ public class DynamoDBCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.DYNAMODB_TABLE_DEFAULT_ENCRYPTION_ENABLED, result, status);
+        return status;
+    }
+
+    private Status checkDynamoDBEncryptionWithCMK() {
+        if (allTableNames.isEmpty()) {
+            writer.addToBuffer(AWSFinding.DYNAMODB_ENCRYPTION_WITH_CMK, 
+                            Text.NO_DYNAMODB_TABLES_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allTableNames.stream()
+            .map(tableName -> {
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                
+                try {
+                    DescribeTableResponse response = dynamodb.describeTable(
+                        DescribeTableRequest.builder().tableName(tableName).build()
+                    ).join();
+                    
+                    TableDescription table = response.table();
+                    SSEDescription sseDescription = table.sseDescription();
+                    boolean hasEncryptionEnabled = sseDescription != null 
+                        && "ENABLED".equals(sseDescription.statusAsString());
+                    
+                    boolean usesCMK = hasEncryptionEnabled 
+                        && "KMS".equals(sseDescription.sseTypeAsString())
+                        && sseDescription.kmsMasterKeyArn() != null
+                        && !sseDescription.kmsMasterKeyArn().contains("aws/dynamodb");
+                    
+                    s = usesCMK ? Status.PASS : Status.FAIL;
+                    r = MAPPER.valueToTree(response.toBuilder());
+                    
+                    if (!usesCMK) {
+                        if (!hasEncryptionEnabled) {
+                            r.put("reason", "Encryption not enabled for this table");
+                        } else if (sseDescription != null && sseDescription.kmsMasterKeyArn() != null
+                                && sseDescription.kmsMasterKeyArn().contains("aws/dynamodb")) {
+                            r.put("reason", "Using AWS managed key instead of CMK");
+                        } else {
+                            r.put("reason", "Not using CMK for encryption");
+                        }
+                    }
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(), Text.EXCEPTION.getText().concat(e.getMessage()));
+                }
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(tableName, inner);
+            })
+            .collect(Collectors.toList());
+        
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.DYNAMODB_ENCRYPTION_WITH_CMK, result, status);
         return status;
     }
 }

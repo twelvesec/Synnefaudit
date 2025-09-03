@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
@@ -39,10 +37,6 @@ import software.amazon.awssdk.services.organizations.model.AwsOrganizationsNotIn
 import software.amazon.awssdk.services.organizations.model.DescribeAccountRequest;
 import software.amazon.awssdk.services.organizations.model.DescribeAccountResponse;
 import software.amazon.awssdk.services.resourceexplorer2.model.Index;
-import software.amazon.awssdk.services.ssmincidents.SsmIncidentsAsyncClient;
-import software.amazon.awssdk.services.ssmincidents.model.ListResponsePlansRequest;
-import software.amazon.awssdk.services.ssmincidents.model.ListResponsePlansResponse;
-import software.amazon.awssdk.services.ssmincidents.model.ResponsePlanSummary;
 import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
@@ -50,7 +44,6 @@ public class GeneralCheck implements CloudCheck {
     private List<Index> allIndexes;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
-    private final SsmIncidentsAsyncClient ssmIncidents;
     private final AccountAsyncClient accountClient;
     private final BackupAsyncClient backup;
     private final CodeBuildAsyncClient codeBuild;
@@ -58,12 +51,11 @@ public class GeneralCheck implements CloudCheck {
     private final StsAsyncClient sts;
 
     public GeneralCheck(DataWriter writer, SharedDataProvider sharedDataProvider, 
-                        SsmIncidentsAsyncClient ssmIncidents, AccountAsyncClient accountClient, 
+                        AccountAsyncClient accountClient, 
                         BackupAsyncClient backup, CodeBuildAsyncClient codeBuild, 
                         OrganizationsAsyncClient orgs, StsAsyncClient sts) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
-        this.ssmIncidents = ssmIncidents;
         this.accountClient = accountClient;
         this.backup = backup;
         this.codeBuild = codeBuild;
@@ -77,7 +69,6 @@ public class GeneralCheck implements CloudCheck {
             .thenCompose(indexes -> {
                 this.allIndexes = indexes;
                 List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkSSMIncidentsWithNoResponsePlans,       AWSFinding.SSM_INCIDENTS_WITHOUT_RESPONSE_PLANS, this::reportError),
                     wrapCheck(this::checkNoAlternateContactsFound,              AWSFinding.NO_ALTERNATE_CONTACTS_FOUND, this::reportError),
                     wrapCheck(this::checkNoBackupReportPlanExists,              AWSFinding.NO_BACKUP_REPORT_PLAN_EXISTS, this::reportError),
                     wrapCheck(this::checkResourceExplorerIndexes,               AWSFinding.RESOURCE_EXPLORER_NO_INDEXES_FOUND, this::reportError),
@@ -91,28 +82,6 @@ public class GeneralCheck implements CloudCheck {
     @Override
     public void reportError(CloudCheck.ErrorReport report) {
         writer.addToBuffer(report.finding(), report.message(), report.status());
-    }
-
-    private Status checkSSMIncidentsWithNoResponsePlans() {
-        List<String> result;
-        Status status;
-
-        ListResponsePlansResponse listResponse = ssmIncidents.listResponsePlans(
-            ListResponsePlansRequest.builder().build()
-        ).join();
-        List<String> arnList = listResponse.responsePlanSummaries().stream()
-            .map(ResponsePlanSummary::arn)
-            .toList();
-
-        if (arnList.isEmpty()) {
-            status = Status.FAIL;
-            result = List.of(Text.NO_RESPONSE_PLANS.toString());
-        } else {
-            status = Status.PASS;
-            result = arnList;
-        }
-        writer.addToBuffer(AWSFinding.SSM_INCIDENTS_WITHOUT_RESPONSE_PLANS, result, status);
-        return status;
     }
 
     private Status checkNoAlternateContactsFound() {

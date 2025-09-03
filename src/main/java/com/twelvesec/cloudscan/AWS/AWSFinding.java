@@ -14,6 +14,7 @@ public enum AWSFinding {
 
     DYNAMODB_POINT_IN_TIME_RECOVERY_DISABLED("DynamoDB table with point-in-time recovery disabled", Severity.MEDIUM),
     DYNAMODB_TABLE_DEFAULT_ENCRYPTION_ENABLED("DynamoDB table with Default Encryption enabled", Severity.LOW),
+    DYNAMODB_ENCRYPTION_WITH_CMK("DynamoDB table without CMK KMS encryption at rest", Severity.LOW),
 
     NO_SNAPSHOTS_FOR_EBS_VOLUMES("No Snapshots for EBS volumes", Severity.LOW),
     EBS_DEFAULT_ENCRYPTION_NOT_ACTIVATED("EBS Default Encryption is not Activated", Severity.LOW),
@@ -38,6 +39,7 @@ public enum AWSFinding {
     PUBLICLY_ACCESSIBLE_LOAD_BALANCERS("Publicly Accessible Load Balancers found", Severity.MEDIUM),
     ELB_ALBS_DEFENSIVE_MITIGATION_NOT_DROPPING_HEADERS("ELB ALB with mitigation mode defensive and not dropping invalid header fields", Severity.INFO),
     ELB_INSECURE_SSL_CIPHERS("ELBs have insecure SSL ciphers", Severity.MEDIUM),
+    ELB_WITHOUT_LISTENERS("ELBs without Listeners found", Severity.LOW),
 
     ROOT_ACCOUNT_WITHOUT_HARDWARE_MFA("Root Account without Hardware MFA", Severity.MEDIUM),
     ROOT_ACCOUNT_WITH_VIRTUAL_MFA("Root Account with Virtual MFA", Severity.MEDIUM),
@@ -52,6 +54,7 @@ public enum AWSFinding {
     DRS_NOT_ENABLED("DRS not Enabled", Severity.MEDIUM),
 
     SSM_INCIDENTS_WITHOUT_RESPONSE_PLANS("SSM Incidents with no Response Plans", Severity.MEDIUM),
+    PUBLIC_SSM_DOCUMENTS("Public SSM Documents found", Severity.HIGH),
 
     MACIE_NOT_ENABLED("Macie is not enabled", Severity.LOW),
 
@@ -64,6 +67,7 @@ public enum AWSFinding {
 
     KMS_KEYS_NOT_ROTATED("KMS Keys not rotated", Severity.LOW),
     PUBLICLY_EXPOSED_KMS_KEYS("Publicly exposed KMS keys", Severity.MEDIUM),
+    KMS_UNUSED_CMK_KEYS("Unused CMK KMS keys found", Severity.LOW),
 
     ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED("Route53 Public Hosted Zones with query logging disabled", Severity.LOW),
     ROUTE53_RECORDS_WITH_DANGLING_IPS("Route53 Records containing dangling IPs", Severity.HIGH),
@@ -78,6 +82,8 @@ public enum AWSFinding {
 
     CLOUDTRAIL_WITH_NO_INSIGHT_SELECTORS("Trail with no Insight selectors", Severity.LOW),
     CLOUDTRAIL_RECENT_ROOT_ACCOUNT_USAGE("Root account usage found", Severity.MEDIUM),
+    S3_OBJECT_LEVEL_READ_LOGGING("S3 buckets Object-level logging for read events is disabled", Severity.LOW),
+    S3_OBJECT_LEVEL_WRITE_LOGGING("S3 buckets Object-level logging for write events is disabled", Severity.LOW),
 
     RESOURCE_EXPLORER_NO_INDEXES_FOUND("No Resource Explorer Indexes found", Severity.LOW),
 

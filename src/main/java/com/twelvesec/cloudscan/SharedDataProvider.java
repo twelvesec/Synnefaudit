@@ -28,6 +28,8 @@ import software.amazon.awssdk.services.cloudfront.model.DistributionSummary;
 import software.amazon.awssdk.services.cloudfront.model.ListDistributionsRequest;
 import software.amazon.awssdk.services.cloudfront.model.ListDistributionsResponse;
 import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
+import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsRequest;
+import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsResponse;
 import software.amazon.awssdk.services.cloudtrail.model.ListTrailsRequest;
 import software.amazon.awssdk.services.cloudtrail.model.ListTrailsResponse;
 import software.amazon.awssdk.services.cloudtrail.model.TrailInfo;
@@ -114,6 +116,10 @@ import software.amazon.awssdk.services.secretsmanager.model.SecretListEntry;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
 import software.amazon.awssdk.services.sns.model.ListTopicsRequest;
 import software.amazon.awssdk.services.sns.model.Topic;
+import software.amazon.awssdk.services.ssm.SsmAsyncClient;
+import software.amazon.awssdk.services.ssm.model.DocumentIdentifier;
+import software.amazon.awssdk.services.ssm.model.ListDocumentsRequest;
+import software.amazon.awssdk.services.ssm.model.ListDocumentsResponse;
 import software.amazon.awssdk.services.support.SupportAsyncClient;
 import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckResultRequest;
 import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckResultResponse;
@@ -144,6 +150,7 @@ public class SharedDataProvider {
     private ResourceExplorer2AsyncClient resourceexplorer2;
     private S3AsyncClient s3;
     private SnsAsyncClient sns;
+    private SsmAsyncClient ssm;
     private SupportAsyncClient support;
 
     public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AthenaAsyncClient athena,
@@ -153,7 +160,7 @@ public class SharedDataProvider {
             SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
             KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, RdsAsyncClient rds, 
             Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
-            SupportAsyncClient support) {
+            SsmAsyncClient ssm, SupportAsyncClient support) {
         this.accessAnalyzer = accessAnalyzer;
         this.acm = acm;
         this.athena = athena;
@@ -177,6 +184,7 @@ public class SharedDataProvider {
         this.resourceexplorer2 = resourceexplorer2;
         this.s3 = s3;
         this.sns = sns;
+        this. ssm = ssm;
         this.support = support;
     }
 
@@ -247,6 +255,17 @@ public class SharedDataProvider {
         Supplier<CompletableFuture<List<TrailInfo>>> loader = () ->
             cloudTrail.listTrails(ListTrailsRequest.builder().build())
                 .thenApply(ListTrailsResponse::trails);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<GetEventSelectorsResponse> getEventSelectorsForTrail(String trailName) {
+        String key = "cloudtrail:eventselectors:" + trailName;
+        Supplier<CompletableFuture<GetEventSelectorsResponse>> loader = () ->
+            cloudTrail.getEventSelectors(
+                GetEventSelectorsRequest.builder()
+                    .trailName(trailName)
+                    .build()
+            );
         return getCachedData(key, loader);
     }
 
@@ -482,6 +501,16 @@ public class SharedDataProvider {
                 page -> page.topics().stream()
                     .map(Topic::topicArn)
                     .collect(Collectors.toList())
+            );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<DocumentIdentifier>> getAllSSMDocuments() {
+        String key = "ssm:documents";
+        Supplier<CompletableFuture<List<DocumentIdentifier>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                ssm.listDocumentsPaginator(ListDocumentsRequest.builder().build()),
+                ListDocumentsResponse::documentIdentifiers
             );
         return getCachedData(key, loader);
     }

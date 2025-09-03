@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
@@ -21,6 +22,7 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeList
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeListenersResponse;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancerAttributesRequest;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancerAttributesResponse;
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.Listener;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancer;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancerTypeEnum;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancerAttribute;
@@ -57,7 +59,8 @@ public class ELBCheck implements CloudCheck {
                     wrapCheck(this::checkELBListenerWithoutSSLFound,                            AWSFinding.ELB_LISTENER_WITHOUT_SSL, this::reportError),
                     wrapCheck(this::checkPubliclyAccessibleLoadBalancers,                       AWSFinding.PUBLICLY_ACCESSIBLE_LOAD_BALANCERS, this::reportError),
                     wrapCheck(this::checkAlbsDefensiveMitigationButNotDroppingInvalidHeaders,   AWSFinding.ELB_ALBS_DEFENSIVE_MITIGATION_NOT_DROPPING_HEADERS, this::reportError),
-                    wrapCheck(this::checkELBInsecureSSLCiphers,                                 AWSFinding.ELB_INSECURE_SSL_CIPHERS, this::reportError)
+                    wrapCheck(this::checkELBInsecureSSLCiphers,                                 AWSFinding.ELB_INSECURE_SSL_CIPHERS, this::reportError),
+                    wrapCheck(this::checkELBWithoutListeners,                                   AWSFinding.ELB_WITHOUT_LISTENERS, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -391,5 +394,67 @@ public class ELBCheck implements CloudCheck {
             return Status.PASS;
         }
         return Status.FAIL;
+    }
+
+    private Status checkELBWithoutListeners() {
+        if (allLoadBalancers == null || allLoadBalancers.isEmpty()) {
+            writer.addToBuffer(AWSFinding.ELB_WITHOUT_LISTENERS, 
+                            Text.NO_ELBS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allLoadBalancers.stream()
+            .map(loadBalancer -> {
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                
+                try {
+                    DescribeListenersResponse listenersResponse = elb.describeListeners(
+                        DescribeListenersRequest.builder()
+                            .loadBalancerArn(loadBalancer.loadBalancerArn())
+                            .build()
+                    ).join();
+
+                    List<Listener> listeners = listenersResponse.listeners();
+                    boolean hasListeners = !listeners.isEmpty();
+                    
+                    s = hasListeners ? Status.PASS : Status.FAIL;
+                    
+                    r.put("loadBalancerArn", loadBalancer.loadBalancerArn());
+                    r.put("loadBalancerName", loadBalancer.loadBalancerName());
+                    r.put("loadBalancerType", loadBalancer.typeAsString());
+                    r.put("scheme", loadBalancer.scheme().toString());
+                    r.put("hasListeners", hasListeners);
+                    r.put("listenerCount", listeners.size());
+                    
+                    if (!listeners.isEmpty()) {
+                        ArrayNode listenersNode = MAPPER.valueToTree(
+                            listeners.stream()
+                                .map(listener -> Map.of(
+                                    "listenerArn", listener.listenerArn(),
+                                    "port", listener.port(),
+                                    "protocol", listener.protocolAsString()
+                                ))
+                                .collect(Collectors.toList())
+                        );
+                        r.set("listeners", listenersNode);
+                    }
+                    
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                    r.put("loadBalancerArn", loadBalancer.loadBalancerArn());
+                    r.put("loadBalancerName", loadBalancer.loadBalancerName());
+                }
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(loadBalancer.loadBalancerArn(), inner);
+            })
+            .collect(Collectors.toList());
+        
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.ELB_WITHOUT_LISTENERS, result, status);
+        return status;
     }
 }

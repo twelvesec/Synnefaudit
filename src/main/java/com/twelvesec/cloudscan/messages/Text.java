@@ -110,6 +110,8 @@ public enum Text {
     NO_SNS_TOPICS_FOUND("No SNS Topics found."),
     NO_HTTP_SUBSCRIPTIONS_FOUND("No HTTP Subscriptions found."),
 
+    NO_SSM_DOCUMENTS_FOUND("No SSM Documents found."),
+
     NO_VPCS_FOUND("No VPCs found."),
     NO_VPC_SUBNETS_FOUND("No VPC subnets found."),
     NO_VPC_ENDPOINTS_FOUND("No VPC Endpoints found."),

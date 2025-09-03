@@ -1,8 +1,10 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
@@ -21,9 +23,11 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
+import software.amazon.awssdk.services.cloudtrail.model.EventSelector;
 import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsRequest;
 import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsResponse;
 import software.amazon.awssdk.services.cloudtrail.model.ReadWriteType;
+import software.amazon.awssdk.services.cloudtrail.model.Trail;
 import software.amazon.awssdk.services.cloudtrail.model.TrailInfo;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetBucketAclRequest;

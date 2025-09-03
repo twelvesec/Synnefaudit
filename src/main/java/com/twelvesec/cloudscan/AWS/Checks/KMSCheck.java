@@ -1,11 +1,12 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.CloudCheck;
@@ -14,23 +15,35 @@ import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.GetMetricDataRequest;
+import software.amazon.awssdk.services.cloudwatch.model.GetMetricDataResponse;
+import software.amazon.awssdk.services.cloudwatch.model.Metric;
+import software.amazon.awssdk.services.cloudwatch.model.MetricDataQuery;
+import software.amazon.awssdk.services.cloudwatch.model.MetricStat;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
 import software.amazon.awssdk.services.kms.model.DescribeKeyRequest;
 import software.amazon.awssdk.services.kms.model.DescribeKeyResponse;
 import software.amazon.awssdk.services.kms.model.GetKeyPolicyResponse;
 import software.amazon.awssdk.services.kms.model.GetKeyRotationStatusRequest;
 import software.amazon.awssdk.services.kms.model.GetKeyRotationStatusResponse;
+import software.amazon.awssdk.services.kms.model.KeyMetadata;
+import software.amazon.awssdk.services.kms.model.KeyState;
 
 public class KMSCheck implements CloudCheck {
     private List<String> keyIds;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final KmsAsyncClient kms;
+    private final CloudWatchAsyncClient cloudWatch;
 
-    public KMSCheck(DataWriter writer, SharedDataProvider sharedDataProvider, KmsAsyncClient kms) {
+    public KMSCheck(DataWriter writer, SharedDataProvider sharedDataProvider, 
+                    KmsAsyncClient kms, CloudWatchAsyncClient cloudWatch) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.kms = kms;
+        this.cloudWatch = cloudWatch;
     }
 
     @Override
@@ -40,7 +53,8 @@ public class KMSCheck implements CloudCheck {
                 this.keyIds = keyIds;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkKMSKeysNotRotated, AWSFinding.KMS_KEYS_NOT_ROTATED, this::reportError),
-                    wrapCheck(this::checkExposedKmsKeys,    AWSFinding.PUBLICLY_EXPOSED_KMS_KEYS, this::reportError)
+                    wrapCheck(this::checkExposedKmsKeys,    AWSFinding.PUBLICLY_EXPOSED_KMS_KEYS, this::reportError),
+                    wrapCheck(this::checkUnusedCMKKmsKeys,  AWSFinding.KMS_UNUSED_CMK_KEYS, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -132,6 +146,85 @@ public class KMSCheck implements CloudCheck {
         
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.PUBLICLY_EXPOSED_KMS_KEYS, result, status);
+        return status;
+    }
+
+    private Status checkUnusedCMKKmsKeys() {
+        if (keyIds.isEmpty()) {
+            writer.addToBuffer(AWSFinding.KMS_UNUSED_CMK_KEYS, 
+                            Text.NO_KMS_KEYS_FOUND_TO_INSPECT.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        Instant cutoff = Instant.now().minus(90, ChronoUnit.DAYS);
+        
+        List<Map<String, Object>> result = keyIds.stream()
+            .map(keyId -> {
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                
+                try {
+                    DescribeKeyResponse keyResponse = kms.describeKey(
+                        DescribeKeyRequest.builder().keyId(keyId).build()
+                    ).join();
+                    
+                    KeyMetadata keyMetadata = keyResponse.keyMetadata();
+                    r.set("keyMetadata", MAPPER.valueToTree(keyMetadata));
+                    
+                    if (!keyMetadata.keyState().equals(KeyState.ENABLED)) {
+                        s = Status.NOT_APPLICABLE;
+                    } else {
+                        GetKeyRotationStatusResponse rotationResponse = kms.getKeyRotationStatus(
+                            GetKeyRotationStatusRequest.builder().keyId(keyId).build()
+                        ).join();
+                        r.put("keyRotationEnabled", rotationResponse.keyRotationEnabled());
+                        
+                        long keyAgeDays = ChronoUnit.DAYS.between(keyMetadata.creationDate(), Instant.now());
+                        r.put("keyAgeDays", keyAgeDays);
+                        
+                        try {
+                            GetMetricDataResponse metricsResponse = cloudWatch.getMetricData(
+                                GetMetricDataRequest.builder()
+                                    .metricDataQueries(MetricDataQuery.builder()
+                                        .id("keyUsage")
+                                        .metricStat(MetricStat.builder()
+                                            .metric(Metric.builder()
+                                                .namespace("AWS/KMS")
+                                                .metricName("KeyUsageCount")
+                                                .dimensions(Dimension.builder()
+                                                    .name("KeyId").value(keyId).build())
+                                                .build())
+                                            .period(86400).stat("Sum").build())
+                                        .build())
+                                    .startTime(cutoff).endTime(Instant.now()).build()
+                            ).join();
+                            
+                            boolean hasRecentUsage = metricsResponse.metricDataResults().stream()
+                                .anyMatch(metricResult -> metricResult.values().stream()
+                                    .anyMatch(value -> value > 0));
+                            
+                            s = hasRecentUsage ? Status.PASS : Status.FAIL;
+                            
+                        } catch (Exception e) {
+                            boolean isLikelyUnused = keyAgeDays > 90;
+                            s = isLikelyUnused ? Status.FAIL : Status.PASS;
+                            r.put(Text.ERROR.getText(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                        }
+                    }
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(), 
+                        Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                ObjectNode inner = MAPPER.createObjectNode();
+                inner.put(Text.STATUS.toString(), s.toString());
+                inner.set(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(keyId, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.KMS_UNUSED_CMK_KEYS, result, status);
         return status;
     }
 }
