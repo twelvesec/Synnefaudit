@@ -120,22 +120,35 @@ public interface CloudCheck {
     }
 
     default Status getOverallStatus(List<?> data) {
-        boolean hasFailure = data.stream()
+        if (data.isEmpty()) {
+            return Status.NOT_APPLICABLE;
+        }
+        
+        return data.stream()
             .map(item -> {
                 if (item instanceof ObjectNode on) {
                     return Status.valueOf(on.get(Text.STATUS.toString()).asText());
-                } else if (item instanceof Map<?,?> m) {
-                    Object value = m.values().iterator().next();
-                    if (value instanceof ObjectNode inner) {
-                        return Status.valueOf(inner.get(Text.STATUS.toString()).asText());
+                } else if (item instanceof Map<?, ?> outerMap) {
+                    Object outerValue = outerMap.values().iterator().next();
+                    
+                    if (outerValue instanceof Map<?, ?> innerMap) {
+                        Object statusObj = innerMap.get(Text.STATUS.toString());
+                        if (statusObj instanceof Status) {
+                            return (Status) statusObj;
+                        }
                     }
                     return Status.FAIL_EXCEPTION;
                 } else {
                     return Status.FAIL_EXCEPTION;
                 }
             })
-            .anyMatch(s -> s == Status.FAIL || s == Status.FAIL_EXCEPTION);
-        return hasFailure ? Status.FAIL : Status.PASS;
+            .reduce(Status.PASS, (overall, current) -> {
+                return current == Status.FAIL_EXCEPTION 
+                    ? Status.FAIL_EXCEPTION
+                    : (current == Status.FAIL 
+                        ? Status.FAIL
+                        : overall);
+            });
     }
 
     default Supplier<CheckResult> wrapCheck(Supplier<Status> check, AWSFinding title, Consumer<ErrorReport> errorReporter) {
