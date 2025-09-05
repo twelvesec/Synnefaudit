@@ -107,6 +107,8 @@ public enum Text {
     ACLS_DISABLED("ACLs disabled (Bucket owner enforced) : "),
     NO_PUBLIC_ACCESS_BLOCK_CONFIGURATION_FOUND("No public access block configuration found : "),
 
+    NO_ACCOUNT_ID_FOUND("Account Id could not be retrieved."),
+
     NO_SNS_TOPICS_FOUND("No SNS Topics found."),
     NO_HTTP_SUBSCRIPTIONS_FOUND("No HTTP Subscriptions found."),
 

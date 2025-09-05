@@ -1,34 +1,23 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
 import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
-import software.amazon.awssdk.services.cloudtrail.model.EventSelector;
-import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsRequest;
-import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsResponse;
-import software.amazon.awssdk.services.cloudtrail.model.ReadWriteType;
-import software.amazon.awssdk.services.cloudtrail.model.Trail;
-import software.amazon.awssdk.services.cloudtrail.model.TrailInfo;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetBucketAclRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketAclResponse;
@@ -85,7 +74,11 @@ public class S3BucketsCheck implements CloudCheck {
                     wrapCheck(this::S3BucketsWithACLsEnabled,                   AWSFinding.S3_BUCKETS_WITH_ACL_ENABLED, this::reportError),
                     wrapCheck(this::BlockPublicAccessForS3NotEnabled,           AWSFinding.BLOCK_PUBLIC_ACCESS_S3_DISABLED, this::reportError),
                     wrapCheck(this::S3BucketsWithDefaultEncryptionDisabled,     AWSFinding.S3_BUCKETS_WITH_DEFAULT_ENCRYPTION_DISABLED, this::reportError),
-                    wrapCheck(this::S3BucketsWithWriteAccessAllowed,            AWSFinding.S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED, this::reportError)
+                    wrapCheck(this::S3BucketsWithWriteAccessAllowed,            AWSFinding.S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED, this::reportError),
+                    wrapCheck(this::checkS3AccountLevelPublicAccessBlock,       AWSFinding.S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCK, this::reportError),
+                    wrapCheck(this::S3BucketsListableByPublic,                  AWSFinding.S3_BUCKETS_LISTABLE_BY_PUBLIC, this::reportError),
+                    wrapCheck(this::S3BucketsOpenToPublic,                      AWSFinding.S3_BUCKETS_OPEN_TO_PUBLIC, this::reportError),
+                    wrapCheck(this::S3BucketsWritableByPublic,                  AWSFinding.S3_BUCKETS_WRITABLE_BY_PUBLIC, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -609,5 +602,336 @@ public class S3BucketsCheck implements CloudCheck {
             || normalizedAction.equals("s3:putobjectversionacl")
             || normalizedAction.equals("s3:putbucketpolicy")
             || normalizedAction.equals("s3:putbucketacl");
+    }
+
+    private Status checkS3AccountLevelPublicAccessBlock() {
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(AWSFinding.S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCK, 
+                            Text.NO_S3_BUCKETS_FOUND, Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        Status status;
+        ObjectNode result = MAPPER.createObjectNode();
+        String accountId = Text.NO_ACCOUNT_ID_FOUND.getText();
+
+        try {
+            accountId = sts.getCallerIdentity(GetCallerIdentityRequest.builder().build()).join().account();
+            
+            GetPublicAccessBlockResponse response = s3control.getPublicAccessBlock(
+                GetPublicAccessBlockRequest.builder().accountId(accountId).build()
+            ).join();
+            
+            PublicAccessBlockConfiguration config = response.publicAccessBlockConfiguration();
+            
+            boolean allBlocked = config.blockPublicAcls()
+                               && config.ignorePublicAcls()
+                               && config.blockPublicPolicy()
+                               && config.restrictPublicBuckets();
+            status = allBlocked ? Status.PASS : Status.FAIL;
+            
+            result.put("accountId", accountId);
+            result = MAPPER.valueToTree(config.toBuilder());
+            
+            if (!allBlocked) {
+                List<String> missingSettings = new ArrayList<>();
+                if (!config.blockPublicAcls()) missingSettings.add("BlockPublicAcls");
+                if (!config.ignorePublicAcls()) missingSettings.add("IgnorePublicAcls");
+                if (!config.blockPublicPolicy()) missingSettings.add("BlockPublicPolicy");
+                if (!config.restrictPublicBuckets()) missingSettings.add("RestrictPublicBuckets");
+                
+                result.put("reason", "Missing settings: " + String.join(", ", missingSettings));
+            }
+            
+        } catch (S3ControlException e) {
+            if ("NoSuchPublicAccessBlockConfiguration".equals(e.awsErrorDetails().errorCode())) {
+                status = Status.FAIL;
+                result.put("reason", "No public access block configuration found for account");
+                result.put("accountId", accountId);
+            } else {
+                status = Status.FAIL_EXCEPTION;
+                result.put(Text.ERROR.toString(), Text.EXCEPTION.getText().concat(e.getMessage()));
+            }
+        } catch (Exception e) {
+            status = Status.FAIL_EXCEPTION;
+            result.put(Text.ERROR.toString(), Text.EXCEPTION.getText().concat(e.getMessage()));
+        }
+        
+        writer.addToBuffer(AWSFinding.S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCK, result, status);
+        return status;
+    }
+
+    private Status S3BucketsListableByPublic() {
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(AWSFinding.S3_BUCKETS_LISTABLE_BY_PUBLIC,
+                            Text.NO_S3_BUCKETS_FOUND, Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+            .map(bucket -> {
+                Status s;
+                ObjectNode r;
+                try {
+                    S3AsyncClient regionalS3 = getCorrectRegionClient(bucket);
+                    GetBucketPolicyResponse response = regionalS3.getBucketPolicy(
+                        GetBucketPolicyRequest.builder().bucket(bucket).build()
+                    ).join();
+                    
+                    String policyText = response.policy();
+                    JsonNode policyNode = MAPPER.readTree(policyText);
+                    
+                    boolean isListable = StreamSupport.stream(policyNode.path("Statement").spliterator(), false)
+                        .anyMatch(statement -> {
+                            JsonNode effect = statement.path("Effect");
+                            JsonNode principal = statement.path("Principal");
+                            JsonNode action = statement.path("Action");
+                            
+                            boolean isAllow = "Allow".equalsIgnoreCase(effect.asText());
+                            boolean hasPublicPrincipal = checkPrincipalForPublicAccess(principal);
+                            boolean hasListAction = hasListAction(action);
+                            
+                            return isAllow && hasPublicPrincipal && hasListAction;
+                        });
+                    
+                    s = isListable ? Status.FAIL : Status.PASS;
+                    r = MAPPER.valueToTree(response.toBuilder());
+                    
+                } catch (S3Exception e) {
+                    if ("NoSuchBucketPolicy".equals(e.awsErrorDetails().errorCode())) {
+                        s = Status.PASS;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                        Text.NO_BUCKET_POLICY_FOUND.toString().concat(e.getMessage()));
+                    } else {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(bucket, inner);
+            })
+            .collect(Collectors.toList());
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.S3_BUCKETS_LISTABLE_BY_PUBLIC, result, status);
+        return status;
+    }
+
+    private Status S3BucketsOpenToPublic() {
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(AWSFinding.S3_BUCKETS_OPEN_TO_PUBLIC,
+                            Text.NO_S3_BUCKETS_FOUND, Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+            .map(bucket -> {
+                Status s;
+                ObjectNode r;
+                try {
+                    S3AsyncClient regionalS3 = getCorrectRegionClient(bucket);
+                    GetBucketPolicyResponse response = regionalS3.getBucketPolicy(
+                        GetBucketPolicyRequest.builder().bucket(bucket).build()
+                    ).join();
+                    
+                    String policyText = response.policy();
+                    JsonNode policyNode = MAPPER.readTree(policyText);
+                    
+                    boolean isOpen = StreamSupport.stream(policyNode.path("Statement").spliterator(), false)
+                        .anyMatch(statement -> {
+                            JsonNode effect = statement.path("Effect");
+                            JsonNode principal = statement.path("Principal");
+                            JsonNode action = statement.path("Action");
+                            JsonNode resource = statement.path("Resource");
+                            
+                            boolean isAllow = "Allow".equalsIgnoreCase(effect.asText());
+                            boolean hasPublicPrincipal = checkPrincipalForPublicAccess(principal);
+                            boolean hasReadAction = hasReadAction(action);
+                            boolean affectsBucket = affectsBucket(resource, bucket);
+                            
+                            return isAllow && hasPublicPrincipal && hasReadAction && affectsBucket;
+                        });
+                    
+                    s = isOpen ? Status.FAIL : Status.PASS;
+                    r = MAPPER.valueToTree(response.toBuilder());
+                    
+                } catch (S3Exception e) {
+                    if ("NoSuchBucketPolicy".equals(e.awsErrorDetails().errorCode())) {
+                        s = Status.PASS;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                        Text.NO_BUCKET_POLICY_FOUND.toString().concat(e.getMessage()));
+                    } else {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(bucket, inner);
+            })
+            .collect(Collectors.toList());
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.S3_BUCKETS_OPEN_TO_PUBLIC, result, status);
+        return status;
+    }
+
+    private Status S3BucketsWritableByPublic() {
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(AWSFinding.S3_BUCKETS_WRITABLE_BY_PUBLIC,
+                            Text.NO_S3_BUCKETS_FOUND, Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+            .map(bucket -> {
+                Status s;
+                ObjectNode r;
+                try {
+                    S3AsyncClient regionalS3 = getCorrectRegionClient(bucket);
+                    GetBucketPolicyResponse response = regionalS3.getBucketPolicy(
+                        GetBucketPolicyRequest.builder().bucket(bucket).build()
+                    ).join();
+                    
+                    String policyText = response.policy();
+                    JsonNode policyNode = MAPPER.readTree(policyText);
+                    
+                    boolean isWritable = StreamSupport.stream(policyNode.path("Statement").spliterator(), false)
+                        .anyMatch(statement -> {
+                            JsonNode effect = statement.path("Effect");
+                            JsonNode principal = statement.path("Principal");
+                            JsonNode action = statement.path("Action");
+                            JsonNode resource = statement.path("Resource");
+                            
+                            boolean isAllow = "Allow".equalsIgnoreCase(effect.asText());
+                            boolean hasPublicPrincipal = checkPrincipalForPublicAccess(principal);
+                            boolean hasWriteAction = hasWriteAction(action);
+                            boolean affectsBucket = affectsBucket(resource, bucket);
+                            
+                            return isAllow && hasPublicPrincipal && hasWriteAction && affectsBucket;
+                        });
+                    
+                    s = isWritable ? Status.FAIL : Status.PASS;
+                    r = MAPPER.valueToTree(response.toBuilder());
+                    
+                } catch (S3Exception e) {
+                    if ("NoSuchBucketPolicy".equals(e.awsErrorDetails().errorCode())) {
+                        s = Status.PASS;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                        Text.NO_BUCKET_POLICY_FOUND.toString().concat(e.getMessage()));
+                    } else {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(bucket, inner);
+            })
+            .collect(Collectors.toList());
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.S3_BUCKETS_WRITABLE_BY_PUBLIC, result, status);
+        return status;
+    }
+
+    private boolean checkPrincipalForPublicAccess(JsonNode principalNode) {
+        if (principalNode.isTextual()) {
+            String principal = principalNode.asText();
+            return "*".equals(principal)
+                || "arn:aws:iam::*:root".equals(principal)
+                || principal.contains("AWS:*");
+        } else if (principalNode.isObject()) {
+            JsonNode aws = principalNode.path("AWS");
+            if (aws.isTextual()) {
+                return "*".equals(aws.asText())
+                     || "arn:aws:iam::*:root".equals(aws.asText());
+            } else if (aws.isArray()) {
+                return StreamSupport.stream(aws.spliterator(), false)
+                    .anyMatch(awsPrincipal -> 
+                        "*".equals(awsPrincipal.asText())
+                        || "arn:aws:iam::*:root".equals(awsPrincipal.asText())
+                    );
+            }
+        }
+        return false;
+    }
+
+    private boolean hasListAction(JsonNode actionNode) {
+        if (actionNode.isTextual()) {
+            String action = actionNode.asText();
+            return "s3:ListBucket".equals(action)
+                || "s3:ListBucketVersions".equals(action)
+                || "s3:GetBucket".equals(action)
+                || "s3:*".equals(action)
+                || "*".equals(action);
+        } else if (actionNode.isArray()) {
+            return StreamSupport.stream(actionNode.spliterator(), false)
+                .anyMatch(action -> hasListAction(action));
+        }
+        return false;
+    }
+
+    private boolean hasReadAction(JsonNode actionNode) {
+        if (actionNode.isTextual()) {
+            String action = actionNode.asText();
+            return "s3:GetObject".equals(action)
+                || "s3:GetObjectVersion".equals(action)
+                || "s3:GetObjectAcl".equals(action)
+                || "s3:GetObjectVersionAcl".equals(action)
+                || "s3:*".equals(action)
+                || "*".equals(action);
+        } else if (actionNode.isArray()) {
+            return StreamSupport.stream(actionNode.spliterator(), false)
+                .anyMatch(action -> hasReadAction(action));
+        }
+        return false;
+    }
+
+    private boolean hasWriteAction(JsonNode actionNode) {
+        if (actionNode.isTextual()) {
+            String action = actionNode.asText();
+            return "s3:PutObject".equals(action)
+                || "s3:PutObjectAcl".equals(action)
+                || "s3:DeleteObject".equals(action)
+                || "s3:DeleteObjectVersion".equals(action)
+                || "s3:RestoreObject".equals(action)
+                || "s3:*".equals(action)
+                || "*".equals(action);
+        } else if (actionNode.isArray()) {
+            return StreamSupport.stream(actionNode.spliterator(), false)
+                .anyMatch(action -> hasWriteAction(action));
+        }
+        return false;
+    }
+
+    private boolean affectsBucket(JsonNode resourceNode, String bucketName) {
+        if (resourceNode.isTextual()) {
+            String resource = resourceNode.asText();
+            return resource.contains(bucketName) || resource.equals("*");
+        } else if (resourceNode.isArray()) {
+            return StreamSupport.stream(resourceNode.spliterator(), false)
+                .anyMatch(resource -> affectsBucket(resource, bucketName));
+        }
+        return false;
     }
 }

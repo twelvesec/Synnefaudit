@@ -155,6 +155,10 @@ public enum AWSFinding {
     BLOCK_PUBLIC_ACCESS_S3_DISABLED("Block Public Access for S3 not Enabled", Severity.LOW),
     S3_BUCKETS_WITH_DEFAULT_ENCRYPTION_DISABLED("S3 Buckets with Default Encryption disabled", Severity.MEDIUM),
     S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED("S3 Buckets with Write Access allowed", Severity.HIGH),
+    S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCK("Account Level Public Access Block not enabled", Severity.HIGH),
+    S3_BUCKETS_LISTABLE_BY_PUBLIC("S3 buckets listable by the public", Severity.CRITICAL),
+    S3_BUCKETS_OPEN_TO_PUBLIC("S3 buckets open to the public", Severity.CRITICAL),
+    S3_BUCKETS_WRITABLE_BY_PUBLIC("S3 buckets writable by the public", Severity.CRITICAL),
 
     SNS_ENCRYPTION_WITHOUT_AWS_KMS("SNS Topics Encrypted without AWS KMS", Severity.HIGH),
     SNS_PUBLIC_TOPIC_POLICY("SNS Topics with public policy found", Severity.MEDIUM),

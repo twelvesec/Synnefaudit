@@ -53,6 +53,7 @@ import com.twelvesec.cloudscan.AWS.Checks.RDSInstancesCheck;
 import com.twelvesec.cloudscan.AWS.Checks.Route53Check;
 import com.twelvesec.cloudscan.AWS.Checks.S3BucketsCheck;
 import com.twelvesec.cloudscan.AWS.Checks.SNSTopicsCheck;
+import com.twelvesec.cloudscan.AWS.Checks.SSMCheck;
 import com.twelvesec.cloudscan.AWS.Checks.SupportCheck;
 import com.twelvesec.cloudscan.AWS.Checks.VPCsCheck;
 import com.twelvesec.cloudscan.messages.Text;
@@ -171,7 +172,7 @@ public class App {
         try {
             sharedDataProvider = new SharedDataProvider(
                 accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatchLogs, dynamodb, ec2, ecr, efs, 
-                elb, secretsmanager, guardduty, iam, kafka, kms, lambda, rds, route53, resourceexplorer2, s3, sns, support);
+                elb, secretsmanager, guardduty, iam, kafka, kms, lambda, rds, route53, resourceexplorer2, s3, sns, ssm, support);
 
             List<CloudCheck> checks = getAWSChecks();
 
@@ -329,13 +330,13 @@ public class App {
             new ELBCheck(writer, sharedDataProvider, elb, waf),
             new EnabledServicesCheck(writer, sharedDataProvider, secretsmanager, drs, 
                                     macie2, securityHub, waf),
-            new GeneralCheck(writer, sharedDataProvider, ssm_inc, accountClient, backup, codeBuild, orgs, sts),
+            new GeneralCheck(writer, sharedDataProvider, accountClient, backup, codeBuild, orgs, sts),
             new GlueCheck(writer, glue),
             new GuardDutyCheck(writer, sharedDataProvider, guardduty),
             new IAMCheck(writer, sharedDataProvider, iam, accessAnalyzer, sts),
             new Inspector2Check(writer, inspector2, sts),
             new KafkaCheck(writer, sharedDataProvider, kafka),
-            new KMSCheck(writer, sharedDataProvider, kms),
+            new KMSCheck(writer, sharedDataProvider, kms, cloudWatch),
             new LambdaCheck(writer, sharedDataProvider, lambda),
             new MFACheck(writer, sharedDataProvider, iam, sts),
             new NetworkACLsCheck(writer, sharedDataProvider),
@@ -343,6 +344,7 @@ public class App {
             new Route53Check(writer, sharedDataProvider, route53),
             new S3BucketsCheck(writer, awsDependencyFactory, sharedDataProvider, s3, s3control, sts),
             new SNSTopicsCheck(writer, sharedDataProvider, sns),
+            new SSMCheck(writer, sharedDataProvider, ssm, ssm_inc),
             new SupportCheck(writer, support),
             new VPCsCheck(writer, sharedDataProvider, ec2, networkFirewall, iam)
         );
