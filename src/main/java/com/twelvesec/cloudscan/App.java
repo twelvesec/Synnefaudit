@@ -171,7 +171,7 @@ public class App {
 
         try {
             sharedDataProvider = new SharedDataProvider(
-                accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatchLogs, dynamodb, ec2, ecr, efs, 
+                accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, dynamodb, ec2, ecr, efs, 
                 elb, secretsmanager, guardduty, iam, kafka, kms, lambda, rds, route53, resourceexplorer2, s3, sns, ssm, support);
 
             List<CloudCheck> checks = getAWSChecks();
@@ -320,8 +320,8 @@ public class App {
             new AthenaCheck(writer, sharedDataProvider, athena),
             new CloudFormationCheck(writer, sharedDataProvider, cloudformation),
             new CloudFrontCheck(writer, sharedDataProvider, cf, waf),
-            new CloudTrailCheck(writer, sharedDataProvider, cloudTrail),
-            new CloudWatchCheck(writer, sharedDataProvider, cloudWatch),
+            new CloudTrailCheck(writer, sharedDataProvider, cloudTrail, cloudWatchLogs),
+            new CloudWatchCheck(writer, sharedDataProvider, sts),
             new DynamoDBCheck(writer, sharedDataProvider, dynamodb),
             new EBSCheck(writer, sharedDataProvider, ec2),
             new EC2Check(writer, sharedDataProvider, ec2, ssm),

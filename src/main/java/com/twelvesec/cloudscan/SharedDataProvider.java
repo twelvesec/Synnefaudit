@@ -33,6 +33,10 @@ import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsRespons
 import software.amazon.awssdk.services.cloudtrail.model.ListTrailsRequest;
 import software.amazon.awssdk.services.cloudtrail.model.ListTrailsResponse;
 import software.amazon.awssdk.services.cloudtrail.model.TrailInfo;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.cloudwatch.model.DescribeAlarmsRequest;
+import software.amazon.awssdk.services.cloudwatch.model.DescribeAlarmsResponse;
+import software.amazon.awssdk.services.cloudwatch.model.MetricAlarm;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient;
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogGroupsResponse;
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup;
@@ -133,6 +137,7 @@ public class SharedDataProvider {
     private CloudFormationAsyncClient cloudformation;
     private CloudFrontAsyncClient cf;
     private CloudTrailAsyncClient cloudTrail;
+    private CloudWatchAsyncClient cloudWatch;
     private CloudWatchLogsAsyncClient cloudwatchlogs;
     private DynamoDbAsyncClient dynamodb;
     private Ec2AsyncClient ec2;
@@ -155,8 +160,8 @@ public class SharedDataProvider {
 
     public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AthenaAsyncClient athena,
             CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
-            CloudWatchLogsAsyncClient cloudwatchlogs, DynamoDbAsyncClient dynamodb, Ec2AsyncClient ec2,
-            EcrAsyncClient ecr, EfsAsyncClient efs, ElasticLoadBalancingV2AsyncClient elb,
+            CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, DynamoDbAsyncClient dynamodb, 
+            Ec2AsyncClient ec2, EcrAsyncClient ecr, EfsAsyncClient efs, ElasticLoadBalancingV2AsyncClient elb,
             SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
             KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, RdsAsyncClient rds, 
             Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
@@ -167,6 +172,7 @@ public class SharedDataProvider {
         this.cloudformation = cloudformation;
         this.cf = cf;
         this.cloudTrail = cloudTrail;
+        this.cloudWatch = cloudWatch;
         this.cloudwatchlogs = cloudwatchlogs;
         this.dynamodb = dynamodb;
         this.ec2 = ec2;
@@ -266,6 +272,14 @@ public class SharedDataProvider {
                     .trailName(trailName)
                     .build()
             );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<MetricAlarm>> getAllAlarms() {
+        String key = "cloudwatch:alarms";
+        Supplier<CompletableFuture<List<MetricAlarm>>> loader = () ->
+            cloudWatch.describeAlarms(DescribeAlarmsRequest.builder().build())
+                .thenApply(DescribeAlarmsResponse::metricAlarms);
         return getCachedData(key, loader);
     }
 

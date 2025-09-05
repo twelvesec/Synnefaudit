@@ -61,6 +61,7 @@ public enum AWSFinding {
     CLOUDWATCH_ALARMS_FOR_SENSITIVE_OPERATIONS("CloudWatch Alarms for Sensitive Operations", Severity.LOW),
     CLOUDWATCH_LOG_GROUPS_WITH_NO_KMS_KEYS_ASSOCIATED("Log Groups with no AWS KMS keys associated", Severity.LOW),
     CLOUDWATCH_LOG_GROUPS_WITH_LOW_RETENTION_POLICY("CloudWatch log groups with low retention policy", Severity.MEDIUM),
+    CLOUDWATCH_CROSS_ACCOUNT_SHARING("CloudWatch Alarms with Cross-Account Sharing", Severity.MEDIUM),
 
     WEB_SERVICES_PREMIUM_SUPPORT_PLAN_NOT_SUBSCRIBED("Amazon Web Services Premium Support Plan is not subscribed", Severity.LOW),
     TRUSTED_ADVISOR_WARNINGS("Trusted Advisor checks in warning state", Severity.INFO),
@@ -84,6 +85,8 @@ public enum AWSFinding {
     CLOUDTRAIL_RECENT_ROOT_ACCOUNT_USAGE("Root account usage found", Severity.MEDIUM),
     S3_OBJECT_LEVEL_READ_LOGGING("S3 buckets Object-level logging for read events is disabled", Severity.LOW),
     S3_OBJECT_LEVEL_WRITE_LOGGING("S3 buckets Object-level logging for write events is disabled", Severity.LOW),
+    CLOUDTRAIL_CLOUDWATCH_INTEGRATION("CloudTrail trails found not integrated with CloudWatch Logs", Severity.LOW),
+    CLOUDTRAIL_LOG_GROUPS_WITH_SECRETS_IN_CLOUDWATCH_LOGS("CloudTrail log groups found with secrets in CloudWatch logs", Severity.MEDIUM),
 
     RESOURCE_EXPLORER_NO_INDEXES_FOUND("No Resource Explorer Indexes found", Severity.LOW),
 
