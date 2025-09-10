@@ -59,17 +59,19 @@ public class DataWriter {
         if (arrayNodeContainsText(array, "AccessDeniedException")) {
             status = Status.FAIL_EXCEPTION;
         }
+        
+        CheckMetadata metadata = MetadataLoader.get(finding.name());
 
         ObjectNode inner = MAPPER.createObjectNode();
-        inner.put(Text.CHECKNAME.toString(), finding.getName());
-        inner.put(Text.SEVERITY.toString(), finding.getSeverity().toString());
+        inner.put(Text.CHECKNAME.toString(), metadata.getCheckTitle() != null ? metadata.getCheckTitle() : finding.name());
+        inner.put(Text.SEVERITY.toString(), metadata.toSeverityEnum().toString());
         inner.put(Text.STATUS.toString(), status.toString());
         inner.set(Text.DATA.toString(), array);
 
         buffer.put(finding.toString(), inner);
         
         ObjectNode summaryNode = MAPPER.createObjectNode();
-        summaryNode.put(Text.SEVERITY.toString(), finding.getSeverity().toString());
+        summaryNode.put(Text.SEVERITY.toString(), metadata.toSeverityEnum().toString());
         summaryNode.put(Text.STATUS.toString(), status.toString());
         summaryBuffer.put(finding.toString(), summaryNode);
     }

@@ -24,6 +24,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import com.twelvesec.cloudscan.CloudCheck.CheckSummary;
+import com.twelvesec.cloudscan.CloudCheck.Provider;
 import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
 import com.twelvesec.cloudscan.AWS.Checks.ACMCertificatesCheck;
 import com.twelvesec.cloudscan.AWS.Checks.AccessKeysCheck;
@@ -103,6 +104,8 @@ import software.amazon.awssdk.services.support.SupportAsyncClient;
 import software.amazon.awssdk.services.wafv2.Wafv2AsyncClient;
 
 public class App {
+    private static Provider PROVIDER;
+
     private static Region region;
     private static String profileInput;
     private static Path outfilePath;
@@ -162,6 +165,8 @@ public class App {
         Instant start = Instant.now();
         printer = new ReportPrinter();
 
+        PROVIDER = Provider.AWS; 
+
         retrieveUserParameters(args);
         writer = new DataWriter(outfilePath);
         
@@ -203,6 +208,7 @@ public class App {
             exitCode = 0;
         } catch (Exception e) {
             System.err.println(Text.EXCEPTION.toString() + e.getMessage());
+            e.printStackTrace(System.err);
             exitCode = 1;
         } finally {
             executor.shutdown();
@@ -212,6 +218,10 @@ public class App {
             printer.printRuntime(elapsed);
             System.exit(exitCode);
         }
+    }
+
+    public static Provider getProvider() {
+        return PROVIDER;
     }
 
     private static void retrieveUserParameters(String[] args) {

@@ -36,6 +36,10 @@ public interface CloudCheck {
         UNKNOWN
     }
 
+    public enum Provider {
+        AWS
+    }
+
     public record CheckResult(
         AWSFinding title,
         Status status,
@@ -100,7 +104,10 @@ public interface CloudCheck {
         Map<Severity, Long> bySev = filteredResults.stream()
             .filter(checkresult -> !Status.NOT_APPLICABLE.equals(checkresult.status()))
             .map(CheckResult::title)
-            .map(AWSFinding::getSeverity)
+            .map(findingEnum -> {
+                CheckMetadata meta = MetadataLoader.get(findingEnum.name());
+                return meta.toSeverityEnum();
+            })
             .collect(Collectors.groupingBy(Function.identity(),
                                         () -> new EnumMap<>(Severity.class),
                                         Collectors.counting()));
