@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCK",
+  "CheckTitle": "Account Level Public Access Block not enabled",
+  "Severity": "High",
+  "Description": "S3 Buckets found not having account level public access blocked.",
+  "Risk": "This may result to sensitive data access from unauthorized users.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure public access is blocked for all S3 buckets on account level.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/configuring-block-public-access-account.html"
+    }
+  },
+  "Notes": ""
+}

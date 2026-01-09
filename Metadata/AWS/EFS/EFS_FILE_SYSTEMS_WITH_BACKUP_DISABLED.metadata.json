@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EFS_FILE_SYSTEMS_WITH_BACKUP_DISABLED",
+  "CheckTitle": "EFS file systems with Backup disabled",
+  "Severity": "Low",
+  "Description": "EFS file systems found with backup disabled, which can be used to protect data.",
+  "Risk": "Disabling backups increases the risk of data loss in case of accidental deletion, data corruption, or other circumstances.",
+  "RelatedUrls": "https://docs.aws.amazon.com/efs/latest/ug/awsbackup.html, https://docs.aws.amazon.com/aws-backup/latest/devguide/whatisbackup.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure to enable backups for EFS file systems.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/efs-controls.html#efs-2"
+    }
+  },
+  "Notes": ""
+}

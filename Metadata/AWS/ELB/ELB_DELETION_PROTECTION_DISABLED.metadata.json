@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELB_DELETION_PROTECTION_DISABLED",
+  "CheckTitle": "ELBs with Deletion Protection disabled",
+  "Severity": "Low",
+  "Description": "ELBs found without Deletion Protection.",
+  "Risk": "Not enabling it, increases the risk of accidental deletion, which can lead to service disruptions and data loss.",
+  "RelatedUrls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-delete.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Deletion Protection should be enabled for Load Balancers.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elb-controls.html#elb-6"
+    }
+  },
+  "Notes": ""
+}

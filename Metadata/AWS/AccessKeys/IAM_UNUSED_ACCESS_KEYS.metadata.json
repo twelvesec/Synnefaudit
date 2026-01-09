@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_UNUSED_ACCESS_KEYS",
+  "CheckTitle": "Unused access keys found",
+  "Severity": "Info",
+  "Description": "Unused access keys were found for users.",
+  "Risk": "Active unused access keys increase the risk for unauthorized access, and are harder to manage.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Deactivate and remove unused access keys and credentials.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_finding-unused.html"
+    }
+  },
+  "Notes": ""
+}

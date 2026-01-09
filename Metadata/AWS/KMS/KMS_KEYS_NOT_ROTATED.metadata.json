@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KMS_KEYS_NOT_ROTATED",
+  "CheckTitle": "KMS Keys not rotated",
+  "Severity": "Low",
+  "Description": "Key rotation has not been enabled for KMS keys.",
+  "Risk": "Without key rotation there is an increased risk of leaked keys getting used, leading to unauthorized access to sensitive data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Automatic key rotation should be enabled for all KMS keys.",
+      "Urls": "https://docs.aws.amazon.com/kms/latest/developerguide/rotating-keys-enable.html"
+    }
+  },
+  "Notes": ""
+}

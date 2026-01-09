@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ACM_CERTIFICATE_TRANSPARENCY_LOGGING_DISABLED",
+  "CheckTitle": "ACM Certificates have Certificate Transparency logging disabled",
+  "Severity": "Medium",
+  "Description": "ACM Certificates found with Certificate Transparency logging disabled.",
+  "Risk": "Transparency makes allows you to detect SSL/TLS certificates that have been mistakenly or maliciously issued for your domain.",
+  "RelatedUrls": "https://docs.aws.amazon.com/acm/latest/userguide/acm-bestpractices.html#best-practices-transparency",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Opt in on certificate transparency logging, by enabling CertificateTransparencyLoggingPreference.",
+      "Urls": "https://docs.aws.amazon.com/acm/latest/APIReference/API_CertificateOptions.html"
+    }
+  },
+  "Notes": ""
+}

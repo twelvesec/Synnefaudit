@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_NO_ACCESS_KEYS_DURING_SETUP",
+  "CheckTitle": "Access Keys set up during initial user setup",
+  "Severity": "Low",
+  "Description": "Users have access keys set up during initial user setup",
+  "Risk": "Creating access keys during initial user setup creates unnecessary work in key management and rotation",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Do not require the creation of access keys for every user on setup, and only request on a need-to-have basis.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_getting-report.html"
+    }
+  },
+  "Notes": ""
+}

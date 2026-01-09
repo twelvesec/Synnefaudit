@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDFORMATION_STACKS_WITHOUT_TERMINATION_PROTECTION",
+  "CheckTitle": "CloudFormation stacks with Termination Protection disabled",
+  "Severity": "Low",
+  "Description": "CloudFormation stacks do not have Termination Protection enabled.",
+  "Risk": "Without termination protection enabled, CloudFormation stacks and their associated resources could accidentally be deleted.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-protect-stacks.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable termination protection for CloudFormation stacks.",
+      "Urls": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-protect-stacks.html"
+    }
+  },
+  "Notes": ""
+}

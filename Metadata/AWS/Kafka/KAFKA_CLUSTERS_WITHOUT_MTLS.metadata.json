@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KAFKA_CLUSTERS_WITHOUT_MTLS",
+  "CheckTitle": "MSK (Kafka) clusters with mutual TLS Authentication disabled",
+  "Severity": "Low",
+  "Description": "Kafka Clusters found with mTLS Authentication disabled. By default, the TLS protocol only requires a server to authenticate itself to the client, and also offers the ability for the server to request that the client send a certificate to prove its identity.",
+  "Risk": "Not enabling mTLS authentication could expose data streams to unauthorized access and interception.",
+  "RelatedUrls": "https://aws.amazon.com/blogs/compute/introducing-mutual-tls-authentication-for-amazon-msk-as-an-event-source/, https://docs.aws.amazon.com/msk/latest/developerguide/msk-authentication.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure mTLS is enabled for your clusters.",
+      "Urls": "https://docs.aws.amazon.com/msk/latest/developerguide/msk-authentication.html"
+    }
+  },
+  "Notes": ""
+}

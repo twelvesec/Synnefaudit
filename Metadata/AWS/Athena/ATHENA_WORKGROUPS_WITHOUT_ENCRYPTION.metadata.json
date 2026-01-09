@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ATHENA_WORKGROUPS_WITHOUT_ENCRYPTION",
+  "CheckTitle": "Amazon Athena Workgroups with no Encryption",
+  "Severity": "Low",
+  "Description": "Encryption at rest is not enabled for Amazon Athena query results stored in Amazon S3.",
+  "Risk": "Disableing encryption leaves data at rest exposed and unprotected.",
+  "RelatedUrls": "https://docs.aws.amazon.com/athena/latest/ug/encryption.html, https://docs.aws.amazon.com/securityhub/latest/userguide/athena-controls.html#athena-1",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Encrypt data at rest for Amazon Athena query results stored in Amazon S3.",
+      "Urls": "https://docs.aws.amazon.com/athena/latest/ug/encrypting-query-results-stored-in-s3.html"
+    }
+  },
+  "Notes": ""
+}

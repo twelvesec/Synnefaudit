@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDFRONT_NOT_CONFIGURED",
+  "CheckTitle": "CloudFront is not Configured",
+  "Severity": "Medium",
+  "Description": "Cloudfront has not been configured.",
+  "Risk": "The distribution of your static and dynamic web content to end users could end up being a lot slower and effective.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Configure CloudFront to speed up to distribution of content to end users.",
+      "Urls": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html"
+    }
+  },
+  "Notes": ""
+}

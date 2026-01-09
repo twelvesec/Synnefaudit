@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED",
+  "CheckTitle": "S3 Buckets with Write Access allowed",
+  "Severity": "High",
+  "Description": "S3 Buckets found with enabled write access.",
+  "Risk": "This may result to unintended data modification by unauthorized users.",
+  "RelatedUrls": "https://docs.aws.amazon.com/bedrock/latest/userguide/s3-bucket-access.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure write access is blocked for all S3 buckets, unless strictly necessary through business requirements, for the intended users.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_s3_rw-bucket.html, https://docs.aws.amazon.com/transfer/latest/userguide/users-policies-all-access.html, https://docs.aws.amazon.com/AmazonS3/latest/userguide/configuring-block-public-access-bucket.html"
+    }
+  },
+  "Notes": ""
+}

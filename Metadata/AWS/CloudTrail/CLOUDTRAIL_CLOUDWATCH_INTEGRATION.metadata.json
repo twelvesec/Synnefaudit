@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDTRAIL_CLOUDWATCH_INTEGRATION",
+  "CheckTitle": "CloudTrail trails found not integrated with CloudWatch Logs",
+  "Severity": "Low",
+  "Description": "CloudTrail trails were found that are not integrated with CloudWatch Logs.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/send-cloudtrail-events-to-cloudwatch-logs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Configure trail to send events to CloudWatch logs.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/send-cloudtrail-events-to-cloudwatch-logs.html"
+    }
+  },
+  "Notes": ""
+}

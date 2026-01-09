@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CODEBUILD_PROJECTS_NOT_INVOKED_90_DAYS",
+  "CheckTitle": "Codebuild Projects not invoked in the last 90 days",
+  "Severity": "Low",
+  "Description": "Codebuild Projects found that have not been invoked in the last 90 days. Projects are typically used in order to test build and package code. Projects that have not been built in the last 90 days have probably not been actively used, or configured correctly.",
+  "Risk": "",
+  "RelatedUrls": "",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "The projects should be inspected, in order to verify their necessity. Those are not actively used, and are deemed unnecessary should be deleted.",
+      "Urls": "https://docs.aws.amazon.com/codebuild/latest/userguide/delete-builds.html"
+    }
+  },
+  "Notes": ""
+}

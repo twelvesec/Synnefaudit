@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_WITH_BUCKET_VERSIONING_DISABLED",
+  "CheckTitle": "S3 Buckets with Bucket Versioning disabled",
+  "Severity": "Low",
+  "Description": "S3 buckets found without Bucket Versioning, which allows you to keep multiple variants of an object in the same bucket.",
+  "Risk": "Without bucket versioning, or proper backup, it will not be possible to recover objects from accidental deletions, or other events.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure S3 buckets have bucket versioning enabled.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-14"
+    }
+  },
+  "Notes": ""
+}

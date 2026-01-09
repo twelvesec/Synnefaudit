@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDWATCH_LOG_GROUPS_WITH_LOW_RETENTION_POLICY",
+  "CheckTitle": "CloudWatch log groups with low retention policy",
+  "Severity": "Medium",
+  "Description": "Log Groups found with retention policy less than 365 days. Security Hub's default security policy is 365 days, and is the minimum recommended value by AWS.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudwatch-controls.html#cloudwatch-16",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "CloudWatch log groups should be retained for a specified time period. Configure log retention policy according to the security requirements of the organization or set to 365 days.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudwatch-controls.html#cloudwatch-16"
+    }
+  },
+  "Notes": ""
+}

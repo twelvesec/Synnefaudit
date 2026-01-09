@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_DEPRECATED_ENGINE_VERSIONS",
+  "CheckTitle": "Deprecated Engine Version used by RDS instances",
+  "Severity": "Medium",
+  "Description": "RDS instances found using a deprecated engine version. Newer versions can include bug fixes, security improvements and other optimizations.",
+  "Risk": "Using a deprecated version will not include the latest security updates, and exposes the instance to possible attacks.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_UpgradeDBInstance.Upgrading.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure engine version is upgraded to a supported version.",
+      "Urls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_UpgradeDBInstance.Upgrading.html"
+    }
+  },
+  "Notes": ""
+}

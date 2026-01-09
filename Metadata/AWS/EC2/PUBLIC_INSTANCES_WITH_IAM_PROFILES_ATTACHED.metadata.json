@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "PUBLIC_INSTANCES_WITH_IAM_PROFILES_ATTACHED",
+  "CheckTitle": "Public EC2 Instances with Instance Profiles attached",
+  "Severity": "Medium",
+  "Description": "EC2 Instances found Internet Facing with Instance Profiles Attached to them.",
+  "Risk": "Attaching an instance profile to an internet-facing EC2 instance increases its exposure to threats from the internet.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure that instance profiles are properly configured and restricts access and permissions based on the principle of least privilege. Additionally, use IAM with role based access control and CloudTrail for logging in order to secure the instances according to AWS guidelines.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html"
+    }
+  },
+  "Notes": ""
+}

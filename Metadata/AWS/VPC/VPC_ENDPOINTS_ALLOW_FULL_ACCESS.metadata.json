@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "VPC_ENDPOINTS_ALLOW_FULL_ACCESS",
+  "CheckTitle": "VPC Endpoints Allow Full Access",
+  "Severity": "Low",
+  "Description": "VPC Endpoints have been found allowing full access.",
+  "Risk": "Unrestricted access to VPC Endpoints could lead to sensitive data exposure, or other unintended actions by users.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints-access.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure VPC Endpoint policies limit access and available actions according to Least Privilege.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints-access.html"
+    }
+  },
+  "Notes": ""
+}

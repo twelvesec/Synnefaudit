@@ -161,7 +161,7 @@ public class App {
 
     private static int exitCode = 0;
 
-    void main(String[] args) {
+    public static void main(String[] args) {
         Instant start = Instant.now();
         printer = new ReportPrinter();
 
@@ -323,7 +323,7 @@ public class App {
         }
     }
 
-    private List<CloudCheck> getAWSChecks() {
+    private static List<CloudCheck> getAWSChecks() {
         return List.of(
             new AccessKeysCheck(writer, sharedDataProvider, iam),
             new ACMCertificatesCheck(writer, sharedDataProvider, acm),

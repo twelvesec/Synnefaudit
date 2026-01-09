@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "BLOCK_PUBLIC_ACCESS_S3_DISABLED",
+  "CheckTitle": "Block Public Access for S3 not Enabled",
+  "Severity": "Low",
+  "Description": "It has been observed that there are S3 buckets that do not block public access on the bucket level",
+  "Risk": "This risks sensitive data on buckets getting accessed by unauthorized users.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure Block Public Access is configured for all S3 bucket on ",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html"
+    }
+  },
+  "Notes": ""
+}

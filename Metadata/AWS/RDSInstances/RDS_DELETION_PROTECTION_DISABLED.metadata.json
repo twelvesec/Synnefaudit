@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_DELETION_PROTECTION_DISABLED",
+  "CheckTitle": "RDS instances with deletion protection disabled",
+  "Severity": "Low",
+  "Description": "RDS instances found without deletion protection.",
+  "Risk": "Without deletion protection, an instance can be deleted, which could lead to accidental data loss.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_DeleteInstance.html#USER_DeleteInstance.DeletionProtection",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Deletion protection should be enabled for RDS DB instances.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html#rds-8"
+    }
+  },
+  "Notes": ""
+}

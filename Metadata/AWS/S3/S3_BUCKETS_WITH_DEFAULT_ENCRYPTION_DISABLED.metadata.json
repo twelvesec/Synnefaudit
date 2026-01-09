@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_WITH_DEFAULT_ENCRYPTION_DISABLED",
+  "CheckTitle": "S3 Buckets with Default Encryption disabled",
+  "Severity": "Medium",
+  "Description": "S3 Buckets found having default encryption disabled.",
+  "Risk": "This can result in having unencrypted data-at-rest on S3 buckets. It should be enabled by default for all S3 buckets by AWS.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html,https://aws.amazon.com/blogs/aws/amazon-s3-encrypts-new-objects-by-default/",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/default-bucket-encryption.html"
+    }
+  },
+  "Notes": ""
+}

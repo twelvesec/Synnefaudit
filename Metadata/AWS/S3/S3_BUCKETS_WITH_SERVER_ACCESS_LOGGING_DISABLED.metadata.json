@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_WITH_SERVER_ACCESS_LOGGING_DISABLED",
+  "CheckTitle": "S3 Buckets with Server Access Logging disabled",
+  "Severity": "Low",
+  "Description": "S3 buckets found without access logging, which provides detailed records of requests.",
+  "Risk": "Disabling it  limits the ability to monitor and audit access to bucket stored objects.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerLogs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "S3 buckets should have server access logging enabled",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-9"
+    }
+  },
+  "Notes": ""
+}

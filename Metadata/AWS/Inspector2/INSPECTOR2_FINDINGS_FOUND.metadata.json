@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "INSPECTOR2_FINDINGS_FOUND",
+  "CheckTitle": "Inspector2 with findings found",
+  "Severity": "Medium",
+  "Description": "Active findings found on Inspector2.",
+  "Risk": "Having multiple active findings indicates multiple security vulnerabilities and misconfigurations that could potentially be exploited.",
+  "RelatedUrls": "https://docs.aws.amazon.com/inspector/latest/user/what-is-inspector.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Inspect all active findings, and address them as soon as possible.",
+      "Urls": "https://docs.aws.amazon.com/inspector/latest/user/findings-understanding.html"
+    }
+  },
+  "Notes": ""
+}

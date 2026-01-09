@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "VPC_FLOW_LOGGING_DISABLED",
+  "CheckTitle": "VPCs with Flow Logging disabled",
+  "Severity": "Low",
+  "Description": "VPCs found without FLow Logging enabled.",
+  "Risk": "Flow Logs capture information regarding IP traffic between network interfaces in the VPC, and not setting them up limits the ability to monitor such traffic and collect valuable data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make flow logs are set up for VPCs, to collect log events related to traffic inside each VPC.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-basics.html"
+    }
+  },
+  "Notes": ""
+}

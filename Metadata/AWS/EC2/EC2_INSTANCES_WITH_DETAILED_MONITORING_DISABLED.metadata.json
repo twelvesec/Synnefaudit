@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_INSTANCES_WITH_DETAILED_MONITORING_DISABLED",
+  "CheckTitle": "EC2 instances with Detailed Monitoring Disabled",
+  "Severity": "Low",
+  "Description": "EC2 instances found with detailed monitoring disabled. Detailed monitoring provides high-resolution performance metrics for EC2 instances.",
+  "Risk": "Disabled detailed monitoring may limit the ability to diagnose performance issues, optimize resource allocation, and ensure the health and efficiency of EC2 instances.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/manage-detailed-monitoring.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable detailed monitoring for EC2 instances.",
+      "Urls": "https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-instances.html"
+    }
+  },
+  "Notes": ""
+}

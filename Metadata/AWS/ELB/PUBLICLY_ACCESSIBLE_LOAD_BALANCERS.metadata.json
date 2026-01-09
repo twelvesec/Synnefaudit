@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "PUBLICLY_ACCESSIBLE_LOAD_BALANCERS",
+  "CheckTitle": "Publicly Accessible Load Balancers found",
+  "Severity": "Medium",
+  "Description": "Load Balancers found accessible from the internet.",
+  "Risk": "Publicly accessible load balancers increase the risk of sensitive data exposure.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/restrict-access-to-load-balancer.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Review the necessity for a public Load Balancer for each case specifically, and access their need. If the Load Balancer must be publicly accessible, ensure a WAF ACL is implemented.",
+      "Urls": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/restrict-access-to-load-balancer.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_ACCESS_KEYS_NOT_ROTATED",
+  "CheckTitle": "Access Keys not Rotated in the last 90 days",
+  "Severity": "Info",
+  "Description": "There are active access keys that have not been rotated in the last 90 days.",
+  "Risk": "Access keys that have not been rotated in a long time increase the risk of an unwanted or compromised keys getting used.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-3",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Regularly rotate access keys to limit the risk of unauthorized access.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_getting-report.html, https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/automatically-rotate-iam-user-access-keys-at-scale-with-aws-organizations-and-aws-secrets-manager.html"
+    }
+  },
+  "Notes": ""
+}

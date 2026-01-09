@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_USERS_WITH_ATTACHED_POLICIES",
+  "CheckTitle": "Users with Policies attached to them found",
+  "Severity": "Low",
+  "Description": "Users found with policies directly attached to them.",
+  "Risk": "Directly attaching policies to individual users adds unnecessary complexity to policy management.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "IAM policies should be applied to groups and roles, instead of individual users. Review current policies, and modify them according to the principle of least privilege.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-2"
+    }
+  },
+  "Notes": ""
+}

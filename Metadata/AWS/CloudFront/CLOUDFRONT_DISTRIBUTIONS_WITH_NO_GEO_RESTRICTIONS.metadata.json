@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDFRONT_DISTRIBUTIONS_WITH_NO_GEO_RESTRICTIONS",
+  "CheckTitle": "CloudFront distribution with no Geo Restrictions",
+  "Severity": "Info",
+  "Description": "Geo Restrictions are not enabled for CloudFront distributions.",
+  "Risk": "The attack vector is increased, and might include countries in which services should not be accessible.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/georestrictions.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Restrict access to content through geographic restrictions.",
+      "Urls": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/georestrictions.html"
+    }
+  },
+  "Notes": ""
+}

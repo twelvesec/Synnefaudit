@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_INSTANCES_OLDER_THAN_180_DAYS",
+  "CheckTitle": "EC2 Instance older than 180 days",
+  "Severity": "Low",
+  "Description": "EC2 Instances found that are older than 180 days.",
+  "Risk": "Old instances have increased risk of outdated and vulnerable software, along with outdated configurations.",
+  "RelatedUrls": "https://docs.aws.amazon.com/systems-manager/latest/userguide/patch-manager-view-compliance-results.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Review all old EC2 instances, evaluate their necessity, and terminate those that are no longer needed in order to reduce the organization's attack surface.",
+      "Urls": "https://docs.aws.amazon.com/systems-manager/latest/userguide/patch-manager-view-compliance-results.html"
+    }
+  },
+  "Notes": ""
+}

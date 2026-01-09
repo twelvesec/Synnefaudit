@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SNS_ENCRYPTION_WITHOUT_AWS_KMS",
+  "CheckTitle": "SNS Topics Encrypted without AWS KMS",
+  "Severity": "High",
+  "Description": "Unencrypted SNS Topics have been found.",
+  "Risk": "This could result in sensitive information disclosure for data at rest.",
+  "RelatedUrls": "https://docs.aws.amazon.com/sns/latest/dg/sns-server-side-encryption.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure all SNS topics are encrypted using AWS KMS.",
+      "Urls": "https://docs.aws.amazon.com/sns/latest/dg/sns-server-side-encryption.html"
+    }
+  },
+  "Notes": ""
+}

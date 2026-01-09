@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DYNAMODB_POINT_IN_TIME_RECOVERY_DISABLED",
+  "CheckTitle": "DynamoDB table with point-in-time recovery disabled",
+  "Severity": "Medium",
+  "Description": "DynamoDB tables found with point-in-time recovery disabled.",
+  "Risk": "Having point-in-time disabled leaves the tables vulnerable to accidental write or delete operations.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/dynamodb-controls.html#dynamodb-2",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable point-in-time recovery for DynamoDB tables.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/PointInTimeRecovery_Howitworks.html"
+    }
+  },
+  "Notes": ""
+}

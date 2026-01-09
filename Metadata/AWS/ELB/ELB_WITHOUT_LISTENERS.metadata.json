@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELB_WITHOUT_LISTENERS",
+  "CheckTitle": "ELBs without Listeners found",
+  "Severity": "Low",
+  "Description": "ELBs found without Listeners.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-listeners.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "ELBs should be configured to have at least one listener.",
+      "Urls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-listeners.html"
+    }
+  },
+  "Notes": ""
+}

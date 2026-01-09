@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDFRONT_DISTRIBUTIONS_FIELDLEVELENCRYPTION_DISABLED",
+  "CheckTitle": "CloudFront Distributions with FieldLevelEncryption disabled",
+  "Severity": "Low",
+  "Description": "CloudFront Distributions with Field Level Encryption has not been enabled.",
+  "Risk": "sensitive information provided by your users is not encrypted at the edge, and this additional layer of security has not been added.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/field-level-encryption.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable field-level encryption to enforce secure end-to-end connections.",
+      "Urls": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/field-level-encryption.html"
+    }
+  },
+  "Notes": ""
+}

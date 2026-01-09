@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_WITH_ACL_ENABLED",
+  "CheckTitle": "S3 Buckets with ACL enabled",
+  "Severity": "Low",
+  "Description": "S3 Buckets found having ACLs enabled.",
+  "Risk": "This complicates the management of S3 Buckets' permissions, compared to using bucket policies.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure S3 buckets have ACLs disabled, except in circumstances where you must control access for each object individually.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/ensure-object-ownership.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_IMDSV2_CONFIGURATION",
+  "CheckTitle": "EC2 Instance Metadata Service Version 2 (IMDSv2) is disabled",
+  "Severity": "Medium",
+  "Description": "EC2 Instance found that have Metadata Service Version 2 (IMDSv2) is disabled.",
+  "Risk": "IMDSv2 uses session-oriented requests, and protects from misconfiguration and SSRF vulnerabilities.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure IMDSv2 is enabled for EC2 Instances.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html"
+    }
+  },
+  "Notes": ""
+}

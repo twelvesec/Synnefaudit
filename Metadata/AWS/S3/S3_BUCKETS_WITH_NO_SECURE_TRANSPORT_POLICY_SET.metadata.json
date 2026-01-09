@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_WITH_NO_SECURE_TRANSPORT_POLICY_SET",
+  "CheckTitle": "S3 Buckets with no Secure Transport policy set",
+  "Severity": "Medium",
+  "Description": "S3 buckets found without an associated secure transport bucket policy.",
+  "Risk": "Without a secure transport bucket policy, the buckets are by default accessible with HTTP, resulting in a risk of confidentiality of stored data.",
+  "RelatedUrls": "http://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure a secure transport policy is set for S3 buckets, in order ti enforce HTTPS for data in transit.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies.html#example-bucket-policies-HTTP-HTTPS"
+    }
+  },
+  "Notes": ""
+}

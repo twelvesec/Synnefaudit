@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_OPEN_TO_PUBLIC",
+  "CheckTitle": "S3 buckets open to the public",
+  "Severity": "Critical",
+  "Description": "S3 buckets found open to the public.",
+  "Risk": "S3 buckets found with publicly available read access.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/configuring-block-public-access-bucket.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure no S3 Buckets are openly available to the public.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html"
+    }
+  },
+  "Notes": ""
+}

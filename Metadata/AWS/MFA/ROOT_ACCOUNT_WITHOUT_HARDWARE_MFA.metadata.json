@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ROOT_ACCOUNT_WITHOUT_HARDWARE_MFA",
+  "CheckTitle": "Root Account without Hardware MFA",
+  "Severity": "Medium",
+  "Description": "Root account found without hardware MFA enabled.",
+  "Risk": "Hardware MFAs such as physical tokens, are the preferred security options for such high risk accounts, and they are harder to be stolen or tampered with by a malicious actor compared to other virtual means.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html#id_root-user_manage_mfa",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Hardware MFA should be enabled for the root user.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-6"
+    }
+  },
+  "Notes": ""
+}

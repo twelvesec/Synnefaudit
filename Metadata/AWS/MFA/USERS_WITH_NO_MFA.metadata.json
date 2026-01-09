@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "USERS_WITH_NO_MFA",
+  "CheckTitle": "Users with no MFA",
+  "Severity": "Medium",
+  "Description": "Users found without a Multi-Factor Authentication (MFA) device set up.",
+  "Risk": "Not setting up a MFA device increases the risk of unauthorized access in case of compromised credentials.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure MFA is enabled for all users.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-19, https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-5"
+    }
+  },
+  "Notes": ""
+}

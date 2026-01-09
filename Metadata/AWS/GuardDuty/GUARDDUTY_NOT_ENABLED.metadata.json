@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "GUARDDUTY_NOT_ENABLED",
+  "CheckTitle": "GuardDuty is not enabled",
+  "Severity": "Medium",
+  "Description": "GuardDuty has not been enabled. It is used to continuously monitor for malicious activity and unauthorized behavior within the AWS environment.",
+  "Risk": "Without it, real-time threat detection and security insights are not available, and this increases the risk of undetected security threats and vulnerabilities.",
+  "RelatedUrls": "https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_settingup.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure GuardDuty is enabled.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-1"
+    }
+  },
+  "Notes": ""
+}

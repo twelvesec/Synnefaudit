@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDWATCH_ALARMS_FOR_SENSITIVE_OPERATIONS",
+  "CheckTitle": "No CloudWatch Alarms for Sensitive operations",
+  "Severity": "Low",
+  "Description": "CloudWatch Alarms have not been set up for sensitive operations. Monitoring such unauthorized API calls is necessary to detect malicious activity and respond swiftly.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/cloudwatch-controls.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure a log metric filter and alarm exist for sensitive operations",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html"
+    }
+  },
+  "Notes": ""
+}

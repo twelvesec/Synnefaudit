@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELB_ALBS_DEFENSIVE_MITIGATION_NOT_DROPPING_HEADERS",
+  "CheckTitle": "ELB ALB with mitigation mode defensive and not dropping invalid header fields",
+  "Severity": "Info",
+  "Description": "ELB ALBs found without mitigation mode set to strictest level and dropping invalid header fields.",
+  "Risk": "Not enabling these exposes the load balancer to HTTP request smuggling attacks and other desynchronization associated risks.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elb-controls.html#elb-4",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure desync mitigation mode is configured for ALBs to the strictest setting, and enable the feature to drop invalid header fields.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elb-controls.html#elb-4"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "PUBLICLY_EXPOSED_KMS_KEYS",
+  "CheckTitle": "Publicly exposed KMS keys",
+  "Severity": "Medium",
+  "Description": "KMS keys found exposed publicly.",
+  "Risk": "Publicly accessible KMS keys risk getting used by unauthorized users.",
+  "RelatedUrls": "https://docs.aws.amazon.com/kms/latest/developerguide/determining-access.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Examine key policies for KMS keys and ensure keys are not publicly accessible.",
+      "Urls": "https://docs.aws.amazon.com/kms/latest/developerguide/control-access.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ACM_CERTIFICATES_EXPIRING_SOON",
+  "CheckTitle": "ACM Certificates about to expire",
+  "Severity": "Medium",
+  "Description": "ACM Certificates found about to expire.",
+  "Risk": "Expired certificates can impact service availability.",
+  "RelatedUrls": "",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Update ACM Certificates before their expiration, and remove unnecessary certificates.",
+      "Urls": "https://docs.aws.amazon.com/config/latest/developerguide/acm-certificate-expiration-check.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "VPCS_WITH_ONLY_PUBLIC_SUBNETS",
+  "CheckTitle": "VPCs with only Public subnets found",
+  "Severity": "Low",
+  "Description": "VPCs have been observed to only have public subnets.",
+  "Risk": "Private subnets protect resources from directly accessing the internet without a NAT device, which increases security for those resources.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/configure-subnets.html#subnet-security",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "VPCs should include private subnets to protect resources from directly accessing the internet.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-example-private-subnets-nat.html"
+    }
+  },
+  "Notes": ""
+}

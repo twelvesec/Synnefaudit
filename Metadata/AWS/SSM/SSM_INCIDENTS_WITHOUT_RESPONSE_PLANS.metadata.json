@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SSM_INCIDENTS_WITHOUT_RESPONSE_PLANS",
+  "CheckTitle": "SSM incidents found without response plans.",
+  "Severity": "Medium",
+  "Description": "SSM incidents have been found without set up response plans.",
+  "Risk": "A response plan works like a template of steps to follow in case of an unexpected serious event. These may include related personnel, monitoring, etc.",
+  "RelatedUrls": "https://docs.aws.amazon.com/incident-manager/latest/userguide/incident-response.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure there a re response plans set in place, in order to reduce the impact of any incidents.",
+      "Urls": "https://docs.aws.amazon.com/incident-manager/latest/userguide/response-plans.html"
+    }
+  },
+  "Notes": ""
+}

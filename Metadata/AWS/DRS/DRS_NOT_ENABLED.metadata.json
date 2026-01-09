@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DRS_NOT_ENABLED",
+  "CheckTitle": "DRS not Enabled",
+  "Severity": "Medium",
+  "Description": "Disaster Recovery Service has not been enabled.",
+  "Risk": "Without DRS, the environment is at risk of prolonged downtime, data loss, and business disruption in case of an incident.",
+  "RelatedUrls": "https://docs.aws.amazon.com/drs/latest/userguide/what-is-drs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "DRS should be enabled with jobs.",
+      "Urls": "https://docs.aws.amazon.com/drs/latest/userguide/quick-start-guide-gs.html"
+    }
+  },
+  "Notes": ""
+}

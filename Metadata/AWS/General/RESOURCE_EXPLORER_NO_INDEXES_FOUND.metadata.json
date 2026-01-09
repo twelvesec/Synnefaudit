@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RESOURCE_EXPLORER_NO_INDEXES_FOUND",
+  "CheckTitle": "No Resource Explorer Indexes found",
+  "Severity": "Low",
+  "Description": "Resource Explorer Indexes could not be found. AWS Resource Explorer can be used to discover and index the resources in the AWS account by using services such as AWS CloudTrail and the tagging service.",
+  "Risk": "Without it, indexes may limit the ability to efficiently manage and troubleshoot resources.",
+  "RelatedUrls": "https://docs.aws.amazon.com/resource-explorer/latest/userguide/welcome.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure Resource explorer is configured.",
+      "Urls": "https://docs.aws.amazon.com/resource-explorer/latest/userguide/manage-service-turn-on-region.html"
+    }
+  },
+  "Notes": ""
+}

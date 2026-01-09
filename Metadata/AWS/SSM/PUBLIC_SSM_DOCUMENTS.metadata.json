@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "PUBLIC_SSM_DOCUMENTS",
+  "CheckTitle": "Public SSM Documents found",
+  "Severity": "High",
+  "Description": "SSM documents found shared to the public.",
+  "Risk": "Publicly shared SSM documents may contain sensitive information that should not be shared with unauthorized users, such as application configurations or secrets.",
+  "RelatedUrls": "https://docs.aws.amazon.com/systems-manager/latest/userguide/documents.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "SSM documents should only be shared to those who need them, according to least privilege. Avoid public share, unless it is required according to business requirements.",
+      "Urls": "https://docs.aws.amazon.com/systems-manager/latest/userguide/documents-ssm-sharing.html#best-practices-shared"
+    }
+  },
+  "Notes": ""
+}

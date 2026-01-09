@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELB_WITHOUT_WAF_ACL_ATTACHED",
+  "CheckTitle": "ELB with no WAF ACL attached",
+  "Severity": "Low",
+  "Description": "ELBs found without a WAF Web ACLs attached.",
+  "Risk": "Not having a WAF ACL attached leaves the ELB unprotected against common web threats and attack vectors.",
+  "RelatedUrls": "https://docs.aws.amazon.com/waf/latest/developerguide/web-acl-associating-aws-resource.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "ELBs should have a WAF Web ACL attached.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elb-controls.html#elb-16"
+    }
+  },
+  "Notes": ""
+}

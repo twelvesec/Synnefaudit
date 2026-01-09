@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "USERS_WITHOUT_HARDWARE_MFA",
+  "CheckTitle": "Users without Hardware MFA",
+  "Severity": "Low",
+  "Description": "IAM users found without a hardware MFA device.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "it is recommended to use hardware MFA when possible, especially for high-risk accounts.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html"
+    }
+  },
+  "Notes": ""
+}

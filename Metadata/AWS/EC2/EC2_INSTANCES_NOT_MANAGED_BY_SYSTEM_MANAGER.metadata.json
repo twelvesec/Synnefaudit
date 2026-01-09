@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_INSTANCES_NOT_MANAGED_BY_SYSTEM_MANAGER",
+  "CheckTitle": "EC2 instances not managed by Systems Manager",
+  "Severity": "Low",
+  "Description": "EC2 instances not managed by Systems Manager.",
+  "Risk": "Not managing EC2 instances through Systems Manager may result in manual administrative overhead and difficulty in applying consistent configurations and updates across instances.",
+  "RelatedUrls": "https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-ec2.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure EC2 instances are managed by System Manager.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ssm-controls.html#ssm-1"
+    }
+  },
+  "Notes": ""
+}

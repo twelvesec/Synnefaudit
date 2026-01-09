@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDTRAIL_RECENT_ROOT_ACCOUNT_USAGE",
+  "CheckTitle": "Root account usage found",
+  "Severity": "Medium",
+  "Description": "Root account usage was detected.",
+  "Risk": "The root account should only be used for specific tasks that require it, in order to avoid accidental unnecessary changes and always be aware of the user that performed any changes to settings, configurations, etc.",
+  "RelatedUrls": "https://docs.aws.amazon.com/managedservices/latest/userguide/how-when-to-use-root.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Only use the root account for actions that require it.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html"
+    }
+  },
+  "Notes": ""
+}

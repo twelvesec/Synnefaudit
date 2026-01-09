@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_ENCRYPTED_WITHOUT_SSE_KMS",
+  "CheckTitle": "S3 Buckets encrypted without SSE-KMS",
+  "Severity": "Medium",
+  "Description": "S3 buckets found without Key Management Service (KMS) Server-Side Encryption (SSE). SSE is used to protect data at rest, and encryption with S3 managed keys (SSE-S3) is enabled by default. However, SSE-KMS provides additional security controls and key management.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-kms-encryption.html, https://docs.aws.amazon.com/AmazonS3/latest/userguide/specifying-dsse-encryption.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "S3 buckets should be encrypted at rest using KMS keys (SSE-KMS or DSSE-KMS).",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-17"
+    }
+  },
+  "Notes": ""
+}

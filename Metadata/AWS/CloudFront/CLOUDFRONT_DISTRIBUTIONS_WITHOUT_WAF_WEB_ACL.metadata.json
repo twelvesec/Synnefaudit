@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDFRONT_DISTRIBUTIONS_WITHOUT_WAF_WEB_ACL",
+  "CheckTitle": "CloudFront Distributions not using a WAF web ACL",
+  "Severity": "Low",
+  "Description": "CloudFront Distributions are not using a Web Application Firewall (WAF) web ACL.",
+  "Risk": "CloudFront distributions are left vulnerable to various web-based attacks such as SQL injection, cross-site scripting (XSS), and DDoS attacks",
+  "RelatedUrls": "https://docs.aws.amazon.com/waf/latest/developerguide/cloudfront-features.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Use WAF web ACL to protect CloudFront Distributions against common web-based attacks.",
+      "Urls": "https://docs.aws.amazon.com/waf/latest/developerguide/cloudfront-features.html"
+    }
+  },
+  "Notes": ""
+}

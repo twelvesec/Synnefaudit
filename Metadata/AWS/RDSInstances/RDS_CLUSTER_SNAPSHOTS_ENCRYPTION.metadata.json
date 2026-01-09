@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_CLUSTER_SNAPSHOTS_ENCRYPTION",
+  "CheckTitle": "RDS Cluster Snapshots not encrypted",
+  "Severity": "Medium",
+  "Description": "RDS Cluster Snapshots found without encryption.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure RDS Cluster Snapshots are encrypted.",
+      "Urls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html"
+    }
+  },
+  "Notes": ""
+}

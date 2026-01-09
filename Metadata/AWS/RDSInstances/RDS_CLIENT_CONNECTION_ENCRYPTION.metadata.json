@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_CLIENT_CONNECTION_ENCRYPTION",
+  "CheckTitle": "RDS Instances client connections not encrypted",
+  "Severity": "High",
+  "Description": "RDS instances client connections found without encryption enabled.",
+  "Risk": "Not enabling connection encryption for databases does not make use of the additional layer of security provided by data encryption.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/mysql-ssl-connections.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure Transport Layer Security (TLS) is enabled for RDS.",
+      "Urls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUPS_NOT_USED",
+  "CheckTitle": "Security Groups Not being Used",
+  "Severity": "Info",
+  "Description": "Security Groups found that are not being used.",
+  "Risk": "Unused security groups can introduce potential security risks and increase the complexity of managing security configurations.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-22",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure unused Amazon EC2 security groups, that are no longer required, are removed.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-22"
+    }
+  },
+  "Notes": ""
+}

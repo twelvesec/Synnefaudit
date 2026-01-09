@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KMS_UNUSED_CMK_KEYS",
+  "CheckTitle": "Unused CMK KMS keys found",
+  "Severity": "Low",
+  "Description": "KMS keys found that remain unused.",
+  "Risk": "Unused keys increase the complexity of the application setup, along with maintenance costs.",
+  "RelatedUrls": "https://docs.aws.amazon.com/kms/latest/developerguide/deleting-keys-determining-usage.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Examine all KMS keys, and remove those that have been determined to be unnecessary and have not been used.",
+      "Urls": "https://docs.aws.amazon.com/kms/latest/developerguide/deleting-keys.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "MACIE_NOT_ENABLED",
+  "CheckTitle": "Macie is not enabled",
+  "Severity": "Low",
+  "Description": "Mace has not been enabled. Amazon Macie is a fully managed data security service, utilizing machine learning and pattern matching to provide visibility, and enables automated protection.",
+  "Risk": "Not using Amazon Macie increases the risk of undetected exposure of sensitive data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/macie/latest/user/what-is-macie.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable and configure Macie.",
+      "Urls": "https://docs.aws.amazon.com/macie/latest/user/what-is-macie.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ATHENA_WORKGROUPS_ENFORCE_CONFIGURATION_DISABLED",
+  "CheckTitle": "Athena Workgroups with EnforceWorkGroupConfiguration disabled",
+  "Severity": "Low",
+  "Description": "Athena Workgroups have not enabled the option to enforce the workgroup configuration.",
+  "Risk": "Clients interacting with these workgroups could override the configured settings, leading to security and performance risks.",
+  "RelatedUrls": "https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings-override.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable the option to override client-side settings.",
+      "Urls": "https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings-override.html"
+    }
+  },
+  "Notes": ""
+}

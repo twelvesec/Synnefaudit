@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "WEB_SERVICES_PREMIUM_SUPPORT_PLAN_NOT_SUBSCRIBED",
+  "CheckTitle": "Amazon Web Services Premium Support Plan is not subscribed",
+  "Severity": "Low",
+  "Description": "It has been observed that AWS Premium Support Plan is not subscribed.",
+  "Risk": "For AWS accounts hosting production environments a premium plan can be used to minimize downtime, assist in incident response, as well as implementing pro-active measures and other technical support.",
+  "RelatedUrls": "https://aws.amazon.com/blogs/mt/aws-partners-determine-aws-support-plans-in-organization/",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Production environments of high availability services require the highest resilience and response times along with security designs that correspond to business requirements.",
+      "Urls": "https://aws.amazon.com/premiumsupport/plans/"
+    }
+  },
+  "Notes": ""
+}

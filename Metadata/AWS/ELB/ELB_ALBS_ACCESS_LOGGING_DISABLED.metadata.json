@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELB_ALBS_ACCESS_LOGGING_DISABLED",
+  "CheckTitle": "ELB ALBs with Access Logging disabled",
+  "Severity": "Low",
+  "Description": "ALBs with Access Logging disabled.",
+  "Risk": "Not enabling Access Logging limits the monitoring of service use and traffic patterns, along with threat analysis and incident response.",
+  "RelatedUrls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Access Logging should be enabled for ALBs.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elb-controls.html#elb-5"
+    }
+  },
+  "Notes": ""
+}

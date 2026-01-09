@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDWATCH_LOG_GROUPS_WITH_NO_KMS_KEYS_ASSOCIATED",
+  "CheckTitle": "Log Groups with no AWS KMS keys associated",
+  "Severity": "Low",
+  "Description": "Log Groups were detected without an AWS KMS key associated with them. CloudWatch Logs uses server-side encryption with 256-bit Advanced Encryption Standard Galois/Counter Mode by default to encrypt data at rest. Encryption using AWS KMS is enabled at the log group level, by associating a KMS key with a log group and all newly ingested data for the log group is encrypted using this key.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/cli/latest/reference/logs/associate-kms-key.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Associate KMS Keys with CloudWatch log groups.",
+      "Urls": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html"
+    }
+  },
+  "Notes": ""
+}

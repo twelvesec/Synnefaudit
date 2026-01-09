@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NETWORK_ACL_WITH_ALL_PORTS_OPEN_TO_INTERNET",
+  "CheckTitle": "Network ACL with every port open to the Internet",
+  "Severity": "High",
+  "Description": "Network ACLs found with all ports open to the internet.",
+  "Risk": "Unrestrictedly exposing network ACLs to the internet risks unauthorized access to resources.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Review the network ACLs and limit open ports only to the minimum required ones. In case remote access is deemed as necessary, make use of VPN or bastion hosts in order to properly control access to services.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html"
+    }
+  },
+  "Notes": ""
+}

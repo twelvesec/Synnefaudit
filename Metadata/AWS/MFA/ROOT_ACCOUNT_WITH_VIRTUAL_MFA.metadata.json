@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ROOT_ACCOUNT_WITH_VIRTUAL_MFA",
+  "CheckTitle": "Root Account with Virtual MFA",
+  "Severity": "Medium",
+  "Description": "Root account found using virtual MFA",
+  "Risk": "Virtual MFA is considered less secure than an equivalent hardware MFS device, and for the root account specifically, virtual MFA is only recommended to be used temporarily if hardware MFA can not be set up at the moment.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/enable-mfa-for-root.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Hardware MFA should be enabled for the root user.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-6"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_HUB_NOT_ENABLED",
+  "CheckTitle": "Security Hub is not enabled",
+  "Severity": "Low",
+  "Description": "Security Hub has not been enabled. It can be used to provide a comprehensive view of your security state. ",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure Security Hub has been enabled.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/what-is-securityhub.html"
+    }
+  },
+  "Notes": ""
+}

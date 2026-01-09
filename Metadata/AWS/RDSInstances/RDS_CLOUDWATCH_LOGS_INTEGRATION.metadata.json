@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_CLOUDWATCH_LOGS_INTEGRATION",
+  "CheckTitle": "RDS instances not integrated with CloudWatch Logs",
+  "Severity": "Low",
+  "Description": "RDS instances found not integrated with CloudWatch logs.",
+  "Risk": "Not enabling logs limits the possible monitoring for usage and threats.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/monitoring-cloudwatch.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "RDS should be integrated with CloudWatch logs.",
+      "Urls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_LogAccess.Procedural.UploadtoCloudWatch.html"
+    }
+  },
+  "Notes": ""
+}

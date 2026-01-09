@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_IAM_AUTHENTICATION_DISABLED",
+  "CheckTitle": "RDS instances with IAM authentication disabled",
+  "Severity": "Low",
+  "Description": "RDS instances found without IAM authentication enabled. This method uses an authentication token, with a small lifetime, to be used instead of credentials for authentication. This encrypts network traffic with the database, and allows you to centrally manage access to database resources.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure IAM authentication is enabled for RDS instances.",
+      "Urls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.Connecting.html"
+    }
+  },
+  "Notes": ""
+}

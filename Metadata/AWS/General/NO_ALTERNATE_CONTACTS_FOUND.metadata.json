@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NO_ALTERNATE_CONTACTS_FOUND",
+  "CheckTitle": "No Alternate Contacts Found",
+  "Severity": "Low",
+  "Description": "There are no contacts found for BILLING, SECURITY and OPERATIONS. It is essential to have distinct contacts for these roles to ensure effective communication and response during security incidents, billing inquiries, and operational issues.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-update-contact-alternate.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure that distinct contacts are defined for the SECURITY, BILLING, and OPERATIONS roles within your AWS organization. These contacts should be individuals or groups responsible for handling security incidents, billing inquiries, and operational issues, respectively.",
+      "Urls": "https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-update-contact-alternate.html"
+    }
+  },
+  "Notes": ""
+}

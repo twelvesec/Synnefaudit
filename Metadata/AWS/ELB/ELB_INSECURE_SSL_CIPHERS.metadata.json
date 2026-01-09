@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELB_INSECURE_SSL_CIPHERS",
+  "CheckTitle": "ELBs have insecure SSL ciphers",
+  "Severity": "Medium",
+  "Description": "ELBs found with insecure SSL protocols or ciphers.",
+  "Risk": "Insecure ciphers could affect the security of data in transit.",
+  "RelatedUrls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-listener-config.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable a security policy with secure ciphers.",
+      "Urls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-listener-config.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html#describe-ssl-policies"
+    }
+  },
+  "Notes": ""
+}

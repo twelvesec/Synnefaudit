@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_MFA_DELETE_DISABLED",
+  "CheckTitle": "S3 Buckets with MFA Delete Disabled",
+  "Severity": "Medium",
+  "Description": "S3 buckets found with MFA Delete disabled. MFA Delete provides an additional level of security regarding the integrity and availability of data.",
+  "Risk": "Disabling MFA delete for S3 buckets could result in accidental bucket deletions, and data loss.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/MultiFactorAuthenticationDelete.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "MFA Delete should be enabled for all S3 buckets.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-20"
+    }
+  },
+  "Notes": ""
+}

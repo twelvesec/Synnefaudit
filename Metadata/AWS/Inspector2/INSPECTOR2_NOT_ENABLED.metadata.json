@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "INSPECTOR2_NOT_ENABLED",
+  "CheckTitle": "Inspector2 not enabled",
+  "Severity": "Medium",
+  "Description": "Inspector2 has not been enabled for the account. It is a service used to identify vulnerabilities in EC2 instances and container workloads.",
+  "Risk": "Not enabling it further complicates the discovery of such security issues that may arise.",
+  "RelatedUrls": "https://docs.aws.amazon.com/organizations/latest/userguide/services-that-can-integrate-inspector2.html, https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazoninspector2.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure Inspector2 is enabled.",
+      "Urls": "https://docs.aws.amazon.com/inspector/latest/user/getting_started_tutorial.html"
+    }
+  },
+  "Notes": ""
+}

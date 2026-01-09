@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ECR_REGISTRY_WITHOUT_LIFECYCLE_POLICY",
+  "CheckTitle": "ECR registries with no lifecycle policy configured",
+  "Severity": "Low",
+  "Description": "ECR registries found without a lifecycle policy configured. A lifecycle policy defines rules for the retention and removal of images in the repository, assisting in the management of storage costs and resources associated with outdated or unused images.",
+  "Risk": "The ECR registries are at risk of accumulating unnecessary images, increased storage costs, as well as potential difficulties in managing the repository and security issues that may remain unattended.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ecr-controls.html#ecr-3",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure ECR registries have a lifecycle policy configured.",
+      "Urls": "https://docs.aws.amazon.com/AmazonECR/latest/userguide/lp_creation.html"
+    }
+  },
+  "Notes": ""
+}

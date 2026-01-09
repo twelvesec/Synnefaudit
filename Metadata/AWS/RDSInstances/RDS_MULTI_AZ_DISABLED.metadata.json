@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_MULTI_AZ_DISABLED",
+  "CheckTitle": "RDS instances with Multi-AZ disabled",
+  "Severity": "Low",
+  "Description": "RDS instances with Multi-Availability Zone (Multi-AZ) disabled.",
+  "Risk": "Not enabling Multi-AZ this failover protection it offers does not exist.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "RDS instances should have multiple Availability Zones enabled.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html#rds-5"
+    }
+  },
+  "Notes": ""
+}

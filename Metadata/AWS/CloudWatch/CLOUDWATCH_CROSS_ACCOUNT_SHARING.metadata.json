@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDWATCH_CROSS_ACCOUNT_SHARING",
+  "CheckTitle": "CloudWatch Alarms with Cross-Account Sharing",
+  "Severity": "Medium",
+  "Description": "Cross-Account access to CloudWatch Alarms could result in increased risk of compromised information between accounts.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Cross-Account-Cross-Region.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to resources is provided according to least privileges, and comply with Zero-Trust principles.",
+      "Urls": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Cross-Account-Cross-Region.html"
+    }
+  },
+  "Notes": ""
+}

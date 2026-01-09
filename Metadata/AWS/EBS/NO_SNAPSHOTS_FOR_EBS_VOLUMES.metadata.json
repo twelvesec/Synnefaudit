@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NO_SNAPSHOTS_FOR_EBS_VOLUMES",
+  "CheckTitle": "No Snapshots for EBS volumes",
+  "Severity": "Low",
+  "Description": "Snapshots have not been found for EBS volumes.",
+  "Risk": "EBS Snapshots offer the ability to create point-in-time backups of EBS volumes, and not having them risks data loss in the event of a failure or data corruption.",
+  "RelatedUrls": "https://docs.aws.amazon.com/ebs/latest/userguide/what-is-ebs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable Snapshots for EBS volumes.",
+      "Urls": "https://docs.aws.amazon.com/prescriptive-guidance/latest/backup-recovery/ec2-backup.html"
+    }
+  },
+  "Notes": ""
+}

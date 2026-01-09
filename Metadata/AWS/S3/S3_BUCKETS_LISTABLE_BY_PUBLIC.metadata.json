@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_LISTABLE_BY_PUBLIC",
+  "CheckTitle": "S3 buckets listable by the public",
+  "Severity": "Critical",
+  "Description": "S3 Buckets observed being publicly listable.",
+  "Risk": "This can result in unauthorized access to data and unintended information disclosure.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure S3 buckets are not able to be listed by the public, and generally block any other action from the public. Configure access to buckets according to least privilege.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/configuring-block-public-access-bucket.html"
+    }
+  },
+  "Notes": ""
+}

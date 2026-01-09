@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NETWORK_ACL_WITH_SOME_PORTS_OPEN_TO_INTERNET",
+  "CheckTitle": "Network ACL Allow Ingress from the Internet",
+  "Severity": "Medium",
+  "Description": "Network ACLs found with ports open to the internet.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Limit access from the internet only to the necessary ports, and limit remote access through VPNs or bastion hosts.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html"
+    }
+  },
+  "Notes": ""
+}

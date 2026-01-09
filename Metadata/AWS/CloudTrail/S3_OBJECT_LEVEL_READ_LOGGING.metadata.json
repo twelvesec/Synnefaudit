@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_OBJECT_LEVEL_READ_LOGGING",
+  "CheckTitle": "S3 buckets Object-level logging for read events is disabled",
+  "Severity": "Low",
+  "Description": "All AWS CloudTrail trails should be configured to log Data events in order to record S3 object-level API operations, such as GetObject, DeleteObject and PutObject, for individual S3 buckets or for all current and future S3 buckets provisioned in your AWS account.",
+  "Risk": "Not enabling logs limits the ability to monitor the service and perform any necessary analysis.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-cloudtrail-logging-for-s3.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable Object-level logging for read events on S3 Buckets.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-cloudtrail-logging-for-s3.html"
+    }
+  },
+  "Notes": ""
+}

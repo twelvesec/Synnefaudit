@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDTRAIL_WITH_NO_INSIGHT_SELECTORS",
+  "CheckTitle": "Trail with no Insight selectors",
+  "Severity": "Low",
+  "Description": "Trail found without Insight Selectors.",
+  "Risk": "Insight selectors are essential for enabling specific data events and insights for CloudTrail logs.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_GetInsightSelectors.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable Insight Selectors for trails.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_GetInsightSelectors.html"
+    }
+  },
+  "Notes": ""
+}

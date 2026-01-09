@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KAFKA_CLUSTERS_USING_OUTDATED_VERSION",
+  "CheckTitle": "MSK (Kafka) Clusters using outdated version",
+  "Severity": "Low",
+  "Description": "Kafka Cluster found not using the latest version. New versions of Kafka include patches for known security issues, as well as performance improvements.",
+  "Risk": "Using an outdated version can expose your system to security vulnerabilities that have already been addressed in subsequent releases.",
+  "RelatedUrls": "https://docs.aws.amazon.com/msk/latest/developerguide/version-upgrades-best-practices.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Clusters should be upgraded to the latest versions whenever possible.",
+      "Urls": "https://docs.aws.amazon.com/msk/latest/developerguide/msk-update-security.html"
+    }
+  },
+  "Notes": ""
+}

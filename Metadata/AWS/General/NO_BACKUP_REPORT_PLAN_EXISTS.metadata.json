@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NO_BACKUP_REPORT_PLAN_EXISTS",
+  "CheckTitle": "No Backup Report Plan Exists",
+  "Severity": "Low",
+  "Description": "No Backup Report Plan found.",
+  "Risk": "Without it and organization may lack visibility regarding the success or failure of backup operations.",
+  "RelatedUrls": "https://docs.aws.amazon.com/aws-backup/latest/devguide/create-report-plan-console.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure backup report plans exist.",
+      "Urls": "https://docs.aws.amazon.com/aws-backup/latest/devguide/create-report-plan-console.html"
+    }
+  },
+  "Notes": ""
+}

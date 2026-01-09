@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EBS_DEFAULT_ENCRYPTION_NOT_ACTIVATED",
+  "CheckTitle": "EBS Default Encryption is not Activated",
+  "Severity": "Low",
+  "Description": "The default encryption for Amazon Elastic Block Store (EBS) volumes is not activated.",
+  "Risk": "Without default encryption Amazon EBS volumes and snapshot copies are not encrypted at rest, which could result in exposure of confidential information in case of an attack.",
+  "RelatedUrls": "https://docs.aws.amazon.com/ebs/latest/userguide/what-is-ebs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "EBS Default Encryption should be enabled.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-7"
+    }
+  },
+  "Notes": ""
+}

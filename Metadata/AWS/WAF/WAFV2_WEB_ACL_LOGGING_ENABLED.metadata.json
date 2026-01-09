@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "WAFV2_WEB_ACL_LOGGING_ENABLED",
+  "CheckTitle": "AWS WAFv2 WebACL logging not enabled",
+  "Severity": "Medium",
+  "Description": "WAF instances found without logging enabled.",
+  "Risk": "Not enabling it limits the visibility of application traffic and ability to identify and respond to security incidents.",
+  "RelatedUrls": "https://docs.aws.amazon.com/waf/latest/developerguide/logging.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "WAF web ACL logging should be enabled.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/waf-controls.html#waf-11"
+    }
+  },
+  "Notes": ""
+}

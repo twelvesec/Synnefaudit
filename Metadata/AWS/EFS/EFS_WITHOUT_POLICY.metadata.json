@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EFS_WITHOUT_POLICY",
+  "CheckTitle": "EFS file systems with no Policy",
+  "Severity": "High",
+  "Description": "EFS file systems found without a policy associated with them. EFS allows you to set up policies to control access to your file systems.",
+  "Risk": "Without proper access policy, the file systems are open to all clients within the VPC, which can be dangerous, depending on the type of data available.",
+  "RelatedUrls": "https://docs.aws.amazon.com/efs/latest/ug/create-file-system-policy.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure a proper policy is associated with each EFS file system.",
+      "Urls": "https://docs.aws.amazon.com/efs/latest/ug/create-file-system-policy.html"
+    }
+  },
+  "Notes": ""
+}

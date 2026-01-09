@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_INSTANCES_USING_DEFAULT_MASTER_USERNAME",
+  "CheckTitle": "RDS instances using default master username",
+  "Severity": "Info",
+  "Description": "RDS instances found with default master username.",
+  "Risk": "Using the default master username for the DB cluster makes it easier for an attacker to perform a brute-force attack by only enumerating possible passwords.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.MasterAccounts.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Even though it cannot be changed after the DB cluster is created, the master account username should be changed from the default value on setup.",
+      "Urls": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/UsingWithRDS.MasterAccounts.html"
+    }
+  },
+  "Notes": ""
+}

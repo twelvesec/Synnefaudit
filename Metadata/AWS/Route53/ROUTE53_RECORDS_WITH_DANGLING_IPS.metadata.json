@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ROUTE53_RECORDS_WITH_DANGLING_IPS",
+  "CheckTitle": "Route53 Records containing dangling IPs",
+  "Severity": "High",
+  "Description": "Route53 Records in Hosted Zones found with dangling IPs, meaning that IP addresses referenced by the DNS records are not associated with active resources.",
+  "Risk": "Dangling IPs can result in misrouting and delays.",
+  "RelatedUrls": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-ipbased.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Review the DNS records, and remove any dangling IPs from Route53 public hosted zones.",
+      "Urls": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/protection-from-dangling-dns.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_AUTOMATED_BACKUPS_DISABLED",
+  "CheckTitle": "RDS instances with automated Backups disabled",
+  "Severity": "Low",
+  "Description": "RDS instances found with BackupRetentionPeriod set to 0.",
+  "Risk": "Disabling automated backups increases the risk of data loss in case of database corruption or other issues.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_WorkingWithAutomatedBackups.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Automated backups should be enabled, with a predefined retention period that aligns with the application requirements, in order to be utilized during disaster recovery.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html#rds-26"
+    }
+  },
+  "Notes": ""
+}

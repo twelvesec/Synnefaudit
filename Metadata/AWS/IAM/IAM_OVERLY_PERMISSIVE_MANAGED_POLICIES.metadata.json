@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES",
+  "CheckTitle": "Overly Permissive Managed Policies",
+  "Severity": "Medium",
+  "Description": "Managed Policies found that allow unrestricted access to services and resources through the usage of '*' on the resource field.",
+  "Risk": "Such policies often provide additional access that does not follow the principle of least privilege. Additionally, if the policy is attached to users other than 'root', it could further lead to potential misuse of AWS resources.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/root-user-best-practices.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started-reduce-permissions.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure overly permissive custom policies are limited, and opt for a multi-account strategy instead of a single AWS admin with unrestricted access to users, services and resources.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-1, https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-21"
+    }
+  },
+  "Notes": ""
+}

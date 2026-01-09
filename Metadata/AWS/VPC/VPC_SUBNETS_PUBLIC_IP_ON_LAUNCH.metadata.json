@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "VPC_SUBNETS_PUBLIC_IP_ON_LAUNCH",
+  "CheckTitle": "VPC Subnets Assign Public IPs by default",
+  "Severity": "Low",
+  "Description": "VPC Subnets have been observed to receive a public IP by default.",
+  "Risk": "Automatically assigning a public IP on a VPC Subnet could lead to accidental exposure of any attached instances to the internet.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-ip-addressing.html#vpc-public-ipv4-addresses",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure VPC subnets do not automatically receive a public IP.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/subnet-public-ip.html"
+    }
+  },
+  "Notes": ""
+}

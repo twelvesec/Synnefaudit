@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DYNAMODB_ENCRYPTION_WITH_CMK",
+  "CheckTitle": "DynamoDB table without CMK KMS encryption at rest",
+  "Severity": "Low",
+  "Description": "DynamodDB table found without CMK KMS encryption at rest.",
+  "Risk": "Not using CMK KMS results in less control over key lifecycle, and may prevent compliance with regulatory or organizational requirements.",
+  "RelatedUrls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/EncryptionAtRest.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "CMK KMS keys for DynamoDB table encryption should be enabled, for centralized management of encryption keys and better encryption at rest.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/encryption.tutorial.html"
+    }
+  },
+  "Notes": ""
+}

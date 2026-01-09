@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KAFKA_BROKERS_WITHOUT_ENHANCED_MONITORING",
+  "CheckTitle": "MSK (Kafka) Brokers with enhanced monitoring disabled",
+  "Severity": "Low",
+  "Description": "Kafka Clusters found with enhanced monitoring disabled. Enhanced monitoring provides detailed performance metrics for clusters, offering the possibility to monitor and analyze the performance and status of the brokers.",
+  "Risk": "Not enabling it diminishes the ability to diagnose the brokers' performance issues and health.",
+  "RelatedUrls": "https://docs.aws.amazon.com/msk/latest/developerguide/monitoring.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure enhanced monitoring is enabled for Kafka Brokers.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/msk-controls.html#msk-2"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_ENHANCED_MONITORING_DISABLED",
+  "CheckTitle": "RDS instances with enhanced monitoring disabled",
+  "Severity": "Low",
+  "Description": "RDS instances found without enhanced monitoring. Enhanced monitoring provides detailed metrics, assisting in monitoring and analyzing resource usage and performance.",
+  "Risk": "Without it, monitoring and diagnostics are limited in terms of performance issues and optimizations.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html#Welcome.Monitoring",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure enhanced monitoring is enabled for ",
+      "Urls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Monitoring.OS.Enabling.html"
+    }
+  },
+  "Notes": ""
+}

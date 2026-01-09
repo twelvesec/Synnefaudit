@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_INSTANCES_WTH_PUBLIC_IPS",
+  "CheckTitle": "EC2 instances with Public IPs",
+  "Severity": "Medium",
+  "Description": "EC2 instances found with Public IPs.",
+  "Risk": "Public IPs result in EC2 instances being reachable through the internet",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-9",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure EC2 instances do not have public IPs, unless strictly necessary for specific instances.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-9"
+    }
+  },
+  "Notes": ""
+}

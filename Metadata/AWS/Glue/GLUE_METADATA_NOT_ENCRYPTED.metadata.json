@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "GLUE_METADATA_NOT_ENCRYPTED",
+  "CheckTitle": "Glue Data Catalog's Metadata not Encrypted",
+  "Severity": "Low",
+  "Description": "Glue Data Catalog's metadata encryption option is disabled. The AWS Glue Data Catalog contains references to data that is used as sources and targets of extract, transform, and load (ETL) jobs in AWS Glue.",
+  "Risk": "For the creation of a data warehouse or data lake, the data must cataloged. Information in the Data Catalog is stored as metadata tables, where each table specifies a single data store. If not encrypted, sensitive information at rest is not protected.",
+  "RelatedUrls": "",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Encryption should be enabled on Glue Data Catalog's Metadata.",
+      "Urls": "https://docs.aws.amazon.com/glue/latest/dg/encrypt-glue-data-catalog.html"
+    }
+  },
+  "Notes": ""
+}

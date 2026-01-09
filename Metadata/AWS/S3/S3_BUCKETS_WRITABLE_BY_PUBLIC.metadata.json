@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_WRITABLE_BY_PUBLIC",
+  "CheckTitle": "S3 buckets writable by the public",
+  "Severity": "Critical",
+  "Description": "S3 buckets found having publicly accessible write access.",
+  "Risk": "This can result in unintended data modification, by unauthorized users.",
+  "RelatedUrls": "https://docs.aws.amazon.com/bedrock/latest/userguide/s3-bucket-access.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure no S3 Buckets have the write access available to the public.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_s3_rw-bucket.html"
+    }
+  },
+  "Notes": ""
+}

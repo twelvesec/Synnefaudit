@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "GUARDDUTY_DETECTOR_NOT_CENTRALLY_MANAGED",
+  "CheckTitle": "GuardDuty detector is not centrally managed",
+  "Severity": "Low",
+  "Description": "GuardDuty detector does not appear to be centrally managed.",
+  "Risk": "GuardDuty findings, settings and member accounts cannot be managed centrally, increasing the complexity of operations.",
+  "RelatedUrls": "https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_organizations.html, https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_accounts.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure GuardDuty is centrally managed.",
+      "Urls": "https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_organizations.html"
+    }
+  },
+  "Notes": ""
+}

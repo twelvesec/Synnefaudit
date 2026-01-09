@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DYNAMODB_TABLE_DEFAULT_ENCRYPTION_ENABLED",
+  "CheckTitle": "DynamoDB table with Default Encryption enabled",
+  "Severity": "Low",
+  "Description": "DynamoDB table found with default encryption enabled, instead of AWS KMS.",
+  "Risk": "Default encryption does not provide enhanced security for data at rest.",
+  "RelatedUrls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/EncryptionAtRest.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "KMS keys for DynamoDB table encryption should be enabled for tables that contain sensitive data. Make sure to specify the encryption key on a new table using the Amazon DynamoDB console or the AWS CLI.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/encryption.tutorial.html"
+    }
+  },
+  "Notes": ""
+}

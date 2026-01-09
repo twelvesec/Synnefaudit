@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "TRUSTED_ADVISOR_WARNINGS",
+  "CheckTitle": "Trusted Advisor checks in warning state",
+  "Severity": "Info",
+  "Description": "Trusted advisor checks have been found in a state of warning or error.",
+  "Risk": "A check with the status error indicate an active issue that should be remediated, and a check with the status warning indicates a potential issue that should be investigated.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awssupport/latest/user/trusted-advisor-check-reference.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure to investigate all checks in an error or warning state, and take any relevant necessary action for each item.",
+      "Urls": "https://docs.aws.amazon.com/awssupport/latest/user/trusted-advisor-check-reference.html"
+    }
+  },
+  "Notes": ""
+}

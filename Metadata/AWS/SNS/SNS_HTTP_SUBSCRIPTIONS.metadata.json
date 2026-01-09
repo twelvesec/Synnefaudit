@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SNS_HTTP_SUBSCRIPTIONS",
+  "CheckTitle": "SNS Subscriptions using HTTP endpoints",
+  "Severity": "Medium",
+  "Description": "SNS Subscriptions found using unencrypted endpoints.",
+  "Risk": "Using HTTP could result in information disclosure, as part of a man-in-the-middle attack.",
+  "RelatedUrls": "https://docs.aws.amazon.com/sns/latest/dg/sns-security-best-practices.html#enforce-encryption-data-in-transit",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure all data in transit and at rest are encrypted, and in this case make sure all topics make use of HTTPS for encryption in transit.",
+      "Urls": "https://docs.aws.amazon.com/sns/latest/dg/sns-security-best-practices.html#enforce-encryption-data-in-transit"
+    }
+  },
+  "Notes": ""
+}

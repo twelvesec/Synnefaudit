@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_ACCESS_ANALYZER_WITH_FINDINGS",
+  "CheckTitle": "IAM Access Analyzer with Findings",
+  "Severity": "Low",
+  "Description": "Access Analyzer is enabled, and with active findings. IAM Access Analyzer analyzes resource policies to identify unauthorized access to resources.",
+  "Risk": "Active findings from it reveal potential security risks and misconfigurations.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-concepts.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Review all findings to determine any unintentional access and archive any false positives. If needed, you can also create archive rules to automatically handle multiple similar findings that have been deemed as intended access.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access-analyzer-concepts.html"
+    }
+  },
+  "Notes": ""
+}

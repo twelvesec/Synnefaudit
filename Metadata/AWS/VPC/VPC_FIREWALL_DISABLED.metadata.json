@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "VPC_FIREWALL_DISABLED",
+  "CheckTitle": "VPCs without Network Firewall enabled",
+  "Severity": "Medium",
+  "Description": "VPCs found without a Network Firewall.",
+  "Risk": "Without a Network Firewall, it is a lot harder to filter incoming traffic, which limits the detection of possible attacks.",
+  "RelatedUrls": "https://aws.amazon.com/network-firewall/",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure Network Firewall is enabled for all VPCs' traffic. This will allow active detection and blocking of malicious traffic through domain filtering, packet inspection, signature-based detection and other measures able to be set up across VPCs and Availability Zones.",
+      "Urls": "https://docs.aws.amazon.com/network-firewall/latest/developerguide/vpc-config.html"
+    }
+  },
+  "Notes": ""
+}

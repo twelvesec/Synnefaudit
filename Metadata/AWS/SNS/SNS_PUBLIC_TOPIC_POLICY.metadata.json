@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SNS_PUBLIC_TOPIC_POLICY",
+  "CheckTitle": "SNS Topics with public policy found",
+  "Severity": "Medium",
+  "Description": "SNS Toping have been observed to use wildcards on their policy.",
+  "Risk": "This may lead to sensitive data exposure to unintended audiences.",
+  "RelatedUrls": "https://docs.aws.amazon.com/config/latest/developerguide/sns-topic-policy.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure no SNS Topics have a public policy, unless explicitly required for business requirements.",
+      "Urls": "https://docs.aws.amazon.com/sns/latest/dg/sns-using-identity-based-policies.html"
+    }
+  },
+  "Notes": ""
+}

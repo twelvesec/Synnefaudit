@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_ACCESS_ANALYZER_DISABLED",
+  "CheckTitle": "IAM Access Analyzer Disabled",
+  "Severity": "Low",
+  "Description": "IAM Access Analyzer has not been enabled for account. It helps identify unintended resource access in your organization, along with validating and generating IAM policies.",
+  "Risk": "Not enabling it, there is added complexity in detecting and handling unauthorized access.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure Access Analyzer is enabled.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html"
+    }
+  },
+  "Notes": ""
+}

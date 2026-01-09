@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_EVENT_SUBSCRIPTIONS_MISSING_CATEGORIES",
+  "CheckTitle": "Amazon RDS event notifications not subscribed",
+  "Severity": "Low",
+  "Description": "Critical event notifications for RDS instances have not been subscribed.",
+  "Risk": "Without such notifications, there will not be the appropriate rapid response for changes that can affect the availability or configuration of RDS resources.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Events.Messages.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure RDS event notification subscription has critical database security group events configured.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/rds-controls.html#rds-22, https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Events.Subscribing.html"
+    }
+  },
+  "Notes": ""
+}

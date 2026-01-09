@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED",
+  "CheckTitle": "Route53 Public Hosted Zones with query logging disabled",
+  "Severity": "Low",
+  "Description": "Route53 Public Hosted Zones found with query logging disabled.",
+  "Risk": "Not enabling it, limits the ability to capture query and response data for analysis and security monitoring.",
+  "RelatedUrls": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/logging-monitoring.html, https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/monitoring-cloudwatch.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Query logging should be enabled for Route53 public hosted zones.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/route53-controls.html#route53-2"
+    }
+  },
+  "Notes": ""
+}

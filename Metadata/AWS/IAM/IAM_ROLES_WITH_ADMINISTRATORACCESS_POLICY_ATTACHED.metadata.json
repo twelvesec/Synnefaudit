@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_ROLES_WITH_ADMINISTRATORACCESS_POLICY_ATTACHED",
+  "CheckTitle": "IAM Roles with AdministratorAccess policy attached",
+  "Severity": "Medium",
+  "Description": "IAM roles found with 'AdministratorAccess' policy attached. This policy is overly permissive and should be used sparingly.",
+  "Risk": "Having too many roles with such privileges poses significant security risks due to the broad and unrestricted permissions that come with this policy.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html, https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AdministratorAccess.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Inspect the roles, and verify only those that are required to have such privileges have the policy attached.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege, https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-1"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_SECURITY_GROUP_NON_RFC1918_INGRESS",
+  "CheckTitle": "Security Group allow ingress traffic from non-RFC1918 address",
+  "Severity": "Medium",
+  "Description": "Security Groups found allowing ingress traffic from non-RFC1918 address (wide-open IP address with a mask between 0 and 24).",
+  "Risk": "Misconfigured security groups increase the attack surface for the instance.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html, https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Review and update the IP permissions of the Security Groups, in order to restrict ingress traffic to only the necessary ports and trusted sources based on your specific requirements.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-13, https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-14"
+    }
+  },
+  "Notes": ""
+}

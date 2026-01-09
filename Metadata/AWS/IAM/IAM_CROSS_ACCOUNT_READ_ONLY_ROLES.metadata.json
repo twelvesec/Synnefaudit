@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_CROSS_ACCOUNT_READ_ONLY_ROLES",
+  "CheckTitle": "IAM Role gives cross account read-only access",
+  "Severity": "High",
+  "Description": "IAM roles found giving cross account read-only access.",
+  "Risk": "The AWS-managed 'ReadOnlyAccess' policy is highly potent and exposes the customer to a significant data leakage threat, and should be granted very conservatively. The 'ReadOnlyAccess' grants read access to all AWS services and resources whereas the 'ViewOnlyAccess' access provides read-only access and further restricts read operations to view resources and only metadata.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#awsmp_readonlyaccess, https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_view-only-user, https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-role.html#aws-resource-iam-role-properties",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure 'ReadOnlyAccess' is granted to limited roles that require it. When granting access to 3rd party vendors, consider using alternative managed policies, such as 'ViewOnlyAccess' or 'SecurityAudit'.",
+      "Urls": "https://docs.aws.amazon.com/aws-managed-policy/latest/reference/ViewOnlyAccess.html, https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SecurityAudit.html"
+    }
+  },
+  "Notes": ""
+}

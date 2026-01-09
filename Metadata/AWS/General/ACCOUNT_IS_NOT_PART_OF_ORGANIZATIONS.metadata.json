@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ACCOUNT_IS_NOT_PART_OF_ORGANIZATIONS",
+  "CheckTitle": "Account is not part of AWS Organization",
+  "Severity": "Low",
+  "Description": "The account is not part of an AWS Organization.",
+  "Risk": "This can lead to a lack of centralized management and control over the AWS accounts, and make it difficult to consistently enforce security policies, along with result in increased costs due to inefficiencies in resource usage.",
+  "RelatedUrls": "",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Create an organization or join an existing one, in order to manage the account.",
+      "Urls": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_org_create.html"
+    }
+  },
+  "Notes": ""
+}

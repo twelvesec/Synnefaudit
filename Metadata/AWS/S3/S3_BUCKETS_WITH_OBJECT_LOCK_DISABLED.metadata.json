@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_WITH_OBJECT_LOCK_DISABLED",
+  "CheckTitle": "S3 Buckets with Object Lock disabled",
+  "Severity": "Low",
+  "Description": "S3 Buckets found with Object Lock disabled. It offers the ability to manage object retention, specifically retention periods and legal holds.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "S3 buckets should have Object Lock enabled.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-15"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "RDS_SNAPSHOTS_ENCRYPTION",
+  "CheckTitle": "RDS Snapshots not encrypted",
+  "Severity": "Medium",
+  "Description": "RDS Snapshots found without encryption.",
+  "Risk": "",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure RDS Snapshots are encrypted.",
+      "Urls": "https://repost.aws/knowledge-center/encrypt-rds-snapshots"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_POLICY_ALLOWS_PRIVILEGE_ESCALATION",
+  "CheckTitle": "IAM Policy Allows Privilege Escalation",
+  "Severity": "High",
+  "Description": "IAM policies found that allow a service to assume different roles and perform actions on their behalf.",
+  "Risk": "Such actions can lead to privilege escalation through the use of insecure permissions, which could even lead to administrator rights.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_iam-passrole-service.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure user permissions are granted on a per-resource basis, and according to the least privilege principle.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege"
+    }
+  },
+  "Notes": ""
+}

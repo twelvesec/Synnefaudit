@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_USERS_WITH_MULTIPLE_ACTIVE_ACCESS_KEYS",
+  "CheckTitle": "IAM Users with Multiple Active Access Keys",
+  "Severity": "Low",
+  "Description": "Users were observed having multiple access keys. Users need programmatic access if they want to interact with AWS outside of the AWS Management Console, and long-term access keys are not recommended. IAM users with access keys are an account security risk.",
+  "Risk": "Having multiple active long-term credentials are hard to manage, and increase the risk of any of them getting compromised.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds-programmatic-access.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Limit the amount of active access keys for each user, and regularly rotate them. Use AWS CloudTrail to monitor access key usage, and set up CloudWatch alarms to notify administrators for denied access attempts",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/access-keys-admin-managed.html"
+    }
+  },
+  "Notes": ""
+}

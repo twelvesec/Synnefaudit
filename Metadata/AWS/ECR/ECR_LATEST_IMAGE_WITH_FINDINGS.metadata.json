@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ECR_LATEST_IMAGE_WITH_FINDINGS",
+  "CheckTitle": "ECR repositories with latest imageTag with findings found",
+  "Severity": "High",
+  "Description": "ECR image scan found vulnerabilities in the newest image version.",
+  "Risk": "Such repositories are at risk due to known vulnerabilities.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Identify the active vulnerabilities along with their impact on the application and sensitive data, and take measures to remediate them.",
+      "Urls": "https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-scanning.html"
+    }
+  },
+  "Notes": ""
+}
