@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_MONGODB_PORTS_OPEN",
+  "CheckTitle": "EC2 instances with open ingress MongoDB ports to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to MongoDB ports (TCP: 27017, 27018).",
+  "Risk": "These ports handle MongoDB database connections and replica set communications. Attackers can exploit unprotected instances to ransom databases, dump sensitive collections, or inject malicious documents into production databases.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

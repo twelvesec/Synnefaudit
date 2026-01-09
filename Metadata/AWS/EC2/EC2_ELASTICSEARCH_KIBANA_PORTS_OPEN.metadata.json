@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_ELASTICSEARCH_KIBANA_PORTS_OPEN",
+  "CheckTitle": "EC2 instances with open ingress Elasticsearch and Kibana ports to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to Elasticsearch and Kibana ports (TCP: 9200, 9300, 5601).",
+  "Risk": "Port 9200 exposes the REST API for data indexing/searching, 9300 handles internal node communication, and 5601 serves the Kibana dashboard. Attackers can directly query indexed documents, inject malicious data, or ransom unprotected Elasticsearch instances containing logs and sensitive information.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

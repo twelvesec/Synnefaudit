@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_CASSANDRA_PORTS_OPEN",
+  "CheckTitle": "EC2 instances with open ingress Cassandra ports to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to Cassandra ports (TCP: 7000, 7001, 7199, 9042, 9160).",
+  "Risk": "These ports handle Cassandra database internals (node communication, JMX monitoring) and client connections. Attackers could exploit unsecured clusters to steal sensitive NoSQL data, disrupt distributed database operations, or compromise entire database clusters.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_REDIS_PORT_OPEN",
+  "CheckTitle": "EC2 instances with open ingress Redis port to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to Redis port (TCP: 6379).",
+  "Risk": "This port handles Redis in-memory data store operations. Attackers can dump all cached keys/values, execute arbitrary Lua scripts on the server, or overwrite critical configuration files via Redis persistence features.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

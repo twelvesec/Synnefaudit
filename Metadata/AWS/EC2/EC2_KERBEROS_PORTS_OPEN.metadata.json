@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_KERBEROS_PORTS_OPEN",
+  "CheckTitle": "EC2 instances with open ingress Kerberos ports to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to Kerberos ports (TCP: 88, 464, 749, 750).",
+  "Risk": "These ports handle Kerberos authentication (88), password changes (464), and admin (749-750). Attackers can intercept Kerberos tickets to perform pass-the-hash attacks, forge golden tickets for domain persistence, or brute-force service account credentials.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_MEMCACHED_PORT_OPEN",
+  "CheckTitle": "EC2 instances with open ingress Memcached ports to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to Memcached port (TCP: 11211).",
+  "Risk": "This port serves the memcached distributed caching system. Attackers can abuse exposed instances for DDoS amplification attacks, dump cached session data containing user credentials, or poison caches to manipulate application behavior.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

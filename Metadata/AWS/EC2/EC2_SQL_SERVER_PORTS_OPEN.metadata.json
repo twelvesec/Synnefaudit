@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_SQL_SERVER_PORTS_OPEN",
+  "CheckTitle": "EC2 instances with open ingress SQL Server ports to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to SQL Server ports (TCP: 1433, 1434).",
+  "Risk": "Port 1433 handles T-SQL database connections while 1434 serves the SQL Server Browser service. Attackers can attempt direct SQL authentication bypass, execute arbitrary SQL commands through injection, or enumerate database instances for targeted attacks.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

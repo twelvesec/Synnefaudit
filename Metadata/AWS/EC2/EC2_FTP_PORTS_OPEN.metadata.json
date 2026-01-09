@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_FTP_PORTS_OPEN",
+  "CheckTitle": "EC2 instances with open ingress FTP ports to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to FTP ports (TCP: 20, 21).",
+  "Risk": "Port 20 handles data transfer while 21 manages control connections in clear text. Attackers can intercept credentials and files in transit, upload malicious content to servers, or use anonymous FTP access to exfiltrate sensitive data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

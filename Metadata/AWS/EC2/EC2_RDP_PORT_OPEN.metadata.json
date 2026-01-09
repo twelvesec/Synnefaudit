@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_RDP_PORT_OPEN",
+  "CheckTitle": "EC2 instances with open ingress RDP port to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to RDP port (TCP: 3389).",
+  "Risk": "This port manages Remote Desktop Protocol connections. Attackers conduct credential stuffing attacks to gain interactive desktop access, deploy ransomware directly to user sessions, or capture screens/keystrokes from active sessions.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

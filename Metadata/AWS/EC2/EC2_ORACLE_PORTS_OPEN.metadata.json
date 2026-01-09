@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_ORACLE_PORTS_OPEN",
+  "CheckTitle": "EC2 instances with open ingress Oracle ports to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to Oracle ports (TCP: 1521, 2483, 2484).",
+  "Risk": "These ports handle Oracle Database listener (1521) and SSL/TLS connections (2483-2484). Attackers can target unpatched Oracle services to execute arbitrary code, exfiltrate sensitive corporate/financial data, or disrupt critical database operations.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

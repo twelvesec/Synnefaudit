@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_SSH_PORT_OPEN",
+  "CheckTitle": "EC2 instances with open ingress SSH port to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to SSH port (TCP: 22).",
+  "Risk": "This port manages secure shell remote administration. Attackers conduct brute-force attacks to gain shell access, establish persistence for botnets/malware, or use compromised systems as jump points for lateral movement within networks.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}

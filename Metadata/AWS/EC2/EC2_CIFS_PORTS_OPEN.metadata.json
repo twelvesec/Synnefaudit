@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_CIFS_PORTS_OPEN",
+  "CheckTitle": "EC2 instances with open ingress CIFS ports to the internet",
+  "Severity": "High",
+  "Description": "EC2 instances found to allow ingress from the internet to CIFS ports (TCP: 139, 445).",
+  "Risk": "These ports handle SMB file sharing and Windows file/printer sharing. Attackers can exploit vulnerable SMB implementations (like EternalBlue) to deploy ransomware, laterally move through networks, or directly access sensitive files without authentication.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure access to ports from the internet is limited for EC2 instances. Apply the concept of Least Privilege and limit traffic to sensitive resources.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-tutorial.html"
+    }
+  },
+  "Notes": ""
+}
