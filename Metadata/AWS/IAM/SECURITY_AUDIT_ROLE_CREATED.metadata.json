@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_AUDIT_ROLE_NOT_FOUND",
+  "CheckTitle": "Security Audit role not found",
+  "Severity": "Low",
+  "Description": "No Security Audit role has been observed.",
+  "Risk": "Without a Security Audit role, there is no separation of duties between different security related teams. This could result in unintended actions by unauthorized users.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "A separate Security Audit IAM role should be in use for accounts monitoring compliance.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor"
+    }
+  },
+  "Notes": ""
+}

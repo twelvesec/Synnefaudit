@@ -17,10 +17,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.PaginatorHelper;
 import com.twelvesec.cloudscan.SharedDataProvider;
@@ -42,9 +44,11 @@ import software.amazon.awssdk.services.iam.model.GetLoginProfileResponse;
 import software.amazon.awssdk.services.iam.model.GetPolicyRequest;
 import software.amazon.awssdk.services.iam.model.GetPolicyVersionRequest;
 import software.amazon.awssdk.services.iam.model.GetRoleRequest;
+import software.amazon.awssdk.services.iam.model.GetRoleResponse;
 import software.amazon.awssdk.services.iam.model.ListAccessKeysRequest;
 import software.amazon.awssdk.services.iam.model.ListAccessKeysResponse;
 import software.amazon.awssdk.services.iam.model.ListAttachedRolePoliciesRequest;
+import software.amazon.awssdk.services.iam.model.ListAttachedRolePoliciesResponse;
 import software.amazon.awssdk.services.iam.model.ListAttachedUserPoliciesRequest;
 import software.amazon.awssdk.services.iam.model.ListAttachedUserPoliciesResponse;
 import software.amazon.awssdk.services.iam.model.ListEntitiesForPolicyRequest;
@@ -109,7 +113,9 @@ public class IAMCheck implements CloudCheck {
                     wrapCheck(this::checkCrossAccountRoleAssumption,                    AWSFinding.IAM_CROSS_ACCOUNT_READ_ONLY_ROLES, this::reportError),
                     wrapCheck(this::checkOverlyPermissiveManagedPolicies,               AWSFinding.IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES, this::reportError),
                     wrapCheck(this::checkIamUsersWithLongTermCredentials,               AWSFinding.IAM_USERS_WITH_LONG_TERM_CREDENTIALS, this::reportError),
-                    wrapCheck(this::checkIamUsersWithAttachedPolicies,                  AWSFinding.IAM_USERS_WITH_ATTACHED_POLICIES, this::reportError)
+                    wrapCheck(this::checkIamUsersWithAttachedPolicies,                  AWSFinding.IAM_USERS_WITH_ATTACHED_POLICIES, this::reportError),
+                    wrapCheck(this::checkSecurityAuditRole,                             AWSFinding.SECURITY_AUDIT_ROLE_NOT_FOUND, this::reportError),
+                    wrapCheck(this::checkSupportRole,                                   AWSFinding.SUPPORT_ROLE_NOT_FOUND, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -635,4 +641,252 @@ public class IAMCheck implements CloudCheck {
         return status;
     }
 
+    private Status checkSecurityAuditRole() {
+        if (allRoles.isEmpty()) {
+            writer.addToBuffer(AWSFinding.SECURITY_AUDIT_ROLE_NOT_FOUND, 
+                            Text.NO_IAM_ROLES_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allRoles.stream()
+            .map(role -> {
+                Status s;
+                Object r;
+                try {
+                    GetRoleResponse roleResponse = iam.getRole(
+                        GetRoleRequest.builder().roleName(role.roleName()).build()
+                    ).join();
+                    
+                    List<AttachedPolicy> attachedPolicies = PaginatorHelper.collectPaginatedItems(
+                        iam.listAttachedRolePoliciesPaginator(
+                            ListAttachedRolePoliciesRequest.builder().roleName(role.roleName()).build()
+                        ),
+                        ListAttachedRolePoliciesResponse::attachedPolicies
+                    ).join();
+
+                    boolean hasSecurityAuditPolicy = attachedPolicies.stream()
+                        .anyMatch(policy -> 
+                            "arn:aws:iam::aws:policy/SecurityAudit".equals(policy.policyArn()) ||
+                            policy.policyName().contains("SecurityAudit")
+                        );
+                    String trustPolicy = roleResponse.role().assumeRolePolicyDocument();
+                    boolean hasProperTrust = isTrustPolicyValidForAudit(trustPolicy);
+                    boolean isSecurityAuditRole = hasSecurityAuditPolicy && hasProperTrust;
+                    
+                    if (role.roleName().toLowerCase().contains("security") || 
+                        role.roleName().toLowerCase().contains("audit")) {
+                        s = isSecurityAuditRole ? Status.PASS : Status.FAIL;
+                        
+                        ObjectNode resultNode = MAPPER.createObjectNode();
+                        
+                        ArrayNode policiesArray = resultNode.putArray("attachedPolicies");
+                        attachedPolicies.forEach(policy -> {
+                            ObjectNode policyNode = MAPPER.createObjectNode();
+                            policyNode.put("policyArn", policy.policyArn());
+                            policyNode.put("policyName", policy.policyName());
+                            policiesArray.add(policyNode);
+                        });
+                        
+                        if (trustPolicy != null) {
+                            try {
+                                String decodedTrustPolicy = URLDecoder.decode(trustPolicy, StandardCharsets.UTF_8);
+                                JsonNode trustPolicyNode = MAPPER.readTree(decodedTrustPolicy);
+                                resultNode.put("trustPolicy", trustPolicyNode);
+                            } catch (Exception e) {
+                                resultNode.put("trustPolicy", trustPolicy);
+                            }
+                        } else {
+                            resultNode.putNull("trustPolicy");
+                        }
+                        
+                        resultNode.put("hasSecurityAuditPolicy", hasSecurityAuditPolicy);
+                        resultNode.put("hasProperTrust", hasProperTrust);                        
+                        r = resultNode;
+                    } else {
+                        s = Status.NOT_APPLICABLE;
+                        r = role.roleName();
+                    }
+                    
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    ObjectNode errorNode = MAPPER.createObjectNode();
+                    errorNode.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                    r = errorNode;
+                }
+                
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(role.roleName(), inner);
+            })
+            .filter(map -> {
+                Map<String, Object> inner = (Map<String, Object>) map.values().iterator().next();
+                return inner.get(Text.STATUS.toString()) != Status.NOT_APPLICABLE;
+            })
+            .toList();
+
+        if (result.isEmpty()) {
+            writer.addToBuffer(AWSFinding.SECURITY_AUDIT_ROLE_NOT_FOUND, 
+                            Text.NO_SECURITY_AUDIT_ROLE_FOUND.toString(), Status.FAIL);
+            return Status.FAIL;
+        }
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.SECURITY_AUDIT_ROLE_NOT_FOUND, result, status);
+        return status;
+    }
+
+    private boolean isTrustPolicyValidForAudit(String trustPolicy) throws JsonProcessingException {
+        if (trustPolicy == null || trustPolicy.isEmpty()) {
+            return false;
+        }
+        
+        String decodedPolicy = URLDecoder.decode(trustPolicy, StandardCharsets.UTF_8);
+        JsonNode policyNode = MAPPER.readTree(decodedPolicy);
+        
+        JsonNode statements = policyNode.path("Statement");
+        if (statements.isArray()) {
+            for (JsonNode stmt : statements) {
+                JsonNode principal = stmt.path("Principal");
+                JsonNode action = stmt.path("Action");
+                
+                if (action.asText("").contains("sts:AssumeRole")) {
+                    if (principal.has("AWS") || principal.has("Service")) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private Status checkSupportRole() {
+        if (allRoles.isEmpty()) {
+            writer.addToBuffer(AWSFinding.SUPPORT_ROLE_NOT_FOUND, 
+                            Text.NO_IAM_ROLES_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allRoles.stream()
+            .map(role -> {
+                Status s;
+                Object r;
+                try {
+                    List<AttachedPolicy> attachedPolicies = PaginatorHelper.collectPaginatedItems(
+                        iam.listAttachedRolePoliciesPaginator(
+                            ListAttachedRolePoliciesRequest.builder().roleName(role.roleName()).build()
+                        ),
+                        ListAttachedRolePoliciesResponse::attachedPolicies
+                    ).join();
+
+                    boolean hasSupportPolicy = attachedPolicies.stream()
+                        .anyMatch(policy -> 
+                            "arn:aws:iam::aws:policy/AWSSupportAccess".equals(policy.policyArn()) ||
+                            policy.policyName().contains("AWSSupportAccess")
+                        );
+                    GetRoleResponse roleResponse = iam.getRole(
+                        GetRoleRequest.builder().roleName(role.roleName()).build()
+                    ).join();
+                    
+                    String trustPolicy = roleResponse.role().assumeRolePolicyDocument();
+                    boolean hasSupportTrust = isTrustPolicyValidForSupport(trustPolicy);
+                    boolean isSupportRole = hasSupportPolicy && hasSupportTrust;
+                    
+                    if (role.roleName().toLowerCase().contains("support") || 
+                        role.roleName().toLowerCase().contains("aws-support")) {
+                        s = isSupportRole ? Status.PASS : Status.FAIL;
+                        
+                        ObjectNode resultNode = MAPPER.createObjectNode();
+                        
+                        ArrayNode policiesArray = resultNode.putArray("attachedPolicies");
+                        attachedPolicies.forEach(policy -> {
+                            ObjectNode policyNode = MAPPER.createObjectNode();
+                            policyNode.put("policyArn", policy.policyArn());
+                            policyNode.put("policyName", policy.policyName());
+                            policiesArray.add(policyNode);
+                        });
+                        
+                        if (trustPolicy != null) {
+                            try {
+                                String decodedTrustPolicy = URLDecoder.decode(trustPolicy, StandardCharsets.UTF_8);
+                                JsonNode trustPolicyNode = MAPPER.readTree(decodedTrustPolicy);
+                                resultNode.set("trustPolicy", trustPolicyNode);
+                            } catch (Exception e) {
+                                resultNode.put("trustPolicy", trustPolicy);
+                            }
+                        } else {
+                            resultNode.putNull("trustPolicy");
+                        }
+                        
+                        resultNode.put("hasAWSSupportAccessPolicy", hasSupportPolicy);
+                        resultNode.put("hasProperTrustForSupport", hasSupportTrust);                        
+                        r = resultNode;
+                    } else {
+                        s = Status.NOT_APPLICABLE;
+                        r = role.roleName();
+                    }
+                    
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    ObjectNode errorResult = MAPPER.createObjectNode();
+                    errorResult.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                    r = errorResult;
+                }
+                
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(role.roleName(), inner);
+            })
+            .filter(map -> {
+                Map<String, Object> inner = (Map<String, Object>) map.values().iterator().next();
+                return inner.get(Text.STATUS.toString()) != Status.NOT_APPLICABLE;
+            })
+            .toList();
+
+        if (result.isEmpty()) {
+            writer.addToBuffer(AWSFinding.SUPPORT_ROLE_NOT_FOUND, 
+                            Text.NO_SUPPORT_ROLE_FOUND.toString(), Status.FAIL);
+            return Status.FAIL;
+        }
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.SUPPORT_ROLE_NOT_FOUND, result, status);
+        return status;
+    }
+
+    private boolean isTrustPolicyValidForSupport(String trustPolicy) throws JsonProcessingException {
+        if (trustPolicy == null || trustPolicy.isEmpty()) {
+            return false;
+        }
+        
+        String decodedPolicy = URLDecoder.decode(trustPolicy, StandardCharsets.UTF_8);
+        JsonNode policyNode = MAPPER.readTree(decodedPolicy);
+        
+        JsonNode statements = policyNode.path("Statement");
+        if (statements.isArray()) {
+            for (JsonNode stmt : statements) {
+                JsonNode principal = stmt.path("Principal");
+                JsonNode action = stmt.path("Action");
+                
+                if (action.asText("").contains("sts:AssumeRole")) {
+                    if (principal.has("Service")) {
+                        JsonNode servicePrincipal = principal.path("Service");
+                        if (servicePrincipal.isTextual() && 
+                            servicePrincipal.asText().equals("support.amazonaws.com")) {
+                            return true;
+                        }
+                        if (servicePrincipal.isArray()) {
+                            for (JsonNode service : servicePrincipal) {
+                                if (service.asText("").equals("support.amazonaws.com")) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }

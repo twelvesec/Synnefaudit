@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SUPPORT_ROLE_NOT_FOUND",
+  "CheckTitle": "No support role has been found.",
+  "Severity": "Low",
+  "Description": "Such a support role would be used to manage incidents with AWS Support.",
+  "Risk": "Separation of duties is necessary for security, and in this case the specified role would be relating to incident notification and response.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awssupport/latest/user/using-service-linked-roles-sup.html#service-linked-role-permissions",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Create and IAM role for managing incidents with AWS Support.",
+      "Urls": "https://docs.aws.amazon.com/awssupport/latest/user/using-service-linked-roles-sup.html#service-linked-role-permissions"
+    }
+  },
+  "Notes": ""
+}

@@ -88,6 +88,9 @@ public enum Text {
     NO_MANAGED_POLICIES_FOUND("No managed policies found."),
     NO_NON_IAM_STS_POLICIES_ATTACHED("No non-IAM/STS policies attached."),
 
+    NO_SECURITY_AUDIT_ROLE_FOUND("No Security Audit role found."),
+    NO_SUPPORT_ROLE_FOUND("No Support role found."),
+
     NO_CLUSTERS_FOUND("No Kafka Clusters found."),
 
     NO_LAMBDA_FUNCTIONS_FOUND("No Lambda Functions found."),
