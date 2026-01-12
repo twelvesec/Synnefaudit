@@ -302,9 +302,9 @@ public class VPCsCheck implements CloudCheck {
                     subnetArray.add(MAPPER.valueToTree(subnet.toBuilder()))
                 );
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), subnetArray);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), subnetArray);
 
                 return Map.<String, Object>of(vpcId, inner);
             })

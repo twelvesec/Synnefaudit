@@ -199,7 +199,7 @@ public class CloudTrailCheck implements CloudCheck {
                         ArrayNode trailsNode = MAPPER.valueToTree(
                             getTrailsWithObjectLevelLoggingForBucket(bucket, checkReadEvents)
                         );
-                        r.set("loggingTrails", trailsNode);
+                        r.put("loggingTrails", trailsNode);
                     } else {
                         r.put("reason", "No CloudTrail trail found with " 
                                       + (checkReadEvents ? "read" : "write")

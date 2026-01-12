@@ -140,9 +140,9 @@ public class GeneralCheck implements CloudCheck {
             .map(index -> {
                 ObjectNode indexNode = MAPPER.valueToTree(index);
 
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), Status.PASS.toString());
-                inner.set(Text.RESULT.toString(), indexNode);
+                inner.put(Text.RESULT.toString(), indexNode);
                 return Map.<String,Object>of(index.arn(), inner);
             })
             .toList();
@@ -222,7 +222,7 @@ public class GeneralCheck implements CloudCheck {
         String accountId = sts.getCallerIdentity(GetCallerIdentityRequest.builder().build()).join().account();
 
         Status status;
-        ObjectNode result = MAPPER.createObjectNode();
+        Map<String, Object> result = new HashMap<>();
         try {
             DescribeAccountResponse orgResponse = orgs.describeAccount(
                 DescribeAccountRequest.builder().accountId(accountId).build()
@@ -231,10 +231,8 @@ public class GeneralCheck implements CloudCheck {
             
             status = orgResponse.account() != null ? Status.PASS : Status.FAIL;
             
-            ObjectNode inner = MAPPER.createObjectNode();
-            inner.put(Text.STATUS.toString(), status.toString());
-            inner.set(Text.RESULT.toString(), orgNode);
-            result = inner;
+            result.put(Text.STATUS.toString(), status.toString());
+            result.put(Text.RESULT.toString(), orgNode);
         } catch (OrganizationNotFoundException|AwsOrganizationsNotInUseException e) {
             status = Status.FAIL;
             result.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));

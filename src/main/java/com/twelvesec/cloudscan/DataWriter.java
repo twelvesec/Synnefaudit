@@ -66,7 +66,7 @@ public class DataWriter {
         inner.put(Text.CHECKNAME.toString(), metadata.getCheckTitle() != null ? metadata.getCheckTitle() : finding.name());
         inner.put(Text.SEVERITY.toString(), metadata.toSeverityEnum().toString());
         inner.put(Text.STATUS.toString(), status.toString());
-        inner.set(Text.DATA.toString(), array);
+        inner.put(Text.DATA.toString(), array);
 
         buffer.put(finding.toString(), inner);
         

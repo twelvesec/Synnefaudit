@@ -388,7 +388,7 @@ public class RDSInstancesCheck implements CloudCheck {
                     s = isEncrypted ? Status.PASS : Status.FAIL;
                     r.put("dbInstanceIdentifier", db.dbInstanceIdentifier());
                     r.put("engine", db.engine());
-                    r.set("DbParameters", MAPPER.valueToTree(paramsResponse.toBuilder()));
+                    r.put("DbParameters", MAPPER.valueToTree(paramsResponse.toBuilder()));
                     r.put("masterUsername", db.masterUsername());
                     r.put("dbName", db.dbName());
                     r.put("availabilityZone", db.availabilityZone());
@@ -459,9 +459,9 @@ public class RDSInstancesCheck implements CloudCheck {
                     r.put(Text.ERROR.getText(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
                 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(db.dbInstanceIdentifier(), inner);
             })
             .toList();
@@ -499,9 +499,9 @@ public class RDSInstancesCheck implements CloudCheck {
                     r.put(Text.ERROR.getText(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
                 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(db.dbInstanceIdentifier(), inner);
             })
             .toList();

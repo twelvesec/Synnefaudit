@@ -1,5 +1,6 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -97,23 +98,23 @@ public class SSMCheck implements CloudCheck {
                     ).join();
 
                     ObjectNode permissionNode = MAPPER.valueToTree(permissionResponse.toBuilder());
-                    r.set("permissions", permissionNode);
+                    r.put("permissions", permissionNode);
                     
                     boolean isPublic = permissionResponse.accountIds() != null && 
                                      permissionResponse.accountIds().contains("*");
                     s = isPublic ? Status.FAIL : Status.PASS;
                     
                     ObjectNode documentNode = MAPPER.valueToTree(document);
-                    r.set("document", documentNode);
+                    r.put("document", documentNode);
                     
                 } catch (Exception e) {
                     s = Status.FAIL_EXCEPTION;
                     r.put(Text.ERROR.toString(), 
                                  Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(document.name(), inner);
             })
             .toList();

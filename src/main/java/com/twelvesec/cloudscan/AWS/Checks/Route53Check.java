@@ -150,15 +150,15 @@ public class Route53Check implements CloudCheck {
                         zoneNode.put("hostedZoneId", zoneId);
                         zoneNode.put("hostedZoneName", zoneName);
 
-                        ObjectNode inner = MAPPER.createObjectNode();
+                        Map<String, Object> inner = new HashMap<>();
                         Status s = hasDanglingIp ? Status.FAIL : Status.PASS;
-                        inner.put(Text.STATUS.toString(), s.toString());
-                        inner.set("record", recordNode);
-                        inner.set("zone", zoneNode);
+                        inner.put(Text.STATUS.toString(), s);
+                        inner.put("record", recordNode);
+                        inner.put("zone", zoneNode);
                         return Collections.<String, Object>singletonMap(recordName, inner);
                     });
             } catch (Exception e) {
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), Status.FAIL_EXCEPTION.toString());
                 inner.put(Text.RESULT.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 return Stream.<Map<String, Object>>of(Collections.singletonMap(zoneId, inner));

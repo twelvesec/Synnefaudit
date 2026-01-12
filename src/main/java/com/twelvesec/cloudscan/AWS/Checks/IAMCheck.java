@@ -152,9 +152,9 @@ public class IAMCheck implements CloudCheck {
                     policiesArray.add(Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), policiesArray);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), policiesArray);
                 return Map.<String, Object>of(roleName, inner);
             })
             .toList();
@@ -355,11 +355,11 @@ public class IAMCheck implements CloudCheck {
 
                 ObjectNode resultNode = MAPPER.createObjectNode();
                 resultNode.put(Text.MESSAGE.toString(), r);
-                resultNode.set(Text.POLICY.toString(), policyNode);
+                resultNode.put(Text.POLICY.toString(), policyNode);
 
                 ObjectNode innerNode = MAPPER.createObjectNode();
                 innerNode.put(Text.STATUS.toString(), s.toString());
-                innerNode.set(Text.RESULT.toString(), resultNode);
+                innerNode.put(Text.RESULT.toString(), resultNode);
                 return Map.<String,Object>of(arn, innerNode);
             })
             .toList();
@@ -440,11 +440,11 @@ public class IAMCheck implements CloudCheck {
 
                 ObjectNode resultNode = MAPPER.createObjectNode();
                 resultNode.put(Text.MESSAGE.toString(), r);
-                resultNode.set(Text.POLICY.toString(), policyNode);
+                resultNode.put(Text.POLICY.toString(), policyNode);
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), resultNode);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), resultNode);
                 return Map.<String,Object>of(roleName, inner);
             })
             .toList();
@@ -541,12 +541,12 @@ public class IAMCheck implements CloudCheck {
 
                 ObjectNode policyNode = MAPPER.createObjectNode();
                 policyNode.put(Text.MESSAGE.toString(), msg);
-                policyNode.set(Text.POLICY.toString(), versionNode);
-                policyNode.set(Text.ENTITIES.toString(), entitiesNode);
+                policyNode.put(Text.POLICY.toString(), versionNode);
+                policyNode.put(Text.ENTITIES.toString(), entitiesNode);
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), policyNode);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), policyNode);
                 return Map.<String,Object>of(arn, inner);
             })
             .toList();
@@ -579,9 +579,9 @@ public class IAMCheck implements CloudCheck {
                         Status s = isOld ? Status.FAIL : Status.PASS;
                         ObjectNode metaNode = MAPPER.valueToTree(meta.toBuilder());
 
-                        ObjectNode inner = MAPPER.createObjectNode();
-                        inner.put(Text.STATUS.toString(), s.toString());
-                        inner.set(Text.RESULT.toString(), metaNode);
+                        Map<String, Object> inner = new HashMap<>();
+                        inner.put(Text.STATUS.toString(), s);
+                        inner.put(Text.RESULT.toString(), metaNode);
                         return Map.<String, Object>of(user.userName(), inner);
                     });
                 })
@@ -623,9 +623,9 @@ public class IAMCheck implements CloudCheck {
                     outputNode = MAPPER.createObjectNode()
                         .put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), status.toString());
-                inner.set(Text.RESULT.toString(), outputNode);
+                inner.put(Text.RESULT.toString(), outputNode);
                 return Map.<String, Object>of(userName, inner);
             })
             .toList();

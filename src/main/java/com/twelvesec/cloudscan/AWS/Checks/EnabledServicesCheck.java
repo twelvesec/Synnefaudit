@@ -210,8 +210,8 @@ public class EnabledServicesCheck implements CloudCheck {
                     r = Text.NO_LOGGING_CONFIGURATION_FOUND.toString().concat(String.join(", ",loggedArns));
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
                 inner.put(Text.RESULT.toString(), r);
                 return Map.<String,Object>of(arn, inner);
             })

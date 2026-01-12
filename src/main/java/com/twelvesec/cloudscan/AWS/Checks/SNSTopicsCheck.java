@@ -192,7 +192,7 @@ public class SNSTopicsCheck implements CloudCheck {
                         attributes.put("Policy", MAPPER.writeValueAsString(policyNode));
                     }
                     
-                    r.set("topicAttributes", MAPPER.valueToTree(attributes));
+                    r.put("topicAttributes", MAPPER.valueToTree(attributes));
                     
                     httpSubs.forEach(sub -> {
                         ObjectNode subNode = MAPPER.createObjectNode();
@@ -205,7 +205,7 @@ public class SNSTopicsCheck implements CloudCheck {
                     if (httpSubscriptions.isEmpty()) {
                         r.put("httpSubscriptions", Text.NO_HTTP_SUBSCRIPTIONS_FOUND.toString());
                     } else {
-                        r.set("httpSubscriptions", httpSubscriptions);
+                        r.put("httpSubscriptions", httpSubscriptions);
                     }
                     
                 } catch (Exception e) {
@@ -213,9 +213,9 @@ public class SNSTopicsCheck implements CloudCheck {
                     r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
                 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(topicArn, inner);
             })
             .toList();

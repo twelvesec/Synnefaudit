@@ -1,5 +1,6 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -75,9 +76,9 @@ public class LambdaCheck implements CloudCheck {
                     status = Status.FAIL_EXCEPTION;
                     resultNode.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), status.toString());
-                inner.set(Text.RESULT.toString(), resultNode);
+                inner.put(Text.RESULT.toString(), resultNode);
                 return Map.<String, Object>of(functionName, inner);
             })
             .toList();

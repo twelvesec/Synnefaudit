@@ -127,9 +127,9 @@ public class Inspector2Check implements CloudCheck {
                 String arn = finding.findingArn();
                 ObjectNode r = MAPPER.valueToTree(finding.toBuilder());
 
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), Status.FAIL.toString());
-                inner.set(Text.RESULT.toString(), r);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String,Object>of(arn, inner);
                 })
             .toList();

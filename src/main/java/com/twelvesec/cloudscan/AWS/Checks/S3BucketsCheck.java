@@ -219,9 +219,9 @@ public class S3BucketsCheck implements CloudCheck {
                         .put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), policyNode);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), policyNode);
 
                 return Map.<String,Object>of(bucket, inner);
             })
@@ -486,7 +486,7 @@ public class S3BucketsCheck implements CloudCheck {
                         if (r == null) {
                             r = MAPPER.createObjectNode();
                         }
-                        r.set("Policy", MAPPER.readTree(policyText));
+                        r.put("Policy", MAPPER.readTree(policyText));
                     } catch (S3Exception e) {
                         if (r == null) {
                             r = MAPPER.createObjectNode();
@@ -555,7 +555,7 @@ public class S3BucketsCheck implements CloudCheck {
                         });
                     
                     s = allowsWriteAccess ? Status.FAIL : Status.PASS;
-                    r.set("Policy", policyNode);
+                    r.put("Policy", policyNode);
                     
                 } catch (S3Exception e) {
                     if ("NoSuchBucketPolicy".equals(e.awsErrorDetails().errorCode())) {

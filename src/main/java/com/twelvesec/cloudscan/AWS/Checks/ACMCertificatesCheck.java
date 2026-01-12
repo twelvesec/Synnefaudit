@@ -2,6 +2,7 @@ package com.twelvesec.cloudscan.AWS.Checks;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -87,9 +88,9 @@ public class ACMCertificatesCheck implements CloudCheck {
                                 Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), status.toString());
-                inner.set(Text.RESULT.toString(), certNode);
+                inner.put(Text.RESULT.toString(), certNode);
                 return Map.<String, Object>of(certArn, inner);
             })
             .toList();
@@ -127,9 +128,9 @@ public class ACMCertificatesCheck implements CloudCheck {
                     s = Status.FAIL_EXCEPTION;
                     r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(certArn, inner);
             })
             .toList();

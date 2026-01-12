@@ -1,6 +1,7 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -111,9 +112,9 @@ public class SupportCheck implements CloudCheck {
                     Status.FAIL
                 );
 
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), status.toString());
-                inner.set(Text.RESULT.toString(), MAPPER.valueToTree(summary.toBuilder()));
+                inner.put(Text.RESULT.toString(), MAPPER.valueToTree(summary.toBuilder()));
                 return Map.<String,Object>of(summary.checkId(), inner);
             })
             .toList();

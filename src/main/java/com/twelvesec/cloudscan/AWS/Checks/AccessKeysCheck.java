@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.AWS.AWSFinding;
@@ -144,9 +145,9 @@ public class AccessKeysCheck implements CloudCheck {
                                                     Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String,Object>of(user.userName(), inner);
             })
             .toList();
@@ -217,9 +218,9 @@ public class AccessKeysCheck implements CloudCheck {
                     s = Status.FAIL_EXCEPTION;
                     r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(userName, inner);
             })
             .toList();
@@ -270,16 +271,16 @@ public class AccessKeysCheck implements CloudCheck {
                     
                     s = hasEarlyKeys ? Status.FAIL : Status.PASS;
                     r.put(Text.USERCREATIONDATE.toString(), user.createDate().toString());
-                    r.set(Text.ACCESSKEYS.toString(), accessKeysArray); 
+                    r.put(Text.ACCESSKEYS.toString(), accessKeysArray); 
                     
                 }  catch (Exception e) {
                     s = Status.FAIL_EXCEPTION;
                     r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
                 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(username, inner);
             })
             .toList();
@@ -350,9 +351,9 @@ public class AccessKeysCheck implements CloudCheck {
                     ));
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(username, inner);
             })
             .toList();

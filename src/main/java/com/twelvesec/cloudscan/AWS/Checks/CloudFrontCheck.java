@@ -169,9 +169,9 @@ public class CloudFrontCheck implements CloudCheck {
                                                 Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String,Object>of(distId, inner);
             })
             .toList();

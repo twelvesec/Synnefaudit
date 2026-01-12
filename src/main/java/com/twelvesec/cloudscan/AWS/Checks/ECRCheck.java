@@ -186,12 +186,12 @@ public class ECRCheck implements CloudCheck {
 
                 if (findings != null && !findings.isEmpty()) {
                     ArrayNode findingsArray = MAPPER.valueToTree(findings);
-                    resultNode.set(Text.FINDINGS.toString(), findingsArray);
+                    resultNode.put(Text.FINDINGS.toString(), findingsArray);
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), resultNode);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), resultNode);
                 return Map.<String, Object>of(repo, inner);
             })
             .toList();

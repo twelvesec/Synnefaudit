@@ -120,9 +120,9 @@ public class CloudWatchCheck implements CloudCheck {
                 Status s = retention == null || retention < LOW_RETENTION_THRESHOLD ? Status.FAIL : Status.PASS;
                 ObjectNode logGroupNode = MAPPER.valueToTree(logGroup.toBuilder());
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), logGroupNode);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), logGroupNode);
                 return Map.<String, Object>of(name, inner);
             })
             .toList();

@@ -1,5 +1,6 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -80,9 +81,9 @@ public class CloudFormationCheck implements CloudCheck {
                         .put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(stackName, inner);
             })
             .toList();

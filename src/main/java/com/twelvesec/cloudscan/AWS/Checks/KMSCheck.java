@@ -87,7 +87,7 @@ public class KMSCheck implements CloudCheck {
                         DescribeKeyRequest.builder().keyId(keyId).build()
                     ).join();
                     ObjectNode awsAccountId = MAPPER.valueToTree(keyDescription.keyMetadata().awsAccountId());
-                    r.set(Text.AWSACCOUNTID.getText(), awsAccountId);
+                    r.put(Text.AWSACCOUNTID.getText(), awsAccountId);
                 } catch (Exception e) {
                     s = Status.FAIL_EXCEPTION;
                     r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
@@ -126,8 +126,8 @@ public class KMSCheck implements CloudCheck {
                     ObjectNode policyNode = MAPPER.valueToTree(policyResponse.toBuilder());
                     ObjectNode keyNode = MAPPER.valueToTree(keyDesc.toBuilder());
                     
-                    resultNode.set(Text.POLICY.toString(), policyNode);
-                    resultNode.set("keyDetails", keyNode);
+                    resultNode.put(Text.POLICY.toString(), policyNode);
+                    resultNode.put("keyDetails", keyNode);
                     
                     boolean isExposed = policyResponse.policy() != null 
                                     && policyResponse.policy().contains("\"Principal\":\"*\"");
@@ -137,9 +137,9 @@ public class KMSCheck implements CloudCheck {
                     status = Status.FAIL_EXCEPTION;
                     resultNode.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), status.toString());
-                inner.set(Text.RESULT.toString(), resultNode);
+                inner.put(Text.RESULT.toString(), resultNode);
                 return Map.<String, Object>of(keyId, inner);
             })
             .toList();
@@ -169,7 +169,7 @@ public class KMSCheck implements CloudCheck {
                     ).join();
                     
                     KeyMetadata keyMetadata = keyResponse.keyMetadata();
-                    r.set("keyMetadata", MAPPER.valueToTree(keyMetadata));
+                    r.put("keyMetadata", MAPPER.valueToTree(keyMetadata));
                     
                     if (!keyMetadata.keyState().equals(KeyState.ENABLED)) {
                         s = Status.NOT_APPLICABLE;
@@ -216,9 +216,9 @@ public class KMSCheck implements CloudCheck {
                     r = MAPPER.createObjectNode().put(Text.ERROR.toString(), 
                         Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(keyId, inner);
             })
             .toList();

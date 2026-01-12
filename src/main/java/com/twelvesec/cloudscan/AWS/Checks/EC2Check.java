@@ -229,8 +229,8 @@ public class EC2Check implements CloudCheck {
                     r = Text.EXCEPTION.toString().concat(e.getMessage());
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
                 inner.put(Text.RESULT.toString(), r);
                 return Map.<String,Object>of(groupId, inner);
             })
@@ -267,9 +267,9 @@ public class EC2Check implements CloudCheck {
 
                 ObjectNode instanceNode = MAPPER.valueToTree(instance.toBuilder());
 
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), (hasPublicIp && hasIamProfile) ? Status.FAIL.toString() : Status.PASS.toString());
-                inner.set(Text.RESULT.toString(), instanceNode);
+                inner.put(Text.RESULT.toString(), instanceNode);
                 return Map.<String, Object>of(instanceId, inner);
             })
             .toList();
@@ -293,9 +293,9 @@ public class EC2Check implements CloudCheck {
 
                 ObjectNode instanceNode = MAPPER.valueToTree(instance.toBuilder());
 
-                ObjectNode inner = MAPPER.createObjectNode();
+                Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), isOld ? Status.FAIL.toString() : Status.PASS.toString());
-                inner.set(Text.RESULT.toString(), instanceNode);
+                inner.put(Text.RESULT.toString(), instanceNode);
 
                 return Map.<String, Object>of(instance.instanceId(), inner);
             })
@@ -340,9 +340,9 @@ public class EC2Check implements CloudCheck {
                                                 Text.EXCEPTION.toString().concat(e.getMessage()));
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
-                inner.set(Text.RESULT.toString(), r);
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
                 return Map.<String, Object>of(groupId, inner);
             })
             .toList();
@@ -445,13 +445,13 @@ public class EC2Check implements CloudCheck {
                     openPorts.clear();
                 }
 
-                ObjectNode inner = MAPPER.createObjectNode();
-                inner.put(Text.STATUS.toString(), s.toString());
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
                 inner.put(Text.RESULT.toString(), r);
                 
                 ArrayNode openPortsArray = MAPPER.createArrayNode();
                 openPorts.forEach(openPortsArray::add);
-                inner.set("open_ports", openPortsArray);
+                inner.put("open_ports", openPortsArray);
                 return Map.<String, Object>of(groupId, inner);
             })
             .toList();
