@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDTRAIL_LOG_FILE_VALIDATION_ENABLED",
+  "CheckTitle": "CloudTrail log file not enabled for trail",
+  "Severity": "Medium",
+  "Description": "Trails have been found without log file integrity enabled.",
+  "Risk": "Without log file integrity validations, it is possible that a manipulated log file after an incident will not be identified during forensic investigation, and as such hinder any investigation.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-intro.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure log file integrity is enabled for all trails.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-enabling.html"
+    }
+  },
+  "Notes": ""
+} 

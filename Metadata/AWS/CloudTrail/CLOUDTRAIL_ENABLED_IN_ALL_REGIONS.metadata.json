@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDTRAIL_ENABLED_IN_ALL_REGIONS",
+  "CheckTitle": "CloudTrail not enabled in all regions",
+  "Severity": "Medium",
+  "Description": "It has been observed that cloudtrail logging has not been enabled on all regions.",
+  "Risk": "CloudTrail allows the logging of Insight events to analyze your management events for anomalous behavior in API call rates and error rates. Without enabling such logging on all regions, there may be monitoring gaps in case of a detailed investigation.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-multi-region-trails.html, https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-user-guide.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure CloudTrail logging in enabled for all regions.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/receive-cloudtrail-log-files-from-multiple-regions.html"
+    }
+  },
+  "Notes": ""
+}

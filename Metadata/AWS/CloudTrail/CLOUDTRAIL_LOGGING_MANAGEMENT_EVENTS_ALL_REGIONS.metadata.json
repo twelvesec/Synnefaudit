@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDTRAIL_LOGGING_MANAGEMENT_EVENTS_ALL_REGIONS",
+  "CheckTitle": "CloudTrail trails without logging management events enabled in all regions",
+  "Severity": "Low",
+  "Description": "Management events provide visibility into management operations that are performed on resources in your AWS account, and trails have been identified without them enabled.",
+  "Risk": "Not enabling them limits the security team in case of an incident, or a security audit, along with contrasting compliance with several regulatory requirements.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-management-events-with-cloudtrail.html, https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-events.html#cloudtrail-management-events",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Logging Management Events should be enabled for all regions.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-management-events-with-cloudtrail.html"
+    }
+  },
+  "Notes": ""
+}

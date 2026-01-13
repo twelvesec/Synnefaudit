@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CLOUDTRAIL_LOGS_ENCRYPTED_AT_REST_KMS",
+  "CheckTitle": "CloudTrail logs are not encrypted at rest",
+  "Severity": "Medium",
+  "Description": "CloudTrail logs have been found to not have encryption enabled (KMS) at rest.",
+  "Risk": "Not enabling encryption at rest for logs may lead to unintended information disclosure",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/encrypting-cloudtrail-log-files-with-aws-kms.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure CloudTrail logs are encrypted at rest.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/encrypting-cloudtrail-log-files-with-aws-kms.html#encrypting-cloudtrail-log-files-with-aws-kms-enabling"
+    }
+  },
+  "Notes": ""
+}

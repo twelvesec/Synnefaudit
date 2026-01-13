@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -16,20 +17,27 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
 import software.amazon.awssdk.services.cloudtrail.model.DescribeTrailsRequest;
 import software.amazon.awssdk.services.cloudtrail.model.DescribeTrailsResponse;
 import software.amazon.awssdk.services.cloudtrail.model.Event;
 import software.amazon.awssdk.services.cloudtrail.model.EventSelector;
+import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsRequest;
 import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsResponse;
 import software.amazon.awssdk.services.cloudtrail.model.GetInsightSelectorsRequest;
 import software.amazon.awssdk.services.cloudtrail.model.GetInsightSelectorsResponse;
+import software.amazon.awssdk.services.cloudtrail.model.GetTrailStatusRequest;
+import software.amazon.awssdk.services.cloudtrail.model.GetTrailStatusResponse;
 import software.amazon.awssdk.services.cloudtrail.model.InsightNotEnabledException;
+import software.amazon.awssdk.services.cloudtrail.model.ListTrailsRequest;
+import software.amazon.awssdk.services.cloudtrail.model.ListTrailsResponse;
 import software.amazon.awssdk.services.cloudtrail.model.LookupAttribute;
 import software.amazon.awssdk.services.cloudtrail.model.LookupAttributeKey;
 import software.amazon.awssdk.services.cloudtrail.model.LookupEventsRequest;
@@ -46,6 +54,9 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.FilterLogEventsRespo
 import software.amazon.awssdk.services.cloudwatchlogs.model.FilteredLogEvent;
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup;
 import software.amazon.awssdk.services.cloudwatchlogs.model.MetricFilter;
+import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
+import software.amazon.awssdk.services.ec2.model.DescribeRegionsRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeRegionsResponse;
 
 public class CloudTrailCheck implements CloudCheck {
     private List<TrailInfo> allTrails;
@@ -78,12 +89,16 @@ public class CloudTrailCheck implements CloudCheck {
             .thenCompose(logGroups -> {
                 this.allLogGroups = logGroups;
                 List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkTrailWithNoInsightSelectors,           AWSFinding.CLOUDTRAIL_WITH_NO_INSIGHT_SELECTORS, this::reportError),
-                    wrapCheck(this::checkRecentRootAccountUsage,                AWSFinding.CLOUDTRAIL_RECENT_ROOT_ACCOUNT_USAGE, this::reportError),
-                    wrapCheck(this::checkS3ObjectLevelReadLogging,              AWSFinding.S3_OBJECT_LEVEL_READ_LOGGING, this::reportError),
-                    wrapCheck(this::checkS3ObjectLevelWriteLogging,             AWSFinding.S3_OBJECT_LEVEL_WRITE_LOGGING, this::reportError),
-                    wrapCheck(this::checkCloudTrailCloudWatchIntegration,       AWSFinding.CLOUDTRAIL_CLOUDWATCH_INTEGRATION, this::reportError),
-                    wrapCheck(this::checkLogGroupsWithSecretsInCloudWatchLogs,  AWSFinding.CLOUDTRAIL_LOG_GROUPS_WITH_SECRETS_IN_CLOUDWATCH_LOGS, this::reportError)
+                    wrapCheck(this::checkTrailWithNoInsightSelectors,                   AWSFinding.CLOUDTRAIL_WITH_NO_INSIGHT_SELECTORS, this::reportError),
+                    wrapCheck(this::checkRecentRootAccountUsage,                        AWSFinding.CLOUDTRAIL_RECENT_ROOT_ACCOUNT_USAGE, this::reportError),
+                    wrapCheck(this::checkS3ObjectLevelReadLogging,                      AWSFinding.S3_OBJECT_LEVEL_READ_LOGGING, this::reportError),
+                    wrapCheck(this::checkS3ObjectLevelWriteLogging,                     AWSFinding.S3_OBJECT_LEVEL_WRITE_LOGGING, this::reportError),
+                    wrapCheck(this::checkCloudTrailCloudWatchIntegration,               AWSFinding.CLOUDTRAIL_CLOUDWATCH_INTEGRATION, this::reportError),
+                    wrapCheck(this::checkLogGroupsWithSecretsInCloudWatchLogs,          AWSFinding.CLOUDTRAIL_LOG_GROUPS_WITH_SECRETS_IN_CLOUDWATCH_LOGS, this::reportError),
+                    wrapCheck(this::checkCloudTrailEnabledInAllRegions,                 AWSFinding.CLOUDTRAIL_ENABLED_IN_ALL_REGIONS, this::reportError),
+                    wrapCheck(this::checkCloudTrailLogFileValidationEnabled,            AWSFinding.CLOUDTRAIL_LOG_FILE_VALIDATION_ENABLED, this::reportError),
+                    wrapCheck(this::checkCloudTrailLoggingManagementEventsInAllRegions, AWSFinding.CLOUDTRAIL_LOGGING_MANAGEMENT_EVENTS_ALL_REGIONS, this::reportError),
+                    wrapCheck(this::checkCloudTrailLogsEncryptedAtRestWithKMS,          AWSFinding.CLOUDTRAIL_LOGS_ENCRYPTED_AT_REST_KMS, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -379,6 +394,198 @@ public class CloudTrailCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.CLOUDTRAIL_LOG_GROUPS_WITH_SECRETS_IN_CLOUDWATCH_LOGS, result, status);
+        return status;
+    }
+
+    private Status checkCloudTrailEnabledInAllRegions() {
+        if (allTrails.isEmpty()) {
+            writer.addToBuffer(AWSFinding.CLOUDTRAIL_ENABLED_IN_ALL_REGIONS,
+                    Text.NO_CLOUDTRAIL_TRAILS_CONFIGURED_FOUND.toString(), Status.FAIL);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = Region.regions().stream()
+            .map(region -> {
+                String regionName = region.id();
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                try (CloudTrailAsyncClient regionalClient = CloudTrailAsyncClient.builder().region(region).build()) {
+                    List<String> trailLoggingInRegion = allTrails.stream()
+                        .map(trail -> {
+                            try {
+                                DescribeTrailsRequest requestDescr = DescribeTrailsRequest.builder().trailNameList(trail.name()).build();
+                                DescribeTrailsResponse responseDescr = cloudTrail.describeTrails(requestDescr).join();
+                                if (responseDescr.trailList().isEmpty()) {
+                                    return null;
+                                }
+                                Trail trailDetails = responseDescr.trailList().get(0);
+                                boolean isMultiRegion = trailDetails.isMultiRegionTrail() != null
+                                                    && trailDetails.isMultiRegionTrail();
+                                String homeRegion = trailDetails.homeRegion();
+
+                                if (!isMultiRegion && (homeRegion == null || !regionName.equalsIgnoreCase(homeRegion))) {
+                                    return null;
+                                }
+
+                                GetTrailStatusRequest requestStatus = GetTrailStatusRequest.builder().name(trail.name()).build();
+                                GetTrailStatusResponse responseStatus = regionalClient.getTrailStatus(requestStatus).join();
+                                return responseStatus.isLogging() ? trail.name() : null;
+                            } catch (Exception e) {
+                                return Text.EXCEPTION.getText().concat(e.getMessage());
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+                    boolean trailLoggingInRegionFound = !trailLoggingInRegion.isEmpty() 
+                                                    && !trailLoggingInRegion.contains(Text.EXCEPTION.getText());
+                    s = trailLoggingInRegionFound 
+                        ? Status.PASS 
+                        : !trailLoggingInRegion.contains(Text.EXCEPTION.getText())
+                            ? Status.FAIL
+                            : Status.FAIL_EXCEPTION;
+                    r.put("region", regionName);
+                    r.put("loggingEnabled", trailLoggingInRegion.toString());
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(regionName, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.CLOUDTRAIL_ENABLED_IN_ALL_REGIONS, result, status);
+        return status;
+    }
+
+    private Status checkCloudTrailLogFileValidationEnabled() {
+        if (allTrails.isEmpty()) {
+            writer.addToBuffer(AWSFinding.CLOUDTRAIL_LOG_FILE_VALIDATION_ENABLED, 
+                            Text.NO_CLOUDTRAIL_TRAILS_CONFIGURED_FOUND.toString(), Status.FAIL);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String,Object>> result = allTrails.stream()
+            .map(trail -> {
+                String name = trail.name();
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                try {
+                    DescribeTrailsRequest request = DescribeTrailsRequest.builder().trailNameList(name).build();
+                    DescribeTrailsResponse response = cloudTrail.describeTrails(request).join();
+                    
+                    Trail trailDetails = response.trailList().get(0);
+                    boolean validationEnabled = trailDetails.logFileValidationEnabled() != null 
+                                            && trailDetails.logFileValidationEnabled();
+                    
+                    s = validationEnabled ? Status.PASS : Status.FAIL;
+                    r.put("logFileValidationEnabled", validationEnabled);
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                Map<String,Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(name, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.CLOUDTRAIL_LOG_FILE_VALIDATION_ENABLED, result, status);
+        return status;
+    }
+
+    private Status checkCloudTrailLoggingManagementEventsInAllRegions() {
+        if (allTrails.isEmpty()) {
+            writer.addToBuffer(AWSFinding.CLOUDTRAIL_LOGGING_MANAGEMENT_EVENTS_ALL_REGIONS, 
+                            Text.NO_CLOUDTRAIL_TRAILS_CONFIGURED_FOUND.toString(), Status.FAIL);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String,Object>> result = allTrails.stream()
+            .map(trail -> {
+                String name = trail.name();
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                try {
+                    DescribeTrailsRequest describeRequest = DescribeTrailsRequest.builder().trailNameList(name).build();
+                    DescribeTrailsResponse describeResponse = cloudTrail.describeTrails(describeRequest).join();
+                    
+                    Trail trailDetails = describeResponse.trailList().get(0);
+                    boolean isMultiRegion = trailDetails.isMultiRegionTrail() != null 
+                                        && trailDetails.isMultiRegionTrail();
+                    
+                    GetEventSelectorsRequest eventRequest = GetEventSelectorsRequest.builder().trailName(name).build();
+                    GetEventSelectorsResponse eventResponse = cloudTrail.getEventSelectors(eventRequest).join();
+                    
+                    boolean hasManagementEvents = false;
+                    if (eventResponse.eventSelectors() != null) {
+                        hasManagementEvents = eventResponse.eventSelectors().stream()
+                            .anyMatch(selector -> selector.includeManagementEvents() != null 
+                                            && selector.includeManagementEvents());
+                    }
+                    
+                    s = isMultiRegion && hasManagementEvents ? Status.PASS : Status.FAIL;
+                    r.put("isMultiRegionTrail", isMultiRegion);
+                    r.put("hasManagementEvents", hasManagementEvents);
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                Map<String,Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(name, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.CLOUDTRAIL_LOGGING_MANAGEMENT_EVENTS_ALL_REGIONS, result, status);
+        return status;
+    }
+
+    private Status checkCloudTrailLogsEncryptedAtRestWithKMS() {
+        if (allTrails.isEmpty()) {
+            writer.addToBuffer(AWSFinding.CLOUDTRAIL_LOGS_ENCRYPTED_AT_REST_KMS, 
+                            Text.NO_CLOUDTRAIL_TRAILS_CONFIGURED_FOUND.toString(), Status.FAIL);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String,Object>> result = allTrails.stream()
+            .map(trail -> {
+                String name = trail.name();
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                try {
+                    DescribeTrailsRequest request = DescribeTrailsRequest.builder().trailNameList(name).build();
+                    DescribeTrailsResponse response = cloudTrail.describeTrails(request).join();
+                    
+                    Trail trailDetails = response.trailList().get(0);
+                    boolean hasKmsKey = trailDetails.kmsKeyId() != null 
+                                    && !trailDetails.kmsKeyId().isEmpty();
+                    
+                    s = hasKmsKey ? Status.PASS : Status.FAIL;
+                    r.put("encryptionEnabled", hasKmsKey);
+                    r.put("kmsKeyId", trailDetails.kmsKeyId());
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                Map<String,Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(name, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.CLOUDTRAIL_LOGS_ENCRYPTED_AT_REST_KMS, result, status);
         return status;
     }
 }
