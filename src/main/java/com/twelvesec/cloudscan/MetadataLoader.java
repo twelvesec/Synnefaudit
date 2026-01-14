@@ -8,8 +8,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -21,13 +23,14 @@ public final class MetadataLoader {
     private static final String METADATA_DIR = "Metadata";
     private static final String META_SUFFIX = ".metadata.json";
 
-    private MetadataLoader() {}
-
     public static CheckMetadata get(String checkId) {
-        if (isErrorId(checkId)) {
-            return createErrorMetadata(checkId);
-        }
-        return CACHE.computeIfAbsent(checkId, MetadataLoader::load);
+        return CACHE.computeIfAbsent(checkId, id -> {
+            try {
+                return load(id);
+            } catch (Exception e) {
+                return createIndividualErrorMetadata(id);
+            }
+        });
     }
 
     private static CheckMetadata load(String id) {        
@@ -44,21 +47,19 @@ public final class MetadataLoader {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .findFirst()
-            .orElseThrow(() -> new RuntimeException("Metadata file not found for check id: " + id));
+            .orElseThrow(() -> {
+                return new RuntimeException("Metadata file not found for check id: " + id);
+            });
     }
 
-    private static boolean isErrorId(String id) {
-        return id.equals("ERROR_WITH_FINDING") || id.endsWith("_ERROR");
-    }
-
-    private static CheckMetadata createErrorMetadata(String id) {
+    private static CheckMetadata createIndividualErrorMetadata(String checkId) {
         return new CheckMetadata(
             "ERROR",
-            id,
-            "Error Finding",
-            "HIGH",
-            "This finding represents an error that occurred during check execution",
-            "Execution error prevented proper check completion"
+            checkId,
+            "Missing Metadata",
+            "",
+            "Metadata file not found for check id: " + checkId,
+            "Check metadata configuration"
         );
     }
 
