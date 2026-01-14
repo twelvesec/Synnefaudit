@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -54,6 +55,7 @@ import software.amazon.awssdk.services.iam.model.ListAttachedUserPoliciesRespons
 import software.amazon.awssdk.services.iam.model.ListEntitiesForPolicyRequest;
 import software.amazon.awssdk.services.iam.model.ListEntitiesForPolicyResponse;
 import software.amazon.awssdk.services.iam.model.NoSuchEntityException;
+import software.amazon.awssdk.services.iam.model.PasswordPolicy;
 import software.amazon.awssdk.services.iam.model.Policy;
 import software.amazon.awssdk.services.iam.model.PolicyGroup;
 import software.amazon.awssdk.services.iam.model.PolicyRole;
@@ -64,7 +66,13 @@ import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
 public class IAMCheck implements CloudCheck {
-    private static final long MAX_KEY_AGE_DAYS = 90;
+    private static final int MAX_KEY_AGE_DAYS = 90;
+    private static final int MIN_PASSWD_LENGTH = 14;
+    private static final int MIN_PASSWD_REUSE = 24;
+    private PasswordPolicy cachedPasswordPolicy = null;
+    private boolean passwordPolicyRetrieved = false;
+    private ObjectNode cachedPasswordPolicyResult = null;
+    private Status passwordPolicyRetrievalStatus = null;
 
     private List<AnalyzerSummary> allAnalyzers;
     private List<Role> allRoles;
@@ -115,7 +123,13 @@ public class IAMCheck implements CloudCheck {
                     wrapCheck(this::checkIamUsersWithLongTermCredentials,               AWSFinding.IAM_USERS_WITH_LONG_TERM_CREDENTIALS, this::reportError),
                     wrapCheck(this::checkIamUsersWithAttachedPolicies,                  AWSFinding.IAM_USERS_WITH_ATTACHED_POLICIES, this::reportError),
                     wrapCheck(this::checkSecurityAuditRole,                             AWSFinding.SECURITY_AUDIT_ROLE_NOT_FOUND, this::reportError),
-                    wrapCheck(this::checkSupportRole,                                   AWSFinding.SUPPORT_ROLE_NOT_FOUND, this::reportError)
+                    wrapCheck(this::checkSupportRole,                                   AWSFinding.SUPPORT_ROLE_NOT_FOUND, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyMaxAge,                       AWSFinding.IAM_PASSWORD_POLICY_MAX_AGE, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyRequireLowercase,             AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_LOWERCASE, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyRequireNumber,                AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_NUMBER, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyRequireSymbol,                AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_SYMBOL, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyRequireUppercase,             AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_UPPERCASE, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyMinimumLength,                AWSFinding.IAM_PASSWORD_POLICY_MINIMUM_LENGTH, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -237,43 +251,157 @@ public class IAMCheck implements CloudCheck {
         return status;
     }
 
-    private Status checkIAMPasswordPolicyIsNotSet() {
-        Status status = Status.FAIL;
-        ObjectNode result;
-
-        try {
-            GetAccountPasswordPolicyResponse response = iam.getAccountPasswordPolicy(
-                GetAccountPasswordPolicyRequest.builder().build()
-            ).join();
-            status = Status.PASS;
-            result = MAPPER.valueToTree(response.passwordPolicy().toBuilder());
-        } catch (NoSuchEntityException e) {
-            status = Status.FAIL;
-            result = MAPPER.createObjectNode().put(Text.ERROR.toString(),
-                Text.PASSWORD_POLICY_NOT_SET.toString().concat(e.getMessage()));
+    private boolean retrievePasswordPolicy() {
+        if (!passwordPolicyRetrieved) {
+            try {
+                GetAccountPasswordPolicyResponse response = iam.getAccountPasswordPolicy(
+                    GetAccountPasswordPolicyRequest.builder().build()
+                ).join();
+                
+                cachedPasswordPolicy = response.passwordPolicy();
+                cachedPasswordPolicyResult = MAPPER.valueToTree(cachedPasswordPolicy.toBuilder());
+                passwordPolicyRetrievalStatus = Status.PASS;                
+            } catch (Exception e) {
+                Throwable cause = e.getCause() != null ? e.getCause() : e;
+                if (cause instanceof NoSuchEntityException) {
+                    cachedPasswordPolicyResult = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                Text.PASSWORD_POLICY_NOT_SET.toString().concat(cause.getMessage()));
+                    passwordPolicyRetrievalStatus = Status.FAIL;
+                } else {
+                    cachedPasswordPolicyResult = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                    passwordPolicyRetrievalStatus = Status.FAIL_EXCEPTION;
+                }
+            }
+            passwordPolicyRetrieved = true;
         }
+        return passwordPolicyRetrievalStatus == Status.PASS;
+}
 
-        writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_NOT_SET, result, status);
+    private Status checkIAMPasswordPolicyIsNotSet() {
+        Status status = retrievePasswordPolicy() ? passwordPolicyRetrievalStatus : Status.FAIL;
+        writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_NOT_SET, cachedPasswordPolicyResult, status);
         return status;
     }
 
     private Status checkShortIAMPasswordPolicyReuse() { 
         Status status = Status.FAIL;
         String result;
-
-        try {
-            GetAccountPasswordPolicyResponse response = iam.getAccountPasswordPolicy(
-                GetAccountPasswordPolicyRequest.builder().build()
-            ).join();
-            int reusePrevention = response.passwordPolicy().passwordReusePrevention();
-            result = Text.PASSWORD_REUSE_PREVENTION.getText().concat(String.valueOf(reusePrevention));
-            status = reusePrevention >= 24 ? Status.PASS : Status.FAIL;
-        } catch (NoSuchEntityException e) {
-            status = Status.FAIL;
-            result = Text.PASSWORD_POLICY_NOT_SET.toString().concat(e.getMessage());
+        
+        if (!retrievePasswordPolicy()) {
+            status = Status.FAIL_EXCEPTION;
+            result = cachedPasswordPolicyResult != null
+                    ? cachedPasswordPolicyResult.toString()
+                    : Text.FAILED_TO_RETRIEVE_PASSWORD_POLICY.getText();
+        } else {
+            Integer reusePrevention = cachedPasswordPolicy.passwordReusePrevention();
+            result = Text.PASSWORD_REUSE_PREVENTION.getText().concat(reusePrevention.toString());
+            status = reusePrevention != null && reusePrevention >= MIN_PASSWD_REUSE ? Status.PASS : Status.FAIL;
         }
-
         writer.addToBuffer(AWSFinding.IAM_SHORT_PASSWORD_POLICY_REUSE, result, status);
+        return status;
+    }
+
+    private Status checkIAMPasswordPolicyMaxAge() {
+        Status status;
+        ObjectNode result;
+        
+        if (!retrievePasswordPolicy()) {
+            System.out.println("[!] No password policy: \n\tpasswordPolicyRetrievalStatus: "+passwordPolicyRetrievalStatus+"\n\tcachedPasswordPolicyResult: "+cachedPasswordPolicyResult);
+            status = passwordPolicyRetrievalStatus;
+            result = cachedPasswordPolicyResult;
+        } else {
+            Integer maxAge = cachedPasswordPolicy.maxPasswordAge();
+            boolean passes = maxAge != null && maxAge <= MAX_KEY_AGE_DAYS;
+            status = passes ? Status.PASS : Status.FAIL;
+            result = cachedPasswordPolicyResult;
+        }
+        writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_MAX_AGE, result, status);
+        return status;
+    }
+
+    private Status checkIAMPasswordPolicyMinimumLength() {
+        Status status;
+        ObjectNode result;
+        
+        if (!retrievePasswordPolicy()) {
+            status = passwordPolicyRetrievalStatus;
+            result = cachedPasswordPolicyResult;
+        } else {
+            Integer minLength = cachedPasswordPolicy.minimumPasswordLength();
+            boolean passes = minLength != null && minLength >= MIN_PASSWD_LENGTH;
+            status = passes ? Status.PASS : Status.FAIL;
+            result = cachedPasswordPolicyResult;
+        }
+        writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_MINIMUM_LENGTH, result, status);
+        return status;
+    }
+
+    private Status checkIAMPasswordPolicyRequireUppercase() {
+        Status status;
+        ObjectNode result;
+        
+        if (!retrievePasswordPolicy()) {
+            status = passwordPolicyRetrievalStatus;
+            result = cachedPasswordPolicyResult;
+        } else {
+            Boolean requireUppercase = cachedPasswordPolicy.requireUppercaseCharacters();
+            boolean passes = requireUppercase != null && requireUppercase;
+            status = passes ? Status.PASS : Status.FAIL;
+            result = cachedPasswordPolicyResult;
+        }
+        writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_UPPERCASE, result, status);
+        return status;
+    }
+
+    private Status checkIAMPasswordPolicyRequireLowercase() {
+        Status status;
+        ObjectNode result;
+        
+        if (!retrievePasswordPolicy()) {
+            status = passwordPolicyRetrievalStatus;
+            result = cachedPasswordPolicyResult;
+        } else {
+            Boolean requireLowercase = cachedPasswordPolicy.requireLowercaseCharacters();
+            boolean passes = requireLowercase != null && requireLowercase;
+            status = passes ? Status.PASS : Status.FAIL;
+            result = cachedPasswordPolicyResult;
+        }
+        writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_LOWERCASE, result, status);
+        return status;
+    }
+
+    private Status checkIAMPasswordPolicyRequireNumber() {
+        Status status;
+        ObjectNode result;
+        
+        if (!retrievePasswordPolicy()) {
+            status = passwordPolicyRetrievalStatus;
+            result = cachedPasswordPolicyResult;
+        } else {
+            Boolean requireNumber = cachedPasswordPolicy.requireNumbers();
+            boolean passes = requireNumber != null && requireNumber;
+            status = passes ? Status.PASS : Status.FAIL;
+            result = cachedPasswordPolicyResult;
+        }
+        writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_NUMBER, result, status);
+        return status;
+    }
+
+    private Status checkIAMPasswordPolicyRequireSymbol() {
+        Status status;
+        ObjectNode result;
+        
+        if (!retrievePasswordPolicy()) {
+            status = passwordPolicyRetrievalStatus;
+            result = cachedPasswordPolicyResult;
+        } else {
+            Boolean requireSymbol = cachedPasswordPolicy.requireSymbols();
+            boolean passes = requireSymbol != null && requireSymbol;
+            status = passes ? Status.PASS : Status.FAIL;
+            result = cachedPasswordPolicyResult;
+        }
+        writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_SYMBOL, result, status);
         return status;
     }
 

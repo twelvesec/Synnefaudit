@@ -87,6 +87,7 @@ public enum Text {
     NO_DANGEROUS_ACTIONS_FOUND("No Dangerous Actions found."),
     NO_MANAGED_POLICIES_FOUND("No managed policies found."),
     NO_NON_IAM_STS_POLICIES_ATTACHED("No non-IAM/STS policies attached."),
+    FAILED_TO_RETRIEVE_PASSWORD_POLICY("Failed to retrieve password policy"),
 
     NO_SECURITY_AUDIT_ROLE_FOUND("No Security Audit role found."),
     NO_SUPPORT_ROLE_FOUND("No Support role found."),
