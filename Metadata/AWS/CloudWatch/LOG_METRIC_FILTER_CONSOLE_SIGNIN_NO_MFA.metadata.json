@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "LOG_METRIC_FILTER_CONSOLE_SIGNIN_NO_MFA",
+  "CheckTitle": "No Log Filter Metrics and Alarms found for Management Console sign-in without MFA",
+  "Severity": "Medium",
+  "Description": "No log groups found with metric filters and alarms.",
+  "Risk": "Not enabling such alarms limits the ability to monitor unauthorized Management console sign-ins changes.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure a metric filter and alarm exist for Management Console sign-in without MFA.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html"
+    }
+  },
+  "Notes": ""
+}

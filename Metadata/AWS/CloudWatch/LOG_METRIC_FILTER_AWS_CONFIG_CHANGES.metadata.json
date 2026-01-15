@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "LOG_METRIC_FILTER_AWS_CONFIG_CHANGES",
+  "CheckTitle": "No Log Filter Metrics and Alarms found for AWS Config configuration changes",
+  "Severity": "Medium",
+  "Description": "No log groups found with metric filters and alarms.",
+  "Risk": "Not enabling such alarms limits the ability to monitor unauthorized configuration changes.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure a metric filter and alarm exist for AWS Config configuration changes.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html"
+    }
+  },
+  "Notes": ""
+}

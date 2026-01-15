@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "LOG_METRIC_FILTER_UNAUTHORIZED_API_CALLS",
+  "CheckTitle": "No Log Filter Metrics and Alarms found for unauthorized API calls",
+  "Severity": "Medium",
+  "Description": "No log groups found with metric filters and alarms.",
+  "Risk": "Not enabling such alarms limits the ability to monitor unauthorized API calls.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure a metric filter and alarm exist for unauthorized API calls.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html"
+    }
+  },
+  "Notes": ""
+}

@@ -331,7 +331,7 @@ public class App {
             new CloudFormationCheck(writer, sharedDataProvider, cloudformation),
             new CloudFrontCheck(writer, sharedDataProvider, cf, waf),
             new CloudTrailCheck(writer, sharedDataProvider, cloudTrail, cloudWatchLogs),
-            new CloudWatchCheck(writer, sharedDataProvider, sts),
+            new CloudWatchCheck(writer, sharedDataProvider, sts, cloudWatchLogs),
             new DynamoDBCheck(writer, sharedDataProvider, dynamodb),
             new EBSCheck(writer, sharedDataProvider, ec2),
             new EC2Check(writer, sharedDataProvider, ec2, ssm),

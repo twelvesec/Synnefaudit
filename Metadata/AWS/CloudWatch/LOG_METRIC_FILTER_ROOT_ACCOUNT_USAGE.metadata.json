@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "LOG_METRIC_FILTER_ROOT_ACCOUNT_USAGE",
+  "CheckTitle": "No Log Filter Metrics and Alarms found for usage of root account",
+  "Severity": "Medium",
+  "Description": "No log groups found with metric filters and alarms.",
+  "Risk": "Not enabling such alarms limits the ability to monitor unauthorized usage of root account.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure a metric filter and alarm exist for usage of root account.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html"
+    }
+  },
+  "Notes": ""
+}

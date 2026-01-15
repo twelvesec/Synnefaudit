@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "LOG_METRIC_FILTER_NETWORK_GATEWAY_CHANGES",
+  "CheckTitle": "No Log Filter Metrics and Alarms found for changes to network gateways",
+  "Severity": "Medium",
+  "Description": "No log groups found with metric filters and alarms.",
+  "Risk": "Not enabling such alarms limits the ability to monitor unauthorized changes to network gateways.",
+  "RelatedUrls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure a metric filter and alarm exist for changes to network gateways.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudwatch-alarms-for-cloudtrail.html"
+    }
+  },
+  "Notes": ""
+}

@@ -36,6 +36,11 @@ public enum Text {
     NO_RESPONSE_PLANS("No response plans found."),
 
     NO_CLOUDWATCH_ALARMS_CONFIGURED("No alarms have been configured."),
+    NO_METRIC_FILTER_FOUND("No metric filter found for pattern: "),
+    METRIC_FILTER_FOUND_WRONG_METRIC("Metric filter found but wrong metric name. Expected: "),
+    NO_MATCHING_ALARMS_FOUND("No matching alarms found."),
+    ALARM_IN_ALARM_STATE("Alarm found in alarm state: "),
+    ALARM_ACTIVE_AND_OK("Alarm is active and ok: "),
         
     NO_PREMIUM_SUPPORT_SUBSCRIPTION_FOUND("No Premium Support Subscription found."),
     PREMIUM_SUPPORT_NOT_SUBSCRIBED("Amazon Web Services Premium Support Plan not subscribed: "),
@@ -176,6 +181,8 @@ public enum Text {
     USERCREATIONDATE("userCreationDate"),
     AWSACCOUNTID("AWSAccountId"),
     LAST_USED_DATE("lastUsedDate"),
+    ALARMS("alarms"),
+    METRIC_FILTERS("metricFilters"),
     NULL_VALUE("Value is null.")
     ;
 
