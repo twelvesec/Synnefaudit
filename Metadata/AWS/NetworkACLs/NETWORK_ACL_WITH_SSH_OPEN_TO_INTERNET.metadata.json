@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NETWORK_ACL_WITH_SSH_OPEN_TO_INTERNET",
+  "CheckTitle": "Network ACLs allow access to SSH port (22) from the internet",
+  "Severity": "Medium",
+  "Description": "Network ACLs found with port 22 open to the internet.",
+  "Risk": "SSH (port 22) is the standard port for Secure Shell access, used for secure remote administration of Unix/Linux systems. Exposing SSH to the internet (0.0.0.0/0) creates a direct attack surface for brute-force attempts and credential theft, potentially allowing unauthorized system access and control.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-21",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure ingress access to ports from the internet is limited, unless required by business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html"
+    }
+  },
+  "Notes": ""
+}

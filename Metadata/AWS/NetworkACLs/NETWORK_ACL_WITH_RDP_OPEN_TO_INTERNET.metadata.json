@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NETWORK_ACL_WITH_RDP_OPEN_TO_INTERNET",
+  "CheckTitle": "Network ACLs allow access to Microsoft RDP port (3389) from the internet",
+  "Severity": "Medium",
+  "Description": "Network ACLs found with port 3389 open to the internet.",
+  "Risk": "RDP (port 3389) is the primary port for Remote Desktop Protocol, enabling remote GUI access to Windows systems. Allowing ingress from the internet (0.0.0.0/0) to RDP exposes systems to brute-force attacks and exploitation of RDP vulnerabilities, risking complete system compromise and lateral movement within the network.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-21",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure ingress access to ports from the internet is limited, unless required by business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html"
+    }
+  },
+  "Notes": ""
+}
