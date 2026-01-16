@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_LDAP_PORTS_OPEN",
-  "CheckTitle": "EC2 instances with open ingress LDAP ports to the internet",
+  "CheckID": "EC2_SSH_PORT_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress SSH port to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to LDAP ports (TCP: 389, 636).",
-  "Risk": "Port 389 handles LDAP queries while 636 serves LDAPS. Attackers can query directory services to enumerate users/computers, harvest credentials via injection, or manipulate directory objects in Active Directory environments.",
+  "Description": "EC2 instances found to allow ingress from the internet to SSH port (TCP: 22).",
+  "Risk": "This port manages secure shell remote administration. Attackers conduct brute-force attacks to gain shell access, establish persistence for botnets/malware, or use compromised systems as jump points for lateral movement within networks.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

@@ -2,30 +2,27 @@ package com.twelvesec.cloudscan.AWS.Checks;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
 import software.amazon.awssdk.services.ec2.model.DescribeInstancesRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeInstancesResponse;
-import software.amazon.awssdk.services.ec2.model.DescribeSecurityGroupsRequest;
 import software.amazon.awssdk.services.ec2.model.Filter;
 import software.amazon.awssdk.services.ec2.model.Instance;
 import software.amazon.awssdk.services.ec2.model.InstanceMetadataOptionsResponse;
@@ -42,6 +39,8 @@ import software.amazon.awssdk.services.ssm.model.InstanceInformationStringFilter
 public class EC2Check implements CloudCheck {
     private List<Instance> allEC2Instances;
     private List<String> allGroupIds;
+    private List<SecurityGroup> allGroups;
+    private List<SecurityGroup> allEC2Groups;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final Ec2AsyncClient ec2;
@@ -64,6 +63,14 @@ public class EC2Check implements CloudCheck {
             })
             .thenCompose(securityGroupIds -> {
                 this.allGroupIds = securityGroupIds;
+                return sharedDataProvider.getAllSecurityGroups();
+            })
+            .thenCompose(securityGroups -> {
+                this.allGroups = securityGroups;
+                return sharedDataProvider.getEC2AttachedSecurityGroups();
+            })
+            .thenCompose(EC2SecurityGroups -> {
+                this.allEC2Groups = EC2SecurityGroups;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkEC2InstancesWithPublicIPs,                         AWSFinding.EC2_INSTANCES_WTH_PUBLIC_IPS, this::reportError),
                     wrapCheck(this::checkEC2InstancesWithDetailedMonitoringDisabled,        AWSFinding.EC2_INSTANCES_WITH_DETAILED_MONITORING_DISABLED, this::reportError),
@@ -73,23 +80,42 @@ public class EC2Check implements CloudCheck {
                     wrapCheck(this::checkEC2InstancesOlderThan180Days,                      AWSFinding.EC2_INSTANCES_OLDER_THAN_180_DAYS, this::reportError),
                     wrapCheck(this::checkSecurityGroupsNotUsed,                             AWSFinding.SECURITY_GROUPS_NOT_USED, this::reportError),
                     wrapCheck(this::checkEC2IMDSv2Configuration,                            AWSFinding.EC2_IMDSV2_CONFIGURATION, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForCassandraPorts,                    AWSFinding.EC2_CASSANDRA_PORTS_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForElasticsearchKibanaPorts,          AWSFinding.EC2_ELASTICSEARCH_KIBANA_PORTS_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForMemcachedPort,                     AWSFinding.EC2_MEMCACHED_PORT_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForCIFSPorts,                         AWSFinding.EC2_CIFS_PORTS_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForSQLServerPorts,                    AWSFinding.EC2_SQL_SERVER_PORTS_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForOraclePorts,                       AWSFinding.EC2_ORACLE_PORTS_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForFTPPorts,                          AWSFinding.EC2_FTP_PORTS_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForSSHPort,                           AWSFinding.EC2_SSH_PORT_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForTelnetPort,                        AWSFinding.EC2_TELNET_PORT_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForMongoDBPorts,                      AWSFinding.EC2_MONGODB_PORTS_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForMySQLPort,                         AWSFinding.EC2_MYSQL_PORT_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForRDPPort,                           AWSFinding.EC2_RDP_PORT_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForLDAPPorts,                         AWSFinding.EC2_LDAP_PORTS_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForPostgreSQLPort,                    AWSFinding.EC2_POSTGRESQL_PORT_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForRedisPort,                         AWSFinding.EC2_REDIS_PORT_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForKerberosPorts,                     AWSFinding.EC2_KERBEROS_PORTS_OPEN, this::reportError),
-                    wrapCheck(this::checkSecurityGroupForKafkaPort,                         AWSFinding.EC2_KAFKA_PORT_OPEN, this::reportError)
+
+                    wrapCheck(this::checkAllSecurityGroupsAllPortsPublic,                   AWSFinding.SECURITY_GROUP_ALL_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsAnyPortPublic,                    AWSFinding.SECURITY_GROUP_ANY_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsCassandraPortsPublic,             AWSFinding.SECURITY_GROUP_CASSANDRA_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsElasticsearchKibanaPortsPublic,   AWSFinding.SECURITY_GROUP_ELASTICSEARCH_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsFTPPortsPublic,                   AWSFinding.SECURITY_GROUP_FTP_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsKafkaPortPublic,                  AWSFinding.SECURITY_GROUP_KAFKA_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsMemcachedPortPublic,              AWSFinding.SECURITY_GROUP_MEMCACHED_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsMongoDBPortsPublic,               AWSFinding.SECURITY_GROUP_MONGODB_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsMySQLPortPublic,                  AWSFinding.SECURITY_GROUP_MYSQL_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsOraclePortsPublic,                AWSFinding.SECURITY_GROUP_ORACLE_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsRDPPortPublic,                    AWSFinding.SECURITY_GROUP_RDP_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsRedisPortPublic,                  AWSFinding.SECURITY_GROUP_POSTGRES_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsSSHPortPublic,                    AWSFinding.SECURITY_GROUP_REDIS_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsTelnetPortPublic,                 AWSFinding.SECURITY_GROUP_SSH_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsWindowsSQLServerPortsPublic,      AWSFinding.SECURITY_GROUP_TELNET_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsPostgreSQLPortPublic,             AWSFinding.SECURITY_GROUP_SQLSERVER_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkAllSecurityGroupsHighRiskPortsPublic,              AWSFinding.SECURITY_GROUP_HIGH_RISK_PORTS_PUBLIC, this::reportError),
+
+                    wrapCheck(this::checkEC2AttachedCassandraPorts,                         AWSFinding.EC2_CASSANDRA_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedElasticsearchKibanaPorts,               AWSFinding.EC2_ELASTICSEARCH_KIBANA_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedMemcachedPort,                          AWSFinding.EC2_MEMCACHED_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedCIFSPorts,                              AWSFinding.EC2_CIFS_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedMicrosoftSQLServerPorts,                AWSFinding.EC2_WINDOWS_SQL_SERVER_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedOraclePorts,                            AWSFinding.EC2_ORACLE_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedFtpPorts,                               AWSFinding.EC2_FTP_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedSshPort,                                AWSFinding.EC2_SSH_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedTelnetPort,                             AWSFinding.EC2_TELNET_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedMongoDBPorts,                           AWSFinding.EC2_MONGODB_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedMySQLPort,                              AWSFinding.EC2_MYSQL_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedRdpPort,                                AWSFinding.EC2_RDP_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedLDAPPorts,                              AWSFinding.EC2_LDAP_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedPostgreSQLPort,                         AWSFinding.EC2_POSTGRESQL_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedRedisPort,                              AWSFinding.EC2_REDIS_PORT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedKerberosPorts,                          AWSFinding.EC2_KERBEROS_PORTS_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEC2AttachedKafkaPort,                              AWSFinding.EC2_KAFKA_PORT_PUBLIC, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -187,21 +213,17 @@ public class EC2Check implements CloudCheck {
     }
 
     private Status checkSecurityGroupAllowIngressFromNonRFC1918Address() { 
-        if (allGroupIds.isEmpty()) {
+        if (allGroups.isEmpty()) {
             writer.addToBuffer(AWSFinding.EC2_SECURITY_GROUP_NON_RFC1918_INGRESS,
                             Text.NO_SECURITY_GROUPS_FOUND.toString(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
 
-        List<Map<String,Object>> result = allGroupIds.stream()
-            .map(groupId -> {
+        List<Map<String,Object>> result = allGroups.stream()
+            .map(sg -> {
                 Status s;
                 String r;
                 try {
-                    SecurityGroup sg = ec2.describeSecurityGroups(
-                        DescribeSecurityGroupsRequest.builder().groupIds(groupId).build()
-                    ).join().securityGroups().get(0);
-
                     List<String> badCidrs = sg.ipPermissions().stream()
                         .flatMap(perm -> {
                             Stream<String> v4 = perm.ipRanges().stream()
@@ -232,7 +254,7 @@ public class EC2Check implements CloudCheck {
                 Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), s);
                 inner.put(Text.RESULT.toString(), r);
-                return Map.<String,Object>of(groupId, inner);
+                return Map.<String,Object>of(sg.securityGroupArn(), inner);
             })
             .toList();
 
@@ -383,180 +405,273 @@ public class EC2Check implements CloudCheck {
         return status;
     }
 
-    private List<Map<String, Object>> checkSecurityGroupsForPorts(Set<Integer> ports, String serviceName) {
-        return allGroupIds.stream()
-            .map(groupId -> {
-                Status s;
-                String r;
-                Set<Integer> openPorts = new TreeSet<>();
-                
-                try {
-                    SecurityGroup sg = ec2.describeSecurityGroups(
-                        DescribeSecurityGroupsRequest.builder().groupIds(groupId).build()
-                    ).join().securityGroups().get(0);
-
-                    Set<Integer> exposedPorts = sg.ipPermissions().stream()
-                        .filter(perm -> "tcp".equals(perm.ipProtocol()))
-                        .flatMap(perm -> {
-                            Integer fromPort = perm.fromPort();
-                            Integer toPort = perm.toPort();
-                            
-                            Set<Integer> matchingPorts = ports.stream()
-                                .filter(targetPort -> {
-                                    if (fromPort != null && toPort != null) {
-                                        return targetPort >= fromPort && targetPort <= toPort;
-                                    } else if (fromPort != null) {
-                                        return targetPort.equals(fromPort);
-                                    }
-                                    return false;
-                                })
-                                .collect(Collectors.toSet());
-                            
-                            boolean hasBadIngress = perm.ipRanges().stream()
-                                .anyMatch(ipRange -> !isRfc1918(ipRange.cidrIp())) ||
-                                perm.ipv6Ranges().stream().anyMatch(ipv6Range -> "::/0".equals(ipv6Range.cidrIpv6()));
-                            
-                            return hasBadIngress && !matchingPorts.isEmpty() 
-                                ? matchingPorts.stream() : Stream.empty();
-                        })
-                        .collect(Collectors.toSet());
-                    openPorts.addAll(exposedPorts);
-
-                    String portsStr = ports.stream()
-                        .sorted()
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(", "));
-
-                    String openPortsStr = openPorts.stream()
-                        .sorted()
-                        .map(String::valueOf)
-                        .collect(Collectors.joining(", "));
-
-                    if (openPorts.isEmpty()) {
-                        s = Status.PASS;
-                        r = String.format("No %s ports are open (%s)", serviceName, portsStr);
-                    } else {
-                        s = Status.FAIL;
-                        r = String.format("%s port(s) found open to the internet: %s", serviceName, openPortsStr);
-                    }
-                } catch (Exception e) {
-                    s = Status.FAIL_EXCEPTION;
-                    r = "Exception checking security group: " + e.getMessage();
-                    openPorts.clear();
-                }
-
-                Map<String, Object> inner = new HashMap<>();
-                inner.put(Text.STATUS.toString(), s);
-                inner.put(Text.RESULT.toString(), r);
-                
-                ArrayNode openPortsArray = MAPPER.createArrayNode();
-                openPorts.forEach(openPortsArray::add);
-                inner.put("open_ports", openPortsArray);
-                return Map.<String, Object>of(groupId, inner);
-            })
-            .toList();
+    private boolean isPortInRange(int port, Integer fromPort, Integer toPort) {
+        if (fromPort == null || toPort == null) return false;
+        return port >= fromPort && port <= toPort;
     }
 
-    private Status runPortCheck(Set<Integer> ports, String serviceName, AWSFinding finding) {
-        if (allGroupIds.isEmpty()) {
-            String portsStr = ports.stream()
-                .sorted()
-                .map(String::valueOf)
-                .collect(Collectors.joining(", "));
-            writer.addToBuffer(finding,
-                String.format("No security groups found to check %s ports %s", serviceName, portsStr),
-                Status.NOT_APPLICABLE);
-            return Status.NOT_APPLICABLE;
+    private enum SecGroupPortMode {
+        ALL_PORTS,
+        ANY_PORT,
+        HIGH_RISK,
+        SPECIFIC_PORTS
+    }
+
+    private boolean hasPublicAccessToPorts(IpPermission permission, Set<Integer> targetPorts, SecGroupPortMode mode) {
+        boolean hasPublicIPv4 = permission.ipRanges().stream().anyMatch(range -> "0.0.0.0/0".equals(range.cidrIp()));
+        boolean hasPublicIPv6 = permission.ipv6Ranges().stream().anyMatch(range -> "::/0".equals(range.cidrIpv6()));
+        
+        if (!hasPublicIPv4 && !hasPublicIPv6) {
+            return false;
+        }
+        
+        String protocol = permission.ipProtocol();
+        boolean isTCP = "tcp".equalsIgnoreCase(protocol) || "6".equals(protocol);
+        boolean isAllProtocols = "-1".equals(protocol);
+        
+        if (!isTCP && !isAllProtocols) {
+            return false;
+        }
+        
+        Integer permissionFromPort = permission.fromPort();
+        Integer permissionToPort = permission.toPort();
+        
+        final Integer fromPort;
+        final Integer toPort;
+
+        if (isAllProtocols && (permissionFromPort == null || permissionToPort == null)) {
+            fromPort = 0;
+            toPort = 65535;
+        } else if (permissionFromPort == null || permissionToPort == null) {
+            return false;
+        } else {
+            fromPort = permissionFromPort;
+            toPort = permissionToPort;
         }
 
-        List<Map<String, Object>> result = checkSecurityGroupsForPorts(ports, serviceName);
+        return switch (mode) {
+            case SecGroupPortMode.ALL_PORTS ->
+                fromPort == 0 && toPort == 65535;
+            case SecGroupPortMode.ANY_PORT ->
+                true;
+            case SecGroupPortMode.HIGH_RISK ->
+                fromPort <= 1024 && toPort >= 1;
+            default ->
+                targetPorts.stream().anyMatch(port -> isPortInRange(port, fromPort, toPort));
+        };
+    }
+
+    private Status runSecurityGroupPortCheck(List<SecurityGroup> securityGroups, AWSFinding finding,
+                                            Set<Integer> ports, SecGroupPortMode mode) {
+        if (securityGroups.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_SECURITY_GROUPS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+        
+        List<Map<String, Object>> result = securityGroups.stream()
+            .map(sg -> {
+                boolean hasViolation = sg.ipPermissions().stream()
+                    .anyMatch(permission -> hasPublicAccessToPorts(permission, ports, mode));
+                Status status = hasViolation ? Status.FAIL : Status.PASS;
+                
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), status);
+                inner.put(Text.RESULT.toString(), sg.toBuilder());
+
+                switch (mode) {
+                    case SecGroupPortMode.ALL_PORTS ->
+                        inner.put(Text.MESSAGE.toString(), "All ports (0-65535) open to public internet");
+                    case SecGroupPortMode.ANY_PORT ->
+                        inner.put(Text.MESSAGE.toString(), "One or more ports open to public internet");
+                    case SecGroupPortMode.HIGH_RISK ->
+                        inner.put(Text.MESSAGE.toString(), "High-risk ports (1-1024) open to public internet");
+                    default -> {
+                        String portsStr = ports.stream()
+                            .sorted()
+                            .map(String::valueOf)
+                            .collect(Collectors.joining(", "));
+                        String message = hasViolation ? 
+                            String.format("Public Ports (%s) found.", portsStr) :
+                            String.format("Not Public Ports (%s) found.", portsStr);
+                        inner.put(Text.MESSAGE.toString(), message);
+                    }
+                };
+                return Map.<String, Object>of(sg.groupId(), inner);
+            })
+            .toList();
+        
         Status status = getOverallStatus(result);
         writer.addToBuffer(finding, result, status);
         return status;
     }
 
-    private Status checkSecurityGroupForCassandraPorts() {
-        return runPortCheck(Set.of(7000, 7001, 7199, 9042, 9160), "Cassandra", 
-            AWSFinding.EC2_CASSANDRA_PORTS_OPEN);
+    private Status checkAllSecurityGroupsAllPortsPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_ALL_PORTS_PUBLIC,
+                                        Collections.emptySet(), SecGroupPortMode.ALL_PORTS);
     }
 
-    private Status checkSecurityGroupForElasticsearchKibanaPorts() {
-        return runPortCheck(Set.of(9200, 9300, 5601), "Elasticsearch/Kibana", 
-            AWSFinding.EC2_ELASTICSEARCH_KIBANA_PORTS_OPEN);
+    private Status checkAllSecurityGroupsAnyPortPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_ANY_PORT_PUBLIC,
+                                        Collections.emptySet(), SecGroupPortMode.ANY_PORT);
     }
 
-    private Status checkSecurityGroupForMemcachedPort() {
-        return runPortCheck(Set.of(11211), "Memcached", 
-            AWSFinding.EC2_MEMCACHED_PORT_OPEN);
+    private Status checkAllSecurityGroupsCassandraPortsPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_CASSANDRA_PORTS_PUBLIC,
+                                        Set.of(7199, 9160, 8888), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForCIFSPorts() {
-        return runPortCheck(Set.of(139, 445), "CIFS", 
-            AWSFinding.EC2_CIFS_PORTS_OPEN);
+    private Status checkAllSecurityGroupsElasticsearchKibanaPortsPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_ELASTICSEARCH_PORTS_PUBLIC,
+                                        Set.of(9200, 9300, 5601), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForSQLServerPorts() {
-        return runPortCheck(Set.of(1433, 1434), "SQL Server", 
-            AWSFinding.EC2_SQL_SERVER_PORTS_OPEN);
+    private Status checkAllSecurityGroupsFTPPortsPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_FTP_PORTS_PUBLIC,
+                                        Set.of(20, 21), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForOraclePorts() {
-        return runPortCheck(Set.of(1521, 2483, 2484), "Oracle", 
-            AWSFinding.EC2_ORACLE_PORTS_OPEN);
+    private Status checkAllSecurityGroupsKafkaPortPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_KAFKA_PORT_PUBLIC,
+                                        Set.of(9092), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForFTPPorts() {
-        return runPortCheck(Set.of(20, 21), "FTP", 
-            AWSFinding.EC2_FTP_PORTS_OPEN);
+    private Status checkAllSecurityGroupsMemcachedPortPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_MEMCACHED_PORT_PUBLIC,
+                                        Set.of(11211), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForSSHPort() {
-        return runPortCheck(Set.of(22), "SSH", 
-            AWSFinding.EC2_SSH_PORT_OPEN);
+    private Status checkAllSecurityGroupsMongoDBPortsPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_MONGODB_PORTS_PUBLIC,
+                                        Set.of(27017, 27018), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForTelnetPort() {
-        return runPortCheck(Set.of(23), "Telnet", 
-            AWSFinding.EC2_TELNET_PORT_OPEN);
+    private Status checkAllSecurityGroupsMySQLPortPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_MYSQL_PORT_PUBLIC,
+                                        Set.of(3306), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForMongoDBPorts() {
-        return runPortCheck(Set.of(27017, 27018), "MongoDB", 
-            AWSFinding.EC2_MONGODB_PORTS_OPEN);
+    private Status checkAllSecurityGroupsOraclePortsPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_ORACLE_PORTS_PUBLIC,
+                                        Set.of(1521, 2483), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForMySQLPort() {
-        return runPortCheck(Set.of(3306), "MySQL", 
-            AWSFinding.EC2_MYSQL_PORT_OPEN);
+    private Status checkAllSecurityGroupsRDPPortPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_RDP_PORT_PUBLIC,
+                                        Set.of(3389), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForRDPPort() {
-        return runPortCheck(Set.of(3389), "RDP", 
-            AWSFinding.EC2_RDP_PORT_OPEN);
+    private Status checkAllSecurityGroupsPostgreSQLPortPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_POSTGRES_PORT_PUBLIC,
+                                        Set.of(5432), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForLDAPPorts() {
-        return runPortCheck(Set.of(389, 636), "LDAP", 
-            AWSFinding.EC2_LDAP_PORTS_OPEN);
+    private Status checkAllSecurityGroupsRedisPortPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_REDIS_PORT_PUBLIC,
+                                        Set.of(6379), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForPostgreSQLPort() {
-        return runPortCheck(Set.of(5432), "PostgreSQL", 
-            AWSFinding.EC2_POSTGRESQL_PORT_OPEN);
+    private Status checkAllSecurityGroupsSSHPortPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_SSH_PORT_PUBLIC,
+                                        Set.of(22), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForRedisPort() {
-        return runPortCheck(Set.of(6379), "Redis", 
-            AWSFinding.EC2_REDIS_PORT_OPEN);
+    private Status checkAllSecurityGroupsTelnetPortPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_TELNET_PORT_PUBLIC,
+                                        Set.of(23), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForKerberosPorts() {
-        return runPortCheck(Set.of(88, 464, 749, 750), "Kerberos", 
-            AWSFinding.EC2_KERBEROS_PORTS_OPEN);
+    private Status checkAllSecurityGroupsWindowsSQLServerPortsPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_SQLSERVER_PORTS_PUBLIC,
+                                        Set.of(1433, 1434), SecGroupPortMode.SPECIFIC_PORTS);
     }
 
-    private Status checkSecurityGroupForKafkaPort() {
-        return runPortCheck(Set.of(9092), "Kafka", 
-            AWSFinding.EC2_KAFKA_PORT_OPEN);
+    private Status checkAllSecurityGroupsHighRiskPortsPublic() {
+        return runSecurityGroupPortCheck(allGroups, AWSFinding.SECURITY_GROUP_HIGH_RISK_PORTS_PUBLIC,
+                                        Collections.emptySet(), SecGroupPortMode.HIGH_RISK);
+    }
+
+    private Status checkEC2AttachedCassandraPorts() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_CASSANDRA_PORTS_PUBLIC,
+                                        Set.of(7000, 7001, 7199, 9042, 9160), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedElasticsearchKibanaPorts() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_ELASTICSEARCH_KIBANA_PORTS_PUBLIC,
+                                        Set.of(9200, 9300, 5601), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedMemcachedPort() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_MEMCACHED_PORT_PUBLIC,
+                                        Set.of(11211), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedCIFSPorts() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_CIFS_PORTS_PUBLIC,
+                                        Set.of(139, 445), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedMicrosoftSQLServerPorts() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_WINDOWS_SQL_SERVER_PORTS_PUBLIC,
+                                        Set.of(1433, 1434), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedOraclePorts() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_ORACLE_PORTS_PUBLIC,
+                                        Set.of(1521, 2483, 2484), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedFtpPorts() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_FTP_PORTS_PUBLIC,
+                                        Set.of(20, 21), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedSshPort() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_SSH_PORT_PUBLIC,
+                                        Set.of(22), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedTelnetPort() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_TELNET_PORT_PUBLIC,
+                                        Set.of(23), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedMongoDBPorts() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_MONGODB_PORTS_PUBLIC,
+                                        Set.of(27017, 27018), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedMySQLPort() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_MYSQL_PORT_PUBLIC,
+                                        Set.of(3306), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedRdpPort() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_RDP_PORT_PUBLIC,
+                                        Set.of(3389), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedLDAPPorts() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_LDAP_PORTS_PUBLIC,
+                                        Set.of(389, 636), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedPostgreSQLPort() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_POSTGRESQL_PORT_PUBLIC,
+                                        Set.of(5432), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedRedisPort() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_REDIS_PORT_PUBLIC,
+                                        Set.of(6379), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedKerberosPorts() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_KERBEROS_PORTS_PUBLIC,
+                                        Set.of(88, 464, 749, 750), SecGroupPortMode.SPECIFIC_PORTS);
+    }
+
+    private Status checkEC2AttachedKafkaPort() {
+        return runSecurityGroupPortCheck(allEC2Groups, AWSFinding.EC2_KAFKA_PORT_PUBLIC,
+                                        Set.of(9092), SecGroupPortMode.SPECIFIC_PORTS);
     }
 }

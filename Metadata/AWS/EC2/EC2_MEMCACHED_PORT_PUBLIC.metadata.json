@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_KERBEROS_PORTS_OPEN",
-  "CheckTitle": "EC2 instances with open ingress Kerberos ports to the internet",
+  "CheckID": "EC2_MEMCACHED_PORT_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress Memcached ports to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to Kerberos ports (TCP: 88, 464, 749, 750).",
-  "Risk": "These ports handle Kerberos authentication (88), password changes (464), and admin (749-750). Attackers can intercept Kerberos tickets to perform pass-the-hash attacks, forge golden tickets for domain persistence, or brute-force service account credentials.",
+  "Description": "EC2 instances found to allow ingress from the internet to Memcached port (TCP: 11211).",
+  "Risk": "This port serves the memcached distributed caching system. Attackers can abuse exposed instances for DDoS amplification attacks, dump cached session data containing user credentials, or poison caches to manipulate application behavior.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

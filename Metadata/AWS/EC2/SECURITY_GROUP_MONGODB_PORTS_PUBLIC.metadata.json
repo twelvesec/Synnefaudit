@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUP_MONGODB_PORTS_PUBLIC",
+  "CheckTitle": "Security Groups with MongoDB ports (27017, 27018) open to the internet",
+  "Severity": "High",
+  "Description": "Security Groups have been found to allow access from the internet to MongoDB ports.",
+  "Risk": "Public MongoDB ports (e.g., 27017) have a history of mass ransomware and data theft incidents where unauthenticated databases are wiped or held for ransom.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure security groups do not allow any access from the internet to ports, unless required as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+    }
+  },
+  "Notes": ""
+}

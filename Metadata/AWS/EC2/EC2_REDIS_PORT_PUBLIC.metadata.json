@@ -1,6 +1,6 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_REDIS_PORT_OPEN",
+  "CheckID": "EC2_REDIS_PORT_PUBLIC",
   "CheckTitle": "EC2 instances with open ingress Redis port to the internet",
   "Severity": "High",
   "Description": "EC2 instances found to allow ingress from the internet to Redis port (TCP: 6379).",

@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_MONGODB_PORTS_OPEN",
-  "CheckTitle": "EC2 instances with open ingress MongoDB ports to the internet",
+  "CheckID": "EC2_TELNET_PORT_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress Telnet port to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to MongoDB ports (TCP: 27017, 27018).",
-  "Risk": "These ports handle MongoDB database connections and replica set communications. Attackers can exploit unprotected instances to ransom databases, dump sensitive collections, or inject malicious documents into production databases.",
+  "Description": "EC2 instances found to allow ingress from the internet to Telnet port (TCP: 23).",
+  "Risk": "This legacy port handles unencrypted terminal sessions. Attackers can sniff login credentials in transit, execute arbitrary commands on network devices/servers, or intercept sensitive configuration data during administration.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_POSTGRESQL_PORT_OPEN",
-  "CheckTitle": "EC2 instances with open ingress PostgreSQL port to the internet",
+  "CheckID": "EC2_WINDOWS_SQL_SERVER_PORTS_OPEN",
+  "CheckTitle": "EC2 instances with open ingress Windows SQL Server ports to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to PostgreSQL port (TCP: 5432).",
-  "Risk": "This port handles PostgreSQL database connections. Attackers can exploit Postgres authentication weaknesses, execute arbitrary commands through SQL injection, or access sensitive application data stored in relational tables.",
+  "Description": "EC2 instances found to allow ingress from the internet to Windows SQL Server ports (TCP: 1433, 1434).",
+  "Risk": "Port 1433 handles T-SQL database connections while 1434 serves the SQL Server Browser service. Attackers can attempt direct SQL authentication bypass, execute arbitrary SQL commands through injection, or enumerate database instances for targeted attacks.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_ELASTICSEARCH_KIBANA_PORTS_OPEN",
-  "CheckTitle": "EC2 instances with open ingress Elasticsearch and Kibana ports to the internet",
+  "CheckID": "EC2_KAFKA_PORT_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress Kafka port to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to Elasticsearch and Kibana ports (TCP: 9200, 9300, 5601).",
-  "Risk": "Port 9200 exposes the REST API for data indexing/searching, 9300 handles internal node communication, and 5601 serves the Kibana dashboard. Attackers can directly query indexed documents, inject malicious data, or ransom unprotected Elasticsearch instances containing logs and sensitive information.",
+  "Description": "EC2 instances found to allow ingress from the internet to Kafka port (TCP: 9092).",
+  "Risk": "This port handles Kafka message broker communications. Attackers can intercept sensitive messages in event streams, inject malicious data into processing pipelines, or disrupt distributed systems by manipulating consumer offsets.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

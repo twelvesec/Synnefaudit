@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUP_MYSQL_PORT_PUBLIC",
+  "CheckTitle": "Security Groups with MySQL port (3306) open to the internet",
+  "Severity": "High",
+  "Description": "Security Groups have been found to allow access from the internet to MySQL port.",
+  "Risk": "Exposing MySQL (3306) invites brute-force attacks, leading to unauthorized database access, data theft, and potential lateral movement into connected systems.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure security groups do not allow any access from the internet to ports, unless required as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+    }
+  },
+  "Notes": ""
+}

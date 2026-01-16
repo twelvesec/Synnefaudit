@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_SQL_SERVER_PORTS_OPEN",
-  "CheckTitle": "EC2 instances with open ingress SQL Server ports to the internet",
+  "CheckID": "EC2_ELASTICSEARCH_KIBANA_PORTS_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress Elasticsearch and Kibana ports to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to SQL Server ports (TCP: 1433, 1434).",
-  "Risk": "Port 1433 handles T-SQL database connections while 1434 serves the SQL Server Browser service. Attackers can attempt direct SQL authentication bypass, execute arbitrary SQL commands through injection, or enumerate database instances for targeted attacks.",
+  "Description": "EC2 instances found to allow ingress from the internet to Elasticsearch and Kibana ports (TCP: 9200, 9300, 5601).",
+  "Risk": "Port 9200 exposes the REST API for data indexing/searching, 9300 handles internal node communication, and 5601 serves the Kibana dashboard. Attackers can directly query indexed documents, inject malicious data, or ransom unprotected Elasticsearch instances containing logs and sensitive information.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUP_ORACLE_PORTS_PUBLIC",
+  "CheckTitle": "Security Groups with Oracle ports (1521, 2483) open to the internet",
+  "Severity": "High",
+  "Description": "Security Groups have been found to allow access from the internet to Oracle ports.",
+  "Risk": "Open Oracle ports (e.g., 1521) are high-value targets for attackers seeking to steal sensitive corporate data or exploit known vulnerabilities in the database.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure security groups do not allow any access from the internet to ports, unless required as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+    }
+  },
+  "Notes": ""
+}

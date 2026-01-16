@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_MYSQL_PORT_OPEN",
-  "CheckTitle": "EC2 instances with open ingress MySQL port to the internet",
+  "CheckID": "EC2_MONGODB_PORTS_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress MongoDB ports to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to MySQL port (TCP: 3306).",
-  "Risk": "This port handles MySQL database connections. Attackers can execute arbitrary SQL statements, dump sensitive relational data, escalate privileges through SQL injection, or compromise application backends directly.",
+  "Description": "EC2 instances found to allow ingress from the internet to MongoDB ports (TCP: 27017, 27018).",
+  "Risk": "These ports handle MongoDB database connections and replica set communications. Attackers can exploit unprotected instances to ransom databases, dump sensitive collections, or inject malicious documents into production databases.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

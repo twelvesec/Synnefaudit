@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_MEMCACHED_PORT_OPEN",
-  "CheckTitle": "EC2 instances with open ingress Memcached ports to the internet",
+  "CheckID": "EC2_CIFS_PORTS_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress CIFS ports to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to Memcached port (TCP: 11211).",
-  "Risk": "This port serves the memcached distributed caching system. Attackers can abuse exposed instances for DDoS amplification attacks, dump cached session data containing user credentials, or poison caches to manipulate application behavior.",
+  "Description": "EC2 instances found to allow ingress from the internet to CIFS ports (TCP: 139, 445).",
+  "Risk": "These ports handle SMB file sharing and Windows file/printer sharing. Attackers can exploit vulnerable SMB implementations (like EternalBlue) to deploy ransomware, laterally move through networks, or directly access sensitive files without authentication.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

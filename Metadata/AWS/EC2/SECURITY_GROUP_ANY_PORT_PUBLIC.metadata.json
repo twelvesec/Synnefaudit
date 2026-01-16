@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUP_ANY_PORT_PUBLIC",
+  "CheckTitle": "Security Groups with ports open to the internet",
+  "Severity": "High",
+  "Description": "Security Groups have been found to allow access from the internet to ports.",
+  "Risk": "Opening a custom range to 0.0.0.0/0 unnecessarily broadens the attack surface, enabling probes and exploitation of any unexpected service listening on those ports.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure security groups do not allow any access from the internet to ports, unless required as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+    }
+  },
+  "Notes": ""
+}

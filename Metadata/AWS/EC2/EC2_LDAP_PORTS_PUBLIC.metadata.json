@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_KAFKA_PORT_OPEN",
-  "CheckTitle": "EC2 instances with open ingress Kafka port to the internet",
+  "CheckID": "EC2_LDAP_PORTS_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress LDAP ports to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to Kafka port (TCP: 9092).",
-  "Risk": "This port handles Kafka message broker communications. Attackers can intercept sensitive messages in event streams, inject malicious data into processing pipelines, or disrupt distributed systems by manipulating consumer offsets.",
+  "Description": "EC2 instances found to allow ingress from the internet to LDAP ports (TCP: 389, 636).",
+  "Risk": "Port 389 handles LDAP queries while 636 serves LDAPS. Attackers can query directory services to enumerate users/computers, harvest credentials via injection, or manipulate directory objects in Active Directory environments.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

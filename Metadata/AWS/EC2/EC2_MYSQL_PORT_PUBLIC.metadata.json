@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_SSH_PORT_OPEN",
-  "CheckTitle": "EC2 instances with open ingress SSH port to the internet",
+  "CheckID": "EC2_MYSQL_PORT_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress MySQL port to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to SSH port (TCP: 22).",
-  "Risk": "This port manages secure shell remote administration. Attackers conduct brute-force attacks to gain shell access, establish persistence for botnets/malware, or use compromised systems as jump points for lateral movement within networks.",
+  "Description": "EC2 instances found to allow ingress from the internet to MySQL port (TCP: 3306).",
+  "Risk": "This port handles MySQL database connections. Attackers can execute arbitrary SQL statements, dump sensitive relational data, escalate privileges through SQL injection, or compromise application backends directly.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

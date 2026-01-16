@@ -1,7 +1,5 @@
 package com.twelvesec.cloudscan;
 
-import static com.twelvesec.cloudscan.ReportPrinter.CHECKS_SUMMARY;
-
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -23,8 +21,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.twelvesec.cloudscan.CloudCheck.CheckSummary;
-import com.twelvesec.cloudscan.CloudCheck.Provider;
 import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
 import com.twelvesec.cloudscan.AWS.Checks.ACMCertificatesCheck;
 import com.twelvesec.cloudscan.AWS.Checks.AccessKeysCheck;
@@ -57,6 +53,9 @@ import com.twelvesec.cloudscan.AWS.Checks.SNSTopicsCheck;
 import com.twelvesec.cloudscan.AWS.Checks.SSMCheck;
 import com.twelvesec.cloudscan.AWS.Checks.SupportCheck;
 import com.twelvesec.cloudscan.AWS.Checks.VPCsCheck;
+import com.twelvesec.cloudscan.CloudCheck.CheckSummary;
+import com.twelvesec.cloudscan.CloudCheck.Provider;
+import static com.twelvesec.cloudscan.ReportPrinter.CHECKS_SUMMARY;
 import com.twelvesec.cloudscan.messages.Text;
 
 import software.amazon.awssdk.profiles.Profile;

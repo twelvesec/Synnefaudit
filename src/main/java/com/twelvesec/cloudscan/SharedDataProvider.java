@@ -1,6 +1,7 @@
 package com.twelvesec.cloudscan;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -54,6 +55,7 @@ import software.amazon.awssdk.services.ec2.model.DescribeVpcEndpointsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeVpcEndpointsResponse;
 import software.amazon.awssdk.services.ec2.model.DescribeVpcsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeVpcsResponse;
+import software.amazon.awssdk.services.ec2.model.GroupIdentifier;
 import software.amazon.awssdk.services.ec2.model.Instance;
 import software.amazon.awssdk.services.ec2.model.NetworkAcl;
 import software.amazon.awssdk.services.ec2.model.RouteTable;
@@ -103,8 +105,8 @@ import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest;
 import software.amazon.awssdk.services.rds.model.DescribeDbInstancesResponse;
 import software.amazon.awssdk.services.rds.model.DescribeDbSnapshotsRequest;
 import software.amazon.awssdk.services.rds.model.DescribeDbSnapshotsResponse;
-import software.amazon.awssdk.services.resourceexplorer2.model.Index;
 import software.amazon.awssdk.services.resourceexplorer2.ResourceExplorer2AsyncClient;
+import software.amazon.awssdk.services.resourceexplorer2.model.Index;
 import software.amazon.awssdk.services.resourceexplorer2.model.ListIndexesRequest;
 import software.amazon.awssdk.services.resourceexplorer2.model.ListIndexesResponse;
 import software.amazon.awssdk.services.route53.Route53AsyncClient;
@@ -326,6 +328,32 @@ public class SharedDataProvider {
                 .thenApply(r -> r.securityGroups().stream()
                     .map(SecurityGroup::groupId)
                     .collect(Collectors.toList()));
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<SecurityGroup>> getAllSecurityGroups() {
+        String key = "ec2:securitygroups";
+        Supplier<CompletableFuture<List<SecurityGroup>>> loader = () ->
+            ec2.describeSecurityGroups()
+                .thenApply(r -> r.securityGroups());
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<SecurityGroup>> getEC2AttachedSecurityGroups() {
+        String key = "ec2:attachedsecuritygroups";
+        Supplier<CompletableFuture<List<SecurityGroup>>> loader = () ->
+            ec2.describeInstances(DescribeInstancesRequest.builder().build())
+                .thenApply(describeInstancesResponse -> {
+                    Set<String> attachedGroupIds = describeInstancesResponse.reservations().stream()
+                        .flatMap(reservation -> reservation.instances().stream())
+                        .flatMap(instance -> instance.securityGroups().stream())
+                        .map(GroupIdentifier::groupId)
+                        .collect(Collectors.toSet());
+                    
+                    return ec2.describeSecurityGroups().join().securityGroups().stream()
+                        .filter(sg -> attachedGroupIds.contains(sg.groupId()))
+                        .collect(Collectors.toList());
+                });
         return getCachedData(key, loader);
     }
 

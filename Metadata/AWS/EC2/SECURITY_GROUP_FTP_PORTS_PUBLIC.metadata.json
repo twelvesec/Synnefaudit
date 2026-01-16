@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUP_FTP_PORTS_PUBLIC",
+  "CheckTitle": "Security Groups with FTP ports (20,21) open to the internet",
+  "Severity": "High",
+  "Description": "Security Groups have been found to allow access from the internet to FTP ports.",
+  "Risk": "FTP (ports 20/21) transmits credentials and data in clear text, allowing eavesdropping, unauthorized file uploads/downloads, and server compromise.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure security groups do not allow any access from the internet to ports, unless required as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUP_MEMCACHED_PORT_PUBLIC",
+  "CheckTitle": "Security Groups with all Memcached port (11211) open to the internet",
+  "Severity": "High",
+  "Description": "Security Groups have been found to allow access from the internet to Memcached port.",
+  "Risk": "An open Memcached port (11211) can be abused for large-scale amplification DDoS attacks and may allow extraction of cached sensitive data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure security groups do not allow any access from the internet to ports, unless required as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+    }
+  },
+  "Notes": ""
+}

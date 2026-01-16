@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUP_ELASTICSEARCH_PORTS_PUBLIC",
+  "CheckTitle": "Security Groups with Elasticsearch/Kibana ports (9200, 9300, 5601) open to the internet",
+  "Severity": "High",
+  "Description": "Security Groups have been found to allow access from the internet to Elasticsearch/Kibana ports.",
+  "Risk": "Open Elasticsearch ports (e.g., 9200, 9300) can lead to data deletion, ransomware, or sensitive information theft, as clusters are frequently indexed by search engines and exploited.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure security groups do not allow any access from the internet to ports, unless required as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+    }
+  },
+  "Notes": ""
+}

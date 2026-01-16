@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUP_SSH_PORT_PUBLIC",
+  "CheckTitle": "Security Groups with SSH port (22) open to the internet",
+  "Severity": "High",
+  "Description": "Security Groups have been found to allow access from the internet to SSH port.",
+  "Risk": "An open SSH port (22) is a prime target for automated brute-forcing, allowing attackers to gain shell access and full control over the instance.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure security groups do not allow any access from the internet to ports, unless required as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+    }
+  },
+  "Notes": ""
+}

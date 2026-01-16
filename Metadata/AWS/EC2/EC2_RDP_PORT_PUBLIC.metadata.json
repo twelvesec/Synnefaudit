@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_CASSANDRA_PORTS_OPEN",
-  "CheckTitle": "EC2 instances with open ingress Cassandra ports to the internet",
+  "CheckID": "EC2_RDP_PORT_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress RDP port to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to Cassandra ports (TCP: 7000, 7001, 7199, 9042, 9160).",
-  "Risk": "These ports handle Cassandra database internals (node communication, JMX monitoring) and client connections. Attackers could exploit unsecured clusters to steal sensitive NoSQL data, disrupt distributed database operations, or compromise entire database clusters.",
+  "Description": "EC2 instances found to allow ingress from the internet to RDP port (TCP: 3389).",
+  "Risk": "This port manages Remote Desktop Protocol connections. Attackers conduct credential stuffing attacks to gain interactive desktop access, deploy ransomware directly to user sessions, or capture screens/keystrokes from active sessions.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

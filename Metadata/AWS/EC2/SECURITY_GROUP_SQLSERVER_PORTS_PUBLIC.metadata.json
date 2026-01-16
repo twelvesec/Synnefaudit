@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "SECURITY_GROUP_SQLSERVER_PORTS_PUBLIC",
+  "CheckTitle": "Security Groups with SQL Server ports (1433, 1434) open to the internet",
+  "Severity": "High",
+  "Description": "Security Groups have been found to allow access from the internet to SQL Server ports.",
+  "Risk": "Public Microsoft SQL Server ports (e.g., 1433) enable credential attacks and exploitation of vulnerabilities, leading to significant data exfiltration or encrypted ransom demands.",
+  "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure security groups do not allow any access from the internet to ports, unless required as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
+    }
+  },
+  "Notes": ""
+}

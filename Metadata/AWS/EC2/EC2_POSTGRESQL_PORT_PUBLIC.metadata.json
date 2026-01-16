@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_RDP_PORT_OPEN",
-  "CheckTitle": "EC2 instances with open ingress RDP port to the internet",
+  "CheckID": "EC2_POSTGRESQL_PORT_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress PostgreSQL port to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to RDP port (TCP: 3389).",
-  "Risk": "This port manages Remote Desktop Protocol connections. Attackers conduct credential stuffing attacks to gain interactive desktop access, deploy ransomware directly to user sessions, or capture screens/keystrokes from active sessions.",
+  "Description": "EC2 instances found to allow ingress from the internet to PostgreSQL port (TCP: 5432).",
+  "Risk": "This port handles PostgreSQL database connections. Attackers can exploit Postgres authentication weaknesses, execute arbitrary commands through SQL injection, or access sensitive application data stored in relational tables.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {

@@ -1,10 +1,10 @@
 {
   "Provider": "aws",
-  "CheckID": "EC2_FTP_PORTS_OPEN",
-  "CheckTitle": "EC2 instances with open ingress FTP ports to the internet",
+  "CheckID": "EC2_KERBEROS_PORTS_PUBLIC",
+  "CheckTitle": "EC2 instances with open ingress Kerberos ports to the internet",
   "Severity": "High",
-  "Description": "EC2 instances found to allow ingress from the internet to FTP ports (TCP: 20, 21).",
-  "Risk": "Port 20 handles data transfer while 21 manages control connections in clear text. Attackers can intercept credentials and files in transit, upload malicious content to servers, or use anonymous FTP access to exfiltrate sensitive data.",
+  "Description": "EC2 instances found to allow ingress from the internet to Kerberos ports (TCP: 88, 464, 749, 750).",
+  "Risk": "These ports handle Kerberos authentication (88), password changes (464), and admin (749-750). Attackers can intercept Kerberos tickets to perform pass-the-hash attacks, forge golden tickets for domain persistence, or brute-force service account credentials.",
   "RelatedUrls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html#security-group-basics",
   "Remediation": {
     "Code": {
