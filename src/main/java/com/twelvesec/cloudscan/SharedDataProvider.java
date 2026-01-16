@@ -76,6 +76,9 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancer
 import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
 import software.amazon.awssdk.services.guardduty.model.ListDetectorsResponse;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
+import software.amazon.awssdk.services.iam.model.Group;
+import software.amazon.awssdk.services.iam.model.ListGroupsRequest;
+import software.amazon.awssdk.services.iam.model.ListGroupsResponse;
 import software.amazon.awssdk.services.iam.model.ListPoliciesRequest;
 import software.amazon.awssdk.services.iam.model.ListPoliciesResponse;
 import software.amazon.awssdk.services.iam.model.ListRolesRequest;
@@ -452,6 +455,16 @@ public class SharedDataProvider {
         Supplier<CompletableFuture<List<Policy>>> loader = () ->
             iam.listPolicies(ListPoliciesRequest.builder().scope(PolicyScopeType.ALL).build())
                 .thenApply(ListPoliciesResponse::policies);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Group>> getAllGroups() {
+        String key = "iam:groups";
+        Supplier<CompletableFuture<List<Group>>> loader = () ->
+            PaginatorHelper.collectPaginatedItems(
+                iam.listGroupsPaginator(ListGroupsRequest.builder().build()),
+                ListGroupsResponse::groups
+            );
         return getCachedData(key, loader);
     }
     

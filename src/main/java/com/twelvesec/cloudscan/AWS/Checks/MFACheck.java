@@ -1,31 +1,44 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.CloudCheck.CheckResult;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.PaginatorHelper;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
 
 import software.amazon.awssdk.services.iam.IamAsyncClient;
+import software.amazon.awssdk.services.iam.model.AttachedPolicy;
 import software.amazon.awssdk.services.iam.model.GetAccountSummaryResponse;
+import software.amazon.awssdk.services.iam.model.GetGroupRequest;
+import software.amazon.awssdk.services.iam.model.GetGroupResponse;
+import software.amazon.awssdk.services.iam.model.GetLoginProfileRequest;
+import software.amazon.awssdk.services.iam.model.Group;
+import software.amazon.awssdk.services.iam.model.ListAttachedGroupPoliciesRequest;
+import software.amazon.awssdk.services.iam.model.ListAttachedGroupPoliciesResponse;
 import software.amazon.awssdk.services.iam.model.ListMfaDevicesRequest;
 import software.amazon.awssdk.services.iam.model.ListMfaDevicesResponse;
 import software.amazon.awssdk.services.iam.model.MFADevice;
+import software.amazon.awssdk.services.iam.model.NoSuchEntityException;
 import software.amazon.awssdk.services.iam.model.User;
 import software.amazon.awssdk.services.iam.model.VirtualMFADevice;
 import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
-
 public class MFACheck implements CloudCheck {
     private List<User> allUsers;
+    private List<Group> allGroups;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final IamAsyncClient iam;
@@ -44,11 +57,17 @@ public class MFACheck implements CloudCheck {
         return sharedDataProvider.getAllUsers()
             .thenCompose(users -> {
                 this.allUsers = users;
+                return sharedDataProvider.getAllGroups();
+            })
+            .thenCompose(groups -> {
+                this.allGroups = groups;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkRootAccountWithoutHardwareMFA,     AWSFinding.ROOT_ACCOUNT_WITHOUT_HARDWARE_MFA, this::reportError),
                     wrapCheck(this::checkRootAccountWithVirtualMFA,         AWSFinding.ROOT_ACCOUNT_WITH_VIRTUAL_MFA, this::reportError),
                     wrapCheck(this::checkUsersWithNoMFA,                    AWSFinding.USERS_WITH_NO_MFA, this::reportError),
-                    wrapCheck(this::checkUsersWithoutHardwareMFA,           AWSFinding.USERS_WITHOUT_HARDWARE_MFA, this::reportError)
+                    wrapCheck(this::checkUsersWithoutHardwareMFA,           AWSFinding.USERS_WITHOUT_HARDWARE_MFA, this::reportError),
+                    wrapCheck(this::checkAdminGroupUsersWithMFA,            AWSFinding.ADMIN_GROUP_USERS_WITHOUT_MFA, this::reportError),
+                    wrapCheck(this::checkConsoleUsersWithNoMFA,             AWSFinding.CONSOLE_USERS_WITHOUT_MFA, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -196,5 +215,171 @@ public class MFACheck implements CloudCheck {
             (serialNumber.startsWith("arn:aws:iam::") 
             || serialNumber.contains(":u2f/") 
             || serialNumber.contains(":hwmfa/"));
+    }
+
+    private Status checkAdminGroupUsersWithMFA() {
+        if (allGroups.isEmpty()) {
+            writer.addToBuffer(AWSFinding.ADMIN_GROUP_USERS_WITHOUT_MFA,
+                            Text.NO_GROUPS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Object> result = allGroups.stream()
+            .map(group -> {
+                String groupName = group.groupName();
+                Status s;
+                Object r;
+                String mes;
+                try {
+                    List<AttachedPolicy> attachedPolicies = PaginatorHelper.collectPaginatedItems(
+                        iam.listAttachedGroupPoliciesPaginator(
+                            ListAttachedGroupPoliciesRequest.builder().groupName(groupName).build()
+                        ),
+                        ListAttachedGroupPoliciesResponse::attachedPolicies
+                    ).join();
+                    
+                    List<User> groupUsers = PaginatorHelper.collectPaginatedItems(
+                        iam.getGroupPaginator(GetGroupRequest.builder().groupName(groupName).build()),
+                        GetGroupResponse::users
+                    ).join();
+                    
+                    boolean hasAdminAccess = attachedPolicies.stream()
+                        .anyMatch(policy -> {
+                            String policyArn = policy.policyArn();
+                            return policyArn != null && 
+                                (policyArn.endsWith("/AdministratorAccess") 
+                                || policyArn.contains("AdministratorAccess"));
+                        });
+                    
+                    if (!hasAdminAccess) {
+                        s = Status.NOT_APPLICABLE;
+                        r = attachedPolicies.toString();
+                        mes = Text.GROUP_WITHOUT_ADMINISTRATOR_ACCESS.toString();
+                    } else if (groupUsers.isEmpty()) {
+                        s = Status.PASS;
+                        r = attachedPolicies.toString();
+                        mes = Text.NO_USERS_IN_ADMINISTRATORACCESS_GROUPS.toString();
+                    } else {
+                        List<Map<String,Object>> usersMFAStatus = groupUsers.stream()
+                            .map(user -> {
+                                String username = user.userName();
+                                try {
+                                    ListMfaDevicesResponse response = iam.listMFADevices(
+                                        ListMfaDevicesRequest.builder()
+                                            .userName(username)
+                                            .build()
+                                    ).join();
+                                    List<MFADevice> mfaDevices = response.mfaDevices();
+                                    return Map.<String,Object>of(
+                                        "username", username,
+                                        "hasMFA", !mfaDevices.isEmpty(),
+                                        "mfaDevices", !mfaDevices.isEmpty() ? mfaDevices : Collections.emptyList()
+                                    );
+                                } catch (Exception e) {
+                                    return Map.<String,Object>of(
+                                        "username", username,
+                                        "hasMFA", false,
+                                        "error", Text.EXCEPTION.toString().concat(e.getMessage())
+                                    );
+                                }
+                            })
+                            .toList();
+                        
+                        boolean allUsersHaveMFA = usersMFAStatus.stream()
+                            .allMatch(user -> Boolean.TRUE.equals(user.get("hasMFA")));
+                        
+                        s = allUsersHaveMFA ? Status.PASS : Status.FAIL;
+                        List<Map<String,Object>> usersWithMFA = usersMFAStatus.stream()
+                                .filter(user -> Boolean.TRUE.equals(user.get("hasMFA")))
+                                .toList();
+                        List<Map<String,Object>> usersWithoutMFA = usersMFAStatus.stream()
+                                .filter(user -> Boolean.FALSE.equals(user.get("hasMFA")))
+                                .toList();
+                        Map<String,Object> resultMap = new HashMap<>();
+                        resultMap.put(Text.ATTACHEDPOLICIES.toString(), attachedPolicies.toString());
+                        resultMap.put(Text.USERS_WITH_MFA.toString(), usersWithMFA);
+                        resultMap.put(Text.USERS_WITHOUT_MFA.toString(), usersWithoutMFA);
+                        r = Map.<String,Object>of(groupName, resultMap);
+                        mes = Text.USERS_IN_ADMINISTRATORACCESS_GROUPS.toString();
+                    }
+                    
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = Text.EXCEPTION.toString().concat(e.getMessage());
+                    mes = null;
+                }
+                
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                inner.put(Text.MESSAGE.toString(), mes);
+                return Map.<String, Object>of(groupName, inner);
+            })
+            .collect(Collectors.toList());
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.ADMIN_GROUP_USERS_WITHOUT_MFA, result, status);
+        return status;
+    }
+
+    private Status checkConsoleUsersWithNoMFA() {
+        if (allUsers.isEmpty()) {
+            writer.addToBuffer(AWSFinding.CONSOLE_USERS_WITHOUT_MFA,
+                            Text.NO_IAM_USERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allUsers.stream()
+            .map(user -> {
+                String username = user.userName();
+                boolean hasConsoleAccess = hasLoginProfile(username);
+                if (!hasConsoleAccess) {
+                    return null; 
+                }
+
+                Status s;
+                String r;
+                try {
+                    ListMfaDevicesResponse response = iam.listMFADevices(
+                        ListMfaDevicesRequest.builder().userName(username).build()
+                    ).join();
+                    
+                    boolean hasMfa = !response.mfaDevices().isEmpty();
+
+                    s = hasMfa ? Status.PASS : Status.FAIL;
+                    r = hasMfa ? response.mfaDevices().toString() : Text.NO_MFA_DEVICES_FOR_USER.toString();
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = Text.EXCEPTION.toString().concat(e.getMessage());
+                }
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(username, inner);
+            })
+            .filter(Objects::nonNull)
+            .toList();
+
+        if (result.isEmpty()) {
+            writer.addToBuffer(AWSFinding.CONSOLE_USERS_WITHOUT_MFA, 
+                            Text.NO_USERS_WITH_CONSOLE_PASSWORD_FOUND.toString(), Status.PASS);
+            return Status.PASS;
+        }
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.CONSOLE_USERS_WITHOUT_MFA, result, status);
+        return status;
+    }
+
+    private Boolean hasLoginProfile(String userName) {
+        iam.getLoginProfile(GetLoginProfileRequest.builder().userName(userName).build())
+            .thenApply(response -> true)
+            .exceptionally(ex -> {
+                if (ex.getCause() instanceof NoSuchEntityException) {
+                    return false;
+                }
+                throw new CompletionException(ex);
+            });
+        return true;
     }
 }

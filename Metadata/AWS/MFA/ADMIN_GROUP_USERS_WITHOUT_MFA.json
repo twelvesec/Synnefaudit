@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ADMIN_GROUP_USERS_WITHOUT_MFA",
+  "CheckTitle": "Users in groups with AdministratorAccess found without MFA",
+  "Severity": "High",
+  "Description": "Users found without MFA in groups with AdministratorAccess attached.",
+  "Risk": "Such misconfigurations may allow unauthorized users to perform high risk actions.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable_virtual.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure MFA is enabled for all users in groups with AdministratorAccess attached.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable_virtual.html#enable-virt-mfa-for-iam-user"
+    }
+  },
+  "Notes": ""
+}

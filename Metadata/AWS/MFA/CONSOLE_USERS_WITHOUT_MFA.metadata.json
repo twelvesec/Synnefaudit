@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CONSOLE_USERS_WITHOUT_MFA",
+  "CheckTitle": "Users with console access found without MFA enabled",
+  "Severity": "High",
+  "Description": "Users have been found to have console access without enabling multi-factor authentication (MFA).",
+  "Risk": "Absence of MFA to such an account may lead to unauthorized access to the console in case the account credentials ever get compromised.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable_virtual.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure MFA is enabled for al users with console access.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable_virtual.html#enable-virt-mfa-for-iam-user"
+    }
+  },
+  "Notes": ""
+}
