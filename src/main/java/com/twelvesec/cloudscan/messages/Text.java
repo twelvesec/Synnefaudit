@@ -55,6 +55,14 @@ public enum Text {
     NO_LOG_GROUPS_FOUND("No CloudWatch Log Groups defined."),
     ALL_LOG_GROUPS_WITH_KMS_ASSOCIATED("Every log group has a KMS key associated."),
 
+    NO_KMS_KEYS_FOUND("No KMS Keys found."),
+    KEY_IS_AWS_MANAGED("Key is AWS Managed."),
+    KEY_PENDING_DELETION("Key is pending deletion."),
+    KMS_KEY_SCHEDULED_FOR_DELETION("KMS key has been scheduled for deletion."),
+    KMS_KEY_NOT_SCHEDULED_FOR_DELETION("KMS key has not been scheduled for deletion,"),
+    KMS_KEY_IS_DISABLED("KMS key has been disabled."),
+    KMS_KEY_NOT_CUSTOMER_MANAGED("KMS key is not customer managed."),
+
     NO_KMS_KEYS_FOUND_TO_INSPECT("No keys were found to inspect."),
     NO_PUBLIC_HOSTED_ZONES_FOUND("No public hosted zones found."),
 
@@ -192,6 +200,8 @@ public enum Text {
     LAST_USED_DATE("lastUsedDate"),
     ALARMS("alarms"),
     METRIC_FILTERS("metricFilters"),
+    KEY_METADATA("keyMetadata"),
+
     NULL_VALUE("Value is null.")
     ;
 

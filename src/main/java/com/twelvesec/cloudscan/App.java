@@ -22,37 +22,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
-import com.twelvesec.cloudscan.AWS.Checks.ACMCertificatesCheck;
 import com.twelvesec.cloudscan.AWS.Checks.AccessKeysCheck;
-import com.twelvesec.cloudscan.AWS.Checks.AthenaCheck;
-import com.twelvesec.cloudscan.AWS.Checks.CloudFormationCheck;
-import com.twelvesec.cloudscan.AWS.Checks.CloudFrontCheck;
-import com.twelvesec.cloudscan.AWS.Checks.CloudTrailCheck;
-import com.twelvesec.cloudscan.AWS.Checks.CloudWatchCheck;
-import com.twelvesec.cloudscan.AWS.Checks.DynamoDBCheck;
-import com.twelvesec.cloudscan.AWS.Checks.EBSCheck;
-import com.twelvesec.cloudscan.AWS.Checks.EC2Check;
-import com.twelvesec.cloudscan.AWS.Checks.ECRCheck;
-import com.twelvesec.cloudscan.AWS.Checks.EFSCheck;
-import com.twelvesec.cloudscan.AWS.Checks.ELBCheck;
-import com.twelvesec.cloudscan.AWS.Checks.EnabledServicesCheck;
-import com.twelvesec.cloudscan.AWS.Checks.GeneralCheck;
-import com.twelvesec.cloudscan.AWS.Checks.GlueCheck;
-import com.twelvesec.cloudscan.AWS.Checks.GuardDutyCheck;
-import com.twelvesec.cloudscan.AWS.Checks.IAMCheck;
-import com.twelvesec.cloudscan.AWS.Checks.Inspector2Check;
-import com.twelvesec.cloudscan.AWS.Checks.KMSCheck;
-import com.twelvesec.cloudscan.AWS.Checks.KafkaCheck;
-import com.twelvesec.cloudscan.AWS.Checks.LambdaCheck;
-import com.twelvesec.cloudscan.AWS.Checks.MFACheck;
-import com.twelvesec.cloudscan.AWS.Checks.NetworkACLsCheck;
-import com.twelvesec.cloudscan.AWS.Checks.RDSInstancesCheck;
-import com.twelvesec.cloudscan.AWS.Checks.Route53Check;
-import com.twelvesec.cloudscan.AWS.Checks.S3BucketsCheck;
-import com.twelvesec.cloudscan.AWS.Checks.SNSTopicsCheck;
-import com.twelvesec.cloudscan.AWS.Checks.SSMCheck;
-import com.twelvesec.cloudscan.AWS.Checks.SupportCheck;
-import com.twelvesec.cloudscan.AWS.Checks.VPCsCheck;
 import com.twelvesec.cloudscan.CloudCheck.CheckSummary;
 import com.twelvesec.cloudscan.CloudCheck.Provider;
 import static com.twelvesec.cloudscan.ReportPrinter.CHECKS_SUMMARY;
@@ -324,7 +294,7 @@ public class App {
 
     private static List<CloudCheck> getAWSChecks() {
         return List.of(
-            new AccessKeysCheck(writer, sharedDataProvider, iam),
+            new AccessKeysCheck(writer, sharedDataProvider, iam, kms),
             new ACMCertificatesCheck(writer, sharedDataProvider, acm),
             new AthenaCheck(writer, sharedDataProvider, athena),
             new CloudFormationCheck(writer, sharedDataProvider, cloudformation),

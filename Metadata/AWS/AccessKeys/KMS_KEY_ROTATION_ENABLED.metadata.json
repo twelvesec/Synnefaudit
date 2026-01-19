@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KMS_KEY_ROTATION_ENABLED",
+  "CheckTitle": "Rotation is not enabled for KMS CMKs",
+  "Severity": "Medium",
+  "Description": "AWS Key Management Service (KMS) Costumer Managed Keys (CMKs) have been found without having rotation enabled.",
+  "Risk": "Not enabling key rotation may result in continued usage of compromised keys.",
+  "RelatedUrls": "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure key rotation is enabled for all KMS CMKs.",
+      "Urls": "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html, https://docs.aws.amazon.com/kms/latest/developerguide/rotating-keys-enable.html"
+    }
+  },
+  "Notes": ""
+}

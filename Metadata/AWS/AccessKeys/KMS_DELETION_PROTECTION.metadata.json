@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KMS_DELETION_PROTECTION",
+  "CheckTitle": "AWS KMS CMKs found scheduled for deletion",
+  "Severity": "High",
+  "Description": "AWS Key Management System (KMS) Customer Managed Keys (CMKs) have been found to not be disabled, and have a scheduled deletion.",
+  "Risk": "Accidentally deleting a key may be dangerous to the application.",
+  "RelatedUrls": "https://docs.aws.amazon.com/kms/latest/developerguide/deleting-keys-scheduling-key-deletion.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure any keys scheduled for deletion are not required anymore. In case of uncertainty, you may disable the key instead of deleting it.",
+      "Urls": "https://docs.aws.amazon.com/kms/latest/developerguide/deleting-keys-scheduling-key-deletion.html"
+    }
+  },
+  "Notes": ""
+}

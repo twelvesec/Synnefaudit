@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KMS_MULTI_REGION",
+  "CheckTitle": "AWS KMS CMKs found being multi-region",
+  "Severity": "Low",
+  "Description": "AWS Key Management Service (KMS) Customer Managed Keys (CMKs) have been found to have multi-region enabled.",
+  "Risk": "Sharing keys across regions could result in decryption of related keys in said regions, along with complicating their management and auditing.",
+  "RelatedUrls": "https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html#multi-region-concepts",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure to to use multi-region keys unless deemed necessary as per business requirements.",
+      "Urls": "https://docs.aws.amazon.com/kms/latest/developerguide/mrk-when-to-use.html"
+    }
+  },
+  "Notes": ""
+}

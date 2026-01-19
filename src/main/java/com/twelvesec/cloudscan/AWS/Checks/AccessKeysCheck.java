@@ -12,11 +12,11 @@ import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
 import software.amazon.awssdk.services.iam.IamAsyncClient;
@@ -31,18 +31,29 @@ import software.amazon.awssdk.services.iam.model.ListAccessKeysRequest;
 import software.amazon.awssdk.services.iam.model.ListAccessKeysResponse;
 import software.amazon.awssdk.services.iam.model.ListAttachedUserPoliciesRequest;
 import software.amazon.awssdk.services.iam.model.User;
+import software.amazon.awssdk.services.kms.KmsAsyncClient;
+import software.amazon.awssdk.services.kms.model.DescribeKeyRequest;
+import software.amazon.awssdk.services.kms.model.DescribeKeyResponse;
+import software.amazon.awssdk.services.kms.model.GetKeyRotationStatusRequest;
+import software.amazon.awssdk.services.kms.model.GetKeyRotationStatusResponse;
+import software.amazon.awssdk.services.kms.model.KeyManagerType;
+import software.amazon.awssdk.services.kms.model.KeyMetadata;
+import software.amazon.awssdk.services.kms.model.KeyState;
 
 public class AccessKeysCheck implements CloudCheck {
     private List<User> allUsers;
+    private List<String> allKeyIds;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final IamAsyncClient iam;
+    private final KmsAsyncClient kms;
 
     public AccessKeysCheck(DataWriter writer, SharedDataProvider sharedDataProvider, 
-                    IamAsyncClient iam) {
+                    IamAsyncClient iam, KmsAsyncClient kms) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.iam = iam;
+        this.kms = kms;
     }
 
     @Override
@@ -50,12 +61,19 @@ public class AccessKeysCheck implements CloudCheck {
         return sharedDataProvider.getAllUsers()
             .thenCompose(users -> {
                 this.allUsers = users;
+                return sharedDataProvider.getAllKeyIds();
+            })
+            .thenCompose(keyIds -> {
+                this.allKeyIds = keyIds;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkIAMUsersWithMultipleActiveAccessKeys,                  AWSFinding.IAM_USERS_WITH_MULTIPLE_ACTIVE_ACCESS_KEYS, this::reportError),
                     wrapCheck(this::checkAccessKeysNotRotated90Days,                            AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED, this::reportError),
                     wrapCheck(this::checkAccessKeysNotRotatedForUsersWithNonIAMorSTSPolicies,   AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED_PRIVILEGED, this::reportError),
                     wrapCheck(this::checkNoAccessKeysDuringUserSetup,                           AWSFinding.IAM_NO_ACCESS_KEYS_DURING_SETUP, this::reportError),
-                    wrapCheck(this::checkUnusedAccessKeys,                                      AWSFinding.IAM_UNUSED_ACCESS_KEYS, this::reportError)
+                    wrapCheck(this::checkUnusedAccessKeys,                                      AWSFinding.IAM_UNUSED_ACCESS_KEYS, this::reportError),
+                    wrapCheck(this::checkKmsKeyRotationEnabled,                                 AWSFinding.KMS_KEY_ROTATION_ENABLED, this::reportError),
+                    wrapCheck(this::checkKmsKeyDeletionProtection,                              AWSFinding.KMS_DELETION_PROTECTION, this::reportError),
+                    wrapCheck(this::checkKmsKeyNotMultiRegion,                                  AWSFinding.KMS_MULTI_REGION, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -360,6 +378,148 @@ public class AccessKeysCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.IAM_UNUSED_ACCESS_KEYS, result, status);
+        return status;
+    }
+
+    private Status checkKmsKeyRotationEnabled() {
+        if (allKeyIds.isEmpty()) {
+            writer.addToBuffer(AWSFinding.KMS_KEY_ROTATION_ENABLED,
+                            Text.NO_KMS_KEYS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allKeyIds.stream()
+            .map(keyId -> {
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                try {
+                    DescribeKeyResponse describeResponse = kms.describeKey(
+                            DescribeKeyRequest.builder().keyId(keyId).build()
+                    ).join();
+                    
+                    if (KeyManagerType.AWS.equals(describeResponse.keyMetadata().keyManager())) {
+                        s = Status.NOT_APPLICABLE;
+                        r.put(Text.MESSAGE.toString(), Text.KEY_IS_AWS_MANAGED.toString());
+                    } else {
+                        GetKeyRotationStatusResponse rotationResponse = kms.getKeyRotationStatus(
+                                GetKeyRotationStatusRequest.builder().keyId(keyId).build()
+                        ).join();
+                        
+                        boolean rotationEnabled = rotationResponse.keyRotationEnabled();
+                        s = rotationEnabled ? Status.PASS : Status.FAIL;
+                    }
+                    r.set(Text.KEY_METADATA.toString(), MAPPER.valueToTree(describeResponse.keyMetadata().toBuilder()));
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(keyId, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.KMS_KEY_ROTATION_ENABLED, result, status);
+        return status;
+    }
+
+    private Status checkKmsKeyDeletionProtection() {
+        if (allKeyIds.isEmpty()) {
+            writer.addToBuffer(AWSFinding.KMS_DELETION_PROTECTION,
+                            Text.NO_KMS_KEYS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allKeyIds.stream()
+            .map(keyId -> {
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                
+                try {
+                    DescribeKeyResponse describeResponse = kms.describeKey(
+                        DescribeKeyRequest.builder().keyId(keyId).build()
+                    ).join();
+                    
+                    KeyMetadata keyMetadata = describeResponse.keyMetadata();
+                    if (KeyManagerType.CUSTOMER.equals(keyMetadata.keyManager())) {
+                        if (!KeyState.DISABLED.equals(keyMetadata.keyState())) {
+                            s = Status.PASS;
+                            r.put(Text.MESSAGE.toString(), Text.KMS_KEY_NOT_SCHEDULED_FOR_DELETION.toString());
+                            
+                            if (KeyState.PENDING_DELETION.equals(keyMetadata.keyState())) {
+                                s = Status.FAIL;
+                                r.put(Text.MESSAGE.toString(), Text.KMS_KEY_SCHEDULED_FOR_DELETION.toString());
+                            }
+                        } else {
+                            s = Status.NOT_APPLICABLE;
+                            r.put(Text.MESSAGE.toString(), Text.KMS_KEY_IS_DISABLED.toString());
+                        }
+                    } else {
+                        s = Status.NOT_APPLICABLE;
+                        r.put(Text.MESSAGE.toString(), Text.KMS_KEY_NOT_CUSTOMER_MANAGED.toString());
+                    }
+                    r.set(Text.KEY_METADATA.toString(), MAPPER.valueToTree(describeResponse.keyMetadata().toBuilder()));
+                } catch (Exception e) { 
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(keyId, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.KMS_DELETION_PROTECTION, result, status);
+        return status;
+    }
+
+    private Status checkKmsKeyNotMultiRegion() {
+        if (allKeyIds.isEmpty()) {
+            writer.addToBuffer(AWSFinding.KMS_MULTI_REGION,
+                            Text.NO_KMS_KEYS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allKeyIds.stream()
+            .map(keyId -> {
+                Status s;
+                ObjectNode r = MAPPER.createObjectNode();
+                
+                try {
+                    DescribeKeyResponse describeResponse = kms.describeKey(
+                        DescribeKeyRequest.builder().keyId(keyId).build()
+                    ).join();
+                    
+                    KeyMetadata keyMetadata = describeResponse.keyMetadata();
+                    
+                    if (KeyManagerType.AWS.equals(keyMetadata.keyManager())) {
+                        s = Status.NOT_APPLICABLE;
+                        r.put(Text.MESSAGE.toString(), Text.KEY_IS_AWS_MANAGED.toString());
+                    } else {
+                        boolean isMultiRegion = Boolean.TRUE.equals(keyMetadata.multiRegion());
+                        s = isMultiRegion ? Status.FAIL : Status.PASS;
+                    }
+                    r.set(Text.KEY_METADATA.toString(), MAPPER.valueToTree(describeResponse.keyMetadata().toBuilder()));
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+                
+                Map<String, Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String, Object>of(keyId, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.KMS_MULTI_REGION, result, status);
         return status;
     }
 }
