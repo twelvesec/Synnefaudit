@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 
 import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.PaginatorHelper;
 import com.twelvesec.cloudscan.SharedDataProvider;
@@ -31,6 +30,7 @@ import software.amazon.awssdk.services.iam.model.ListMfaDevicesRequest;
 import software.amazon.awssdk.services.iam.model.ListMfaDevicesResponse;
 import software.amazon.awssdk.services.iam.model.MFADevice;
 import software.amazon.awssdk.services.iam.model.NoSuchEntityException;
+import software.amazon.awssdk.services.iam.model.SummaryKeyType;
 import software.amazon.awssdk.services.iam.model.User;
 import software.amazon.awssdk.services.iam.model.VirtualMFADevice;
 import software.amazon.awssdk.services.sts.StsAsyncClient;
@@ -62,6 +62,7 @@ public class MFACheck implements CloudCheck {
             .thenCompose(groups -> {
                 this.allGroups = groups;
                 List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::checkRootAccountMFAEnabled,             AWSFinding.ROOT_ACCOUNT_WITHOUT_MFA, this::reportError),
                     wrapCheck(this::checkRootAccountWithoutHardwareMFA,     AWSFinding.ROOT_ACCOUNT_WITHOUT_HARDWARE_MFA, this::reportError),
                     wrapCheck(this::checkRootAccountWithVirtualMFA,         AWSFinding.ROOT_ACCOUNT_WITH_VIRTUAL_MFA, this::reportError),
                     wrapCheck(this::checkUsersWithNoMFA,                    AWSFinding.USERS_WITH_NO_MFA, this::reportError),
@@ -76,6 +77,29 @@ public class MFACheck implements CloudCheck {
     @Override
     public void reportError(CloudCheck.ErrorReport report) {
         writer.addToBuffer(report.finding(), report.message(), report.status());
+    }
+
+    private Status checkRootAccountMFAEnabled() {
+        Status status;
+        Object result;
+        try {
+            GetAccountSummaryResponse summaryResp = iam.getAccountSummary().join();
+            SummaryKeyType mfaKey = summaryResp.summaryMap().keySet().stream()
+                    .filter(key -> "AccountMFAEnabled".equalsIgnoreCase(key.toString()))
+                    .findFirst()
+                    .orElse(SummaryKeyType.valueOf("ACCOUNT_MFA_ENABLED"));
+
+            boolean accountMFAEnabled = summaryResp.summaryMap().getOrDefault(mfaKey, 0) == 1;
+
+            status = accountMFAEnabled ? Status.PASS : Status.FAIL;
+            result = MAPPER.valueToTree(summaryResp.summaryMap());
+        } catch (Exception e) {
+            status = Status.FAIL_EXCEPTION;
+            result = Text.EXCEPTION.toString().concat(e.getMessage());
+        }
+
+        writer.addToBuffer(AWSFinding.ROOT_ACCOUNT_WITHOUT_MFA, result, status);
+        return status;
     }
 
     private Status checkRootAccountWithoutHardwareMFA() { 

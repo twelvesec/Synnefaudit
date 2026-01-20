@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NO_ROOT_ACCOUNT_ACCESS_KEY",
+  "CheckTitle": "Root Account Access Key found",
+  "Severity": "Critical",
+  "Description": "It has been observed that there are access key(s) created for the root user.",
+  "Risk": "Root is the user with the most privileges in an AWS account. Having existing access keys, especially long-term ones for such a privileged user increases the risk of account compromise. Additionally, if multiple people make use of root access keys it may be harder to trace back high risk actions in case of misuse.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_getting-report.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "It is strongly recommended to not create access keys for the root user, due to high privileges and lack of accountability, unless strictly necessary.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html"
+    }
+  },
+  "Notes": ""
+}

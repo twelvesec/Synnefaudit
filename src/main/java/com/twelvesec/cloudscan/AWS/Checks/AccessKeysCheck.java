@@ -1,35 +1,41 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.time.Duration;
-import java.time.Instant;
+import java.time.*;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.messages.Text;
 
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
 import software.amazon.awssdk.services.iam.model.AccessKeyLastUsed;
 import software.amazon.awssdk.services.iam.model.AccessKeyMetadata;
 import software.amazon.awssdk.services.iam.model.AttachedPolicy;
+import software.amazon.awssdk.services.iam.model.GenerateCredentialReportResponse;
 import software.amazon.awssdk.services.iam.model.GetAccessKeyLastUsedRequest;
 import software.amazon.awssdk.services.iam.model.GetAccessKeyLastUsedResponse;
+import software.amazon.awssdk.services.iam.model.GetCredentialReportResponse;
 import software.amazon.awssdk.services.iam.model.GetLoginProfileRequest;
 import software.amazon.awssdk.services.iam.model.GetLoginProfileResponse;
 import software.amazon.awssdk.services.iam.model.ListAccessKeysRequest;
 import software.amazon.awssdk.services.iam.model.ListAccessKeysResponse;
 import software.amazon.awssdk.services.iam.model.ListAttachedUserPoliciesRequest;
+import software.amazon.awssdk.services.iam.model.ReportStateType;
 import software.amazon.awssdk.services.iam.model.User;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
 import software.amazon.awssdk.services.kms.model.DescribeKeyRequest;
@@ -73,7 +79,8 @@ public class AccessKeysCheck implements CloudCheck {
                     wrapCheck(this::checkUnusedAccessKeys,                                      AWSFinding.IAM_UNUSED_ACCESS_KEYS, this::reportError),
                     wrapCheck(this::checkKmsKeyRotationEnabled,                                 AWSFinding.KMS_KEY_ROTATION_ENABLED, this::reportError),
                     wrapCheck(this::checkKmsKeyDeletionProtection,                              AWSFinding.KMS_DELETION_PROTECTION, this::reportError),
-                    wrapCheck(this::checkKmsKeyNotMultiRegion,                                  AWSFinding.KMS_MULTI_REGION, this::reportError)
+                    wrapCheck(this::checkKmsKeyNotMultiRegion,                                  AWSFinding.KMS_MULTI_REGION, this::reportError),
+                    wrapCheck(this::checkNoRootAccountAccessKey,                                AWSFinding.NO_ROOT_ACCOUNT_ACCESS_KEY, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -521,5 +528,147 @@ public class AccessKeysCheck implements CloudCheck {
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.KMS_MULTI_REGION, result, status);
         return status;
+    }
+
+    private Status checkNoRootAccountAccessKey() {
+        try {
+            CompletableFuture<GetCredentialReportResponse> reportFuture =
+                iam.generateCredentialReport()
+                    .thenCompose(response -> pollForCredentialReport())
+                    .thenCompose(response -> iam.getCredentialReport());
+
+            GetCredentialReportResponse reportResponse = reportFuture.orTimeout(30, TimeUnit.SECONDS).join();
+
+            SdkBytes contentBytes = reportResponse.content();
+            if (contentBytes == null) {
+                writer.addToBuffer(AWSFinding.NO_ROOT_ACCOUNT_ACCESS_KEY,
+                        Text.CREDENTIAL_REPORT_NO_CONTENT.toString(), Status.FAIL_EXCEPTION);
+                return Status.FAIL_EXCEPTION;
+            }
+
+            String reportContent = contentBytes.asUtf8String();
+            String[] lines = reportContent.split("\\r?\\n");
+
+            if (lines.length < 2) {
+                writer.addToBuffer(AWSFinding.NO_ROOT_ACCOUNT_ACCESS_KEY,
+                        Text.INVALID_CREDENTIAL_REPORT_FORMAT.toString() + lines.length,
+                        Status.FAIL_EXCEPTION);
+                return Status.FAIL_EXCEPTION;
+            }
+
+            return Arrays.stream(lines)
+                .skip(1)
+                .map(this::parseCSVLine)
+                .filter(columns -> columns.length > 0
+                        && "<root_account>".equals(columns[0].replace("\"", "")))
+                .findFirst()
+                .map(this::analyzeRootAccountRecord)
+                .orElseGet(() -> {
+                    writer.addToBuffer(AWSFinding.NO_ROOT_ACCOUNT_ACCESS_KEY,
+                                    Text.ROOT_NOT_IN_CREDENTIAL_REPORT.toString(), Status.FAIL_EXCEPTION);
+                    return Status.FAIL_EXCEPTION;
+                });
+
+        } catch (Exception e) {
+            writer.addToBuffer(AWSFinding.NO_ROOT_ACCOUNT_ACCESS_KEY,
+                            Text.EXCEPTION.toString().concat(e.getMessage()), Status.FAIL_EXCEPTION);
+            return Status.FAIL_EXCEPTION;
+        }
+    }
+
+    private CompletableFuture<GenerateCredentialReportResponse> pollForCredentialReport() {
+        return IntStream.rangeClosed(1, 30)
+            .mapToObj(attempt ->
+                CompletableFuture
+                    .runAsync(() -> {
+                        try {
+                            if (attempt > 1) Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .thenCompose(__ -> iam.generateCredentialReport())
+            )
+            .reduce(
+                CompletableFuture.completedFuture(null),
+                (prev, current) -> prev.thenCompose(prevResponse ->
+                    (prevResponse != null && ReportStateType.COMPLETE.equals(prevResponse.state()))
+                        ? CompletableFuture.completedFuture(prevResponse)
+                        : current
+                )
+            )
+            .thenCompose(response -> {
+                if (response != null && ReportStateType.COMPLETE.equals(response.state())) {
+                    return CompletableFuture.completedFuture(response);
+                } else {
+                    return CompletableFuture.failedFuture(
+                        new RuntimeException(Text.CREDENTIAL_REPORT_GEN_TIMEOUT.toString())
+                    );
+                }
+            });
+    }
+
+    private String[] parseCSVLine(String line) {
+        String[] parts = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+        return Arrays.stream(parts)
+            .map(s -> s.replaceAll("^\"|\"$", ""))
+            .toArray(String[]::new);
+    }
+
+    private Status analyzeRootAccountRecord(String[] columns) {
+        try {
+            String accessKey1Active = columns.length > 8 ? columns[8].replace("\"", "") : "";
+            String accessKey2Active = columns.length > 13 ? columns[13].replace("\"", "") : "";
+
+            boolean rootHasAccessKey = "true".equalsIgnoreCase(accessKey1Active)
+                || "true".equalsIgnoreCase(accessKey2Active);
+
+            int rootAccessKeyAge = -1;
+            if (rootHasAccessKey) {
+                if ("true".equalsIgnoreCase(accessKey1Active) && columns.length > 10) {
+                    String lastRotatedStr = columns[10].replace("\"", "");
+                    if (!lastRotatedStr.isEmpty() && !"N/A".equals(lastRotatedStr)) {
+                        try {
+                            ZonedDateTime lastRotated = ZonedDateTime.parse(lastRotatedStr);
+                            rootAccessKeyAge = (int) ChronoUnit.DAYS.between(
+                                lastRotated.toLocalDate(),
+                                ZonedDateTime.now().toLocalDate()
+                            );
+                        } catch (DateTimeParseException e) {
+                            try {
+                                LocalDateTime lastRotated = LocalDateTime.parse(lastRotatedStr);
+                                rootAccessKeyAge = (int) ChronoUnit.DAYS.between(lastRotated.toLocalDate(),  LocalDate.now());
+                            } catch (Exception _) {}
+                        }
+                    }
+                }
+            }
+
+            Status status = !rootHasAccessKey ? Status.PASS : Status.FAIL;
+            String message;
+            if (!rootHasAccessKey) {
+                message = Text.NO_ROOT_ACCOUNT_ACCESS_KEY.toString();
+            } else {
+                message = Text.ROOT_ACCOUNT_ACCESS_KEY_PRESENT.toString();
+                if (rootAccessKeyAge > 0) {
+                    message += String.format(Text.AGE_NUM_DAYS.toString(), rootAccessKeyAge);
+                }
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("root_has_access_key", rootHasAccessKey);
+            result.put("access_key_1_active", accessKey1Active);
+            result.put("access_key_2_active", accessKey2Active);
+            result.put("access_key_age_days", rootAccessKeyAge);
+            result.put("message", message);
+
+            writer.addToBuffer(AWSFinding.NO_ROOT_ACCOUNT_ACCESS_KEY, result, status);
+            return status;
+        } catch (Exception e) {
+            writer.addToBuffer(AWSFinding.NO_ROOT_ACCOUNT_ACCESS_KEY,
+                            Text.EXCEPTION.toString().concat(e.getMessage()), Status.FAIL_EXCEPTION);
+            return Status.FAIL_EXCEPTION;
+        }
     }
 }

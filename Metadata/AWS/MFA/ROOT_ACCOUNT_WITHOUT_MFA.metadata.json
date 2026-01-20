@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ROOT_ACCOUNT_WITHOUT_MFA",
+  "CheckTitle": "MFA has not been enabled for root",
+  "Severity": "Critical",
+  "Description": "The root user does not have any Multi-facter Authentication (MFA) device set up.",
+  "Risk": "Root is the most privileged user in the AWS Account, and so in the possibility of compromised root credentials, Multi-Factor Authentication (MFA) serves as an additional protection against unauthorized access.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure MFA is enabled for all users when possible, and especially for high-privilege users such as root.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/enable-mfa-for-root.html"
+    }
+  },
+  "Notes": ""
+}

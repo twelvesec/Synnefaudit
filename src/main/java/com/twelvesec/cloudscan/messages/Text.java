@@ -62,6 +62,13 @@ public enum Text {
     KMS_KEY_NOT_SCHEDULED_FOR_DELETION("KMS key has not been scheduled for deletion,"),
     KMS_KEY_IS_DISABLED("KMS key has been disabled."),
     KMS_KEY_NOT_CUSTOMER_MANAGED("KMS key is not customer managed."),
+    CREDENTIAL_REPORT_NOT_READY("Credential Report is not ready."),
+    NO_ROOT_ACCOUNT_ACCESS_KEY("No root account access key found."),
+    ROOT_ACCOUNT_ACCESS_KEY_PRESENT("Root account access key found."),
+    AGE_NUM_DAYS(" (Age: %d days)"),
+    CREDENTIAL_REPORT_NO_CONTENT("Credential report has no content."),
+    INVALID_CREDENTIAL_REPORT_FORMAT("Invalid credential report format: Expected at least 2 lines (header + data), got "),
+    ROOT_NOT_IN_CREDENTIAL_REPORT("Root account not found in credential report."),
 
     NO_KMS_KEYS_FOUND_TO_INSPECT("No keys were found to inspect."),
     NO_PUBLIC_HOSTED_ZONES_FOUND("No public hosted zones found."),
@@ -170,6 +177,7 @@ public enum Text {
     FAILED_TO_CLOSE_CLIENT("Failed to close client : "),
 
     EXCEPTION("Exception : "),
+    CREDENTIAL_REPORT_GEN_TIMEOUT("Credential report generation timeout."),
     
     CHECKNAME("check-name"),
     STATUS("status"),
