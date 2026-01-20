@@ -1,5 +1,16 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
+import software.amazon.awssdk.services.cloudwatch.model.*;
+import software.amazon.awssdk.services.kms.KmsAsyncClient;
+import software.amazon.awssdk.services.kms.model.*;
+
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -7,29 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
-
-import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
-import software.amazon.awssdk.services.cloudwatch.model.Dimension;
-import software.amazon.awssdk.services.cloudwatch.model.GetMetricDataRequest;
-import software.amazon.awssdk.services.cloudwatch.model.GetMetricDataResponse;
-import software.amazon.awssdk.services.cloudwatch.model.Metric;
-import software.amazon.awssdk.services.cloudwatch.model.MetricDataQuery;
-import software.amazon.awssdk.services.cloudwatch.model.MetricStat;
-import software.amazon.awssdk.services.kms.KmsAsyncClient;
-import software.amazon.awssdk.services.kms.model.DescribeKeyRequest;
-import software.amazon.awssdk.services.kms.model.DescribeKeyResponse;
-import software.amazon.awssdk.services.kms.model.GetKeyPolicyResponse;
-import software.amazon.awssdk.services.kms.model.GetKeyRotationStatusRequest;
-import software.amazon.awssdk.services.kms.model.GetKeyRotationStatusResponse;
-import software.amazon.awssdk.services.kms.model.KeyMetadata;
-import software.amazon.awssdk.services.kms.model.KeyState;
 
 public class KMSCheck implements CloudCheck {
     private List<String> keyIds;

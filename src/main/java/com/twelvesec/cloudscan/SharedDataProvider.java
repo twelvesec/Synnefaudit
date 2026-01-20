@@ -1,13 +1,5 @@
 package com.twelvesec.cloudscan;
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import software.amazon.awssdk.services.accessanalyzer.AccessAnalyzerAsyncClient;
 import software.amazon.awssdk.services.accessanalyzer.model.AnalyzerSummary;
 import software.amazon.awssdk.services.accessanalyzer.model.ListAnalyzersRequest;
@@ -25,15 +17,12 @@ import software.amazon.awssdk.services.cloudformation.model.ListStacksRequest;
 import software.amazon.awssdk.services.cloudformation.model.ListStacksResponse;
 import software.amazon.awssdk.services.cloudformation.model.StackSummary;
 import software.amazon.awssdk.services.cloudfront.CloudFrontAsyncClient;
+import software.amazon.awssdk.services.cloudfront.model.DistributionList;
 import software.amazon.awssdk.services.cloudfront.model.DistributionSummary;
 import software.amazon.awssdk.services.cloudfront.model.ListDistributionsRequest;
 import software.amazon.awssdk.services.cloudfront.model.ListDistributionsResponse;
 import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
-import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsRequest;
-import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsResponse;
-import software.amazon.awssdk.services.cloudtrail.model.ListTrailsRequest;
-import software.amazon.awssdk.services.cloudtrail.model.ListTrailsResponse;
-import software.amazon.awssdk.services.cloudtrail.model.TrailInfo;
+import software.amazon.awssdk.services.cloudtrail.model.*;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 import software.amazon.awssdk.services.cloudwatch.model.DescribeAlarmsRequest;
 import software.amazon.awssdk.services.cloudwatch.model.DescribeAlarmsResponse;
@@ -45,25 +34,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.ListTablesRequest;
 import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
-import software.amazon.awssdk.services.ec2.model.DescribeInstancesRequest;
-import software.amazon.awssdk.services.ec2.model.DescribeNetworkAclsResponse;
-import software.amazon.awssdk.services.ec2.model.DescribeRouteTablesResponse;
-import software.amazon.awssdk.services.ec2.model.DescribeSubnetsResponse;
-import software.amazon.awssdk.services.ec2.model.DescribeVolumesRequest;
-import software.amazon.awssdk.services.ec2.model.DescribeVolumesResponse;
-import software.amazon.awssdk.services.ec2.model.DescribeVpcEndpointsRequest;
-import software.amazon.awssdk.services.ec2.model.DescribeVpcEndpointsResponse;
-import software.amazon.awssdk.services.ec2.model.DescribeVpcsRequest;
-import software.amazon.awssdk.services.ec2.model.DescribeVpcsResponse;
-import software.amazon.awssdk.services.ec2.model.GroupIdentifier;
-import software.amazon.awssdk.services.ec2.model.Instance;
-import software.amazon.awssdk.services.ec2.model.NetworkAcl;
-import software.amazon.awssdk.services.ec2.model.RouteTable;
-import software.amazon.awssdk.services.ec2.model.SecurityGroup;
+import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.ec2.model.Subnet;
-import software.amazon.awssdk.services.ec2.model.Volume;
-import software.amazon.awssdk.services.ec2.model.Vpc;
-import software.amazon.awssdk.services.ec2.model.VpcEndpoint;
 import software.amazon.awssdk.services.ecr.EcrAsyncClient;
 import software.amazon.awssdk.services.ecr.model.Repository;
 import software.amazon.awssdk.services.efs.EfsAsyncClient;
@@ -76,19 +48,7 @@ import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancer
 import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
 import software.amazon.awssdk.services.guardduty.model.ListDetectorsResponse;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
-import software.amazon.awssdk.services.iam.model.Group;
-import software.amazon.awssdk.services.iam.model.ListGroupsRequest;
-import software.amazon.awssdk.services.iam.model.ListGroupsResponse;
-import software.amazon.awssdk.services.iam.model.ListPoliciesRequest;
-import software.amazon.awssdk.services.iam.model.ListPoliciesResponse;
-import software.amazon.awssdk.services.iam.model.ListRolesRequest;
-import software.amazon.awssdk.services.iam.model.ListRolesResponse;
-import software.amazon.awssdk.services.iam.model.ListUsersRequest;
-import software.amazon.awssdk.services.iam.model.ListUsersResponse;
-import software.amazon.awssdk.services.iam.model.Policy;
-import software.amazon.awssdk.services.iam.model.PolicyScopeType;
-import software.amazon.awssdk.services.iam.model.Role;
-import software.amazon.awssdk.services.iam.model.User;
+import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
 import software.amazon.awssdk.services.kafka.model.ClusterInfo;
 import software.amazon.awssdk.services.kafka.model.ListClustersRequest;
@@ -99,15 +59,7 @@ import software.amazon.awssdk.services.kms.model.ListKeysRequest;
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration;
 import software.amazon.awssdk.services.rds.RdsAsyncClient;
-import software.amazon.awssdk.services.rds.model.DBClusterSnapshot;
-import software.amazon.awssdk.services.rds.model.DBInstance;
-import software.amazon.awssdk.services.rds.model.DBSnapshot;
-import software.amazon.awssdk.services.rds.model.DescribeDbClusterSnapshotsRequest;
-import software.amazon.awssdk.services.rds.model.DescribeDbClusterSnapshotsResponse;
-import software.amazon.awssdk.services.rds.model.DescribeDbInstancesRequest;
-import software.amazon.awssdk.services.rds.model.DescribeDbInstancesResponse;
-import software.amazon.awssdk.services.rds.model.DescribeDbSnapshotsRequest;
-import software.amazon.awssdk.services.rds.model.DescribeDbSnapshotsResponse;
+import software.amazon.awssdk.services.rds.model.*;
 import software.amazon.awssdk.services.resourceexplorer2.ResourceExplorer2AsyncClient;
 import software.amazon.awssdk.services.resourceexplorer2.model.Index;
 import software.amazon.awssdk.services.resourceexplorer2.model.ListIndexesRequest;
@@ -132,6 +84,14 @@ import software.amazon.awssdk.services.ssm.model.ListDocumentsResponse;
 import software.amazon.awssdk.services.support.SupportAsyncClient;
 import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckResultRequest;
 import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckResultResponse;
+
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class SharedDataProvider {
     private final ConcurrentMap<String, CompletableFuture<?>> cache = new ConcurrentHashMap<>();
@@ -257,7 +217,7 @@ public class SharedDataProvider {
         Supplier<CompletableFuture<List<DistributionSummary>>> loader = () ->
             cf.listDistributions(ListDistributionsRequest.builder().build())
                 .thenApply(ListDistributionsResponse::distributionList)
-                .thenApply(dl -> dl.items());
+                .thenApply(DistributionList::items);
         return getCachedData(key, loader);
     }
 
@@ -338,7 +298,7 @@ public class SharedDataProvider {
         String key = "ec2:securitygroups";
         Supplier<CompletableFuture<List<SecurityGroup>>> loader = () ->
             ec2.describeSecurityGroups()
-                .thenApply(r -> r.securityGroups());
+                .thenApply(DescribeSecurityGroupsResponse::securityGroups);
         return getCachedData(key, loader);
     }
 

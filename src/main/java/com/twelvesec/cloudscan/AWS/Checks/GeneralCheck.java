@@ -1,20 +1,11 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.services.account.AccountAsyncClient;
 import software.amazon.awssdk.services.account.model.GetAlternateContactRequest;
 import software.amazon.awssdk.services.account.model.GetAlternateContactResponse;
@@ -24,13 +15,7 @@ import software.amazon.awssdk.services.backup.model.ListReportPlansRequest;
 import software.amazon.awssdk.services.backup.model.ListReportPlansResponse;
 import software.amazon.awssdk.services.backup.model.ReportPlan;
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient;
-import software.amazon.awssdk.services.codebuild.model.BatchGetBuildsRequest;
-import software.amazon.awssdk.services.codebuild.model.BatchGetBuildsResponse;
-import software.amazon.awssdk.services.codebuild.model.Build;
-import software.amazon.awssdk.services.codebuild.model.ListBuildsForProjectRequest;
-import software.amazon.awssdk.services.codebuild.model.ListBuildsForProjectResponse;
-import software.amazon.awssdk.services.codebuild.model.ListProjectsRequest;
-import software.amazon.awssdk.services.codebuild.model.SortOrderType;
+import software.amazon.awssdk.services.codebuild.model.*;
 import software.amazon.awssdk.services.iam.model.OrganizationNotFoundException;
 import software.amazon.awssdk.services.organizations.OrganizationsAsyncClient;
 import software.amazon.awssdk.services.organizations.model.AwsOrganizationsNotInUseException;
@@ -39,6 +24,15 @@ import software.amazon.awssdk.services.organizations.model.DescribeAccountRespon
 import software.amazon.awssdk.services.resourceexplorer2.model.Index;
 import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public class GeneralCheck implements CloudCheck {
     private List<Index> allIndexes;
@@ -186,7 +180,7 @@ public class GeneralCheck implements CloudCheck {
                         BatchGetBuildsResponse batch = codeBuild.batchGetBuilds(
                             BatchGetBuildsRequest.builder().ids(latestId.get()).build()
                         ).join();
-                        Build b = batch.builds().get(0);
+                        Build b = batch.builds().getFirst();
                         s = b.endTime().isBefore(cutoff) ? Status.FAIL : Status.PASS;
 
                         r.put("id", b.id());

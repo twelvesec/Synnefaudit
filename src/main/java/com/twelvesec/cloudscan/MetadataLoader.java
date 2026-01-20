@@ -8,10 +8,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -43,13 +41,11 @@ public final class MetadataLoader {
         Path baseDir = Paths.get(getProviderBasePath());
 
         return discoverPotentialPaths(baseDir, fileName)
-            .map(path -> tryLoadFile(path))
+            .map(MetadataLoader::tryLoadFile)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .findFirst()
-            .orElseThrow(() -> {
-                return new RuntimeException("Metadata file not found for check id: " + id);
-            });
+            .orElseThrow(() -> new RuntimeException("Metadata file not found for check id: " + id));
     }
 
     private static CheckMetadata createIndividualErrorMetadata(String checkId) {
@@ -75,7 +71,7 @@ public final class MetadataLoader {
             subdirectoryFilePaths = directoryStream
                 .filter(Files::isDirectory)
                 .map(subdir -> subdir.resolve(fileName))
-                .collect(Collectors.toList());
+                .toList();
         } catch (IOException e) {
             System.err.println("Warning: Error reading directory " + baseDir + ": " + e.getMessage());
             return rootPath;
@@ -108,7 +104,7 @@ public final class MetadataLoader {
     }
 
     private static boolean isValidFileName(String fileName) {
-        return fileName.matches("^[a-zA-Z0-9_\\-\\.]+\\.metadata\\.json$");
+        return fileName.matches("^[a-zA-Z0-9_\\-.]+\\.metadata\\.json$");
     }
 
     public static void clearCache() {

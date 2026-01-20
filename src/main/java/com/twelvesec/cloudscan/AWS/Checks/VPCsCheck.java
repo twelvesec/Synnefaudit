@@ -1,49 +1,32 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.PaginatorHelper;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
-
-import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
-import software.amazon.awssdk.services.ec2.model.DescribeFlowLogsRequest;
-import software.amazon.awssdk.services.ec2.model.DescribeFlowLogsResponse;
-import software.amazon.awssdk.services.ec2.model.Filter;
-import software.amazon.awssdk.services.ec2.model.FlowLog;
-import software.amazon.awssdk.services.ec2.model.RouteTable;
-import software.amazon.awssdk.services.ec2.model.RouteTableAssociation;
-import software.amazon.awssdk.services.ec2.model.Subnet;
-import software.amazon.awssdk.services.ec2.model.Vpc;
-import software.amazon.awssdk.services.ec2.model.VpcEndpoint;
+import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
 import software.amazon.awssdk.services.iam.model.GetPolicyRequest;
 import software.amazon.awssdk.services.iam.model.GetPolicyResponse;
 import software.amazon.awssdk.services.iam.model.GetPolicyVersionRequest;
 import software.amazon.awssdk.services.iam.model.GetPolicyVersionResponse;
 import software.amazon.awssdk.services.networkfirewall.NetworkFirewallAsyncClient;
-import software.amazon.awssdk.services.networkfirewall.model.DescribeFirewallRequest;
-import software.amazon.awssdk.services.networkfirewall.model.Firewall;
-import software.amazon.awssdk.services.networkfirewall.model.FirewallMetadata;
-import software.amazon.awssdk.services.networkfirewall.model.ListFirewallsRequest;
-import software.amazon.awssdk.services.networkfirewall.model.ListFirewallsResponse;
+import software.amazon.awssdk.services.networkfirewall.model.*;
+
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VPCsCheck implements CloudCheck {
     private List<Vpc> allVPCs;
@@ -117,13 +100,13 @@ public class VPCsCheck implements CloudCheck {
                 ).join();
                 
                 List<String> matching = allFirewalls.stream()
-                    .filter(meta -> {
+                    .map(FirewallMetadata::firewallArn)
+                    .filter(s -> {
                         Firewall fw = networkFirewall.describeFirewall(
-                            DescribeFirewallRequest.builder().firewallArn(meta.firewallArn()).build()
+                            DescribeFirewallRequest.builder().firewallArn(s).build()
                         ).join().firewall();
                         return vpcId.equals(fw.vpcId());
                     })
-                    .map(FirewallMetadata::firewallArn)
                     .toList();
 
                 Map<String,Object> inner = new HashMap<>();
@@ -283,8 +266,8 @@ public class VPCsCheck implements CloudCheck {
                 if (!hasIGW) return Stream.empty();
 
                 return rt.associations().stream()
-                    .filter(assoc -> assoc.subnetId() != null)
-                    .map(RouteTableAssociation::subnetId);
+                    .map(RouteTableAssociation::subnetId)
+                    .filter(Objects::nonNull);
             })
             .collect(Collectors.toSet());
 

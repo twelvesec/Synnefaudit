@@ -1,6 +1,7 @@
 package com.twelvesec.cloudscan;
 
 import org.reactivestreams.Publisher;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -14,7 +15,7 @@ public class PaginatorHelper {
         CompletableFuture<List<R>> future = new CompletableFuture<>();
         List<R> items = new ArrayList<>();
         
-        publisher.subscribe(new org.reactivestreams.Subscriber<T>() {
+        publisher.subscribe(new org.reactivestreams.Subscriber<>() {
             @Override
             public void onSubscribe(org.reactivestreams.Subscription s) {
                 s.request(Long.MAX_VALUE);

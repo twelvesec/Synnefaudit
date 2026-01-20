@@ -1,5 +1,19 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2AsyncClient;
+import software.amazon.awssdk.services.elasticloadbalancingv2.model.*;
+import software.amazon.awssdk.services.wafv2.Wafv2AsyncClient;
+import software.amazon.awssdk.services.wafv2.model.GetWebAclForResourceRequest;
+import software.amazon.awssdk.services.wafv2.model.GetWebAclForResourceResponse;
+import software.amazon.awssdk.services.wafv2.model.WafNonexistentItemException;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,30 +21,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
-
-import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2AsyncClient;
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeListenersRequest;
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeListenersResponse;
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancerAttributesRequest;
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancerAttributesResponse;
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.Listener;
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancer;
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancerTypeEnum;
-import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancerAttribute;
-import software.amazon.awssdk.services.wafv2.Wafv2AsyncClient;
-import software.amazon.awssdk.services.wafv2.model.GetWebAclForResourceRequest;
-import software.amazon.awssdk.services.wafv2.model.GetWebAclForResourceResponse;
-import software.amazon.awssdk.services.wafv2.model.WafNonexistentItemException;
-
 
 public class ELBCheck implements CloudCheck {
     private List<LoadBalancer> allLoadBalancers;

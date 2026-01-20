@@ -1,27 +1,20 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
+import software.amazon.awssdk.services.ec2.model.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
-
-import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
-import software.amazon.awssdk.services.ec2.model.DescribeSnapshotsRequest;
-import software.amazon.awssdk.services.ec2.model.Filter;
-import software.amazon.awssdk.services.ec2.model.GetEbsEncryptionByDefaultRequest;
-import software.amazon.awssdk.services.ec2.model.GetEbsEncryptionByDefaultResponse;
-import software.amazon.awssdk.services.ec2.model.Snapshot;
-import software.amazon.awssdk.services.ec2.model.Volume;
 
 public class EBSCheck implements CloudCheck {
     private List<Volume> allVolumes;

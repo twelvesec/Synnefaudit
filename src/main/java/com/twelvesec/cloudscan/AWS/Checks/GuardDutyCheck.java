@@ -1,5 +1,11 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
 import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
 import software.amazon.awssdk.services.guardduty.model.Administrator;
 import software.amazon.awssdk.services.guardduty.model.GetAdministratorAccountRequest;
@@ -10,14 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
 
 public class GuardDutyCheck implements CloudCheck {
     private List<String> allDetectorIds;

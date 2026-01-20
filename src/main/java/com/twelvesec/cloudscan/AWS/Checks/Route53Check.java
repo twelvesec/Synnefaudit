@@ -1,32 +1,20 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.ec2.model.Instance;
+import software.amazon.awssdk.services.route53.Route53AsyncClient;
+import software.amazon.awssdk.services.route53.model.*;
+
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
-
-import software.amazon.awssdk.services.ec2.model.Instance;
-import software.amazon.awssdk.services.route53.Route53AsyncClient;
-import software.amazon.awssdk.services.route53.model.GetQueryLoggingConfigRequest;
-import software.amazon.awssdk.services.route53.model.GetQueryLoggingConfigResponse;
-import software.amazon.awssdk.services.route53.model.HostedZone;
-import software.amazon.awssdk.services.route53.model.ListResourceRecordSetsRequest;
-import software.amazon.awssdk.services.route53.model.ListResourceRecordSetsResponse;
-import software.amazon.awssdk.services.route53.model.NoSuchQueryLoggingConfigException;
-import software.amazon.awssdk.services.route53.model.ResourceRecord;
 
 public class Route53Check implements CloudCheck {
     private List<HostedZone> allHostedZones;
@@ -74,7 +62,7 @@ public class Route53Check implements CloudCheck {
         List<String> publicZones = allHostedZones.stream()
             .filter(zone -> !zone.config().privateZone())
             .map(HostedZone::id)
-            .collect(Collectors.toList());
+            .toList();
 
         if (publicZones.isEmpty()) {
             writer.addToBuffer(AWSFinding.ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED,
@@ -136,11 +124,11 @@ public class Route53Check implements CloudCheck {
 
                 return recordsResponse.resourceRecordSets().stream()
                     .filter(record -> "A".equals(record.type()))
-                    .<Map<String, Object>>map(record -> {
+                    .map(record -> {
                         String recordName = record.name();
                         List<String> recordIps = record.resourceRecords().stream()
                                 .map(ResourceRecord::value)
-                                .collect(Collectors.toList());
+                                .toList();
 
                         boolean hasDanglingIp = recordIps.stream()
                                 .anyMatch(ip -> !activePublicIps.contains(ip));
@@ -155,13 +143,13 @@ public class Route53Check implements CloudCheck {
                         inner.put(Text.STATUS.toString(), s);
                         inner.put("record", recordNode);
                         inner.put("zone", zoneNode);
-                        return Collections.<String, Object>singletonMap(recordName, inner);
+                        return Collections.singletonMap(recordName, inner);
                     });
             } catch (Exception e) {
                 Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), Status.FAIL_EXCEPTION.toString());
                 inner.put(Text.RESULT.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
-                return Stream.<Map<String, Object>>of(Collections.singletonMap(zoneId, inner));
+                return Stream.of(Collections.singletonMap(zoneId, inner));
             }
         })
         .collect(Collectors.toList());

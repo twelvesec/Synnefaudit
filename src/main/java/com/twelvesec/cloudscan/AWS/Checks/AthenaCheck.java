@@ -1,26 +1,19 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.athena.AthenaAsyncClient;
+import software.amazon.awssdk.services.athena.model.*;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
-
-import software.amazon.awssdk.services.athena.AthenaAsyncClient;
-import software.amazon.awssdk.services.athena.model.EncryptionConfiguration;
-import software.amazon.awssdk.services.athena.model.GetWorkGroupRequest;
-import software.amazon.awssdk.services.athena.model.GetWorkGroupResponse;
-import software.amazon.awssdk.services.athena.model.WorkGroup;
-import software.amazon.awssdk.services.athena.model.WorkGroupConfiguration;
-import software.amazon.awssdk.services.athena.model.WorkGroupSummary;
 
 public class AthenaCheck implements CloudCheck {
     private List<WorkGroupSummary> allWorkGroups;

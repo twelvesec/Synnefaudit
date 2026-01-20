@@ -7,11 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -20,14 +16,14 @@ import java.util.stream.Collectors;
 
 public interface CloudCheck {
 
-    public enum Status {
+    enum Status {
         PASS,
         FAIL,
         FAIL_EXCEPTION,
         NOT_APPLICABLE
     }
 
-    public enum Severity {
+    enum Severity {
         CRITICAL,
         HIGH,
         MEDIUM,
@@ -36,17 +32,17 @@ public interface CloudCheck {
         UNKNOWN
     }
 
-    public enum Provider {
+    enum Provider {
         AWS
     }
 
-    public record CheckResult(
+    record CheckResult(
         AWSFinding title,
         Status status,
         String category
     ) {}
 
-    public record CheckSummary(
+    record CheckSummary(
         String category,
         int passCount,
         int failCount,
@@ -66,20 +62,20 @@ public interface CloudCheck {
         String category
     ) {}
 
-    public static final ObjectMapper MAPPER = new ObjectMapper()
+    ObjectMapper MAPPER = new ObjectMapper()
         .registerModule(new JavaTimeModule())
         .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     
-    public final List<CheckResult> subCheckResults = new ArrayList<>();
+    List<CheckResult> subCheckResults = new ArrayList<>();
 
     default List<CheckResult> getResults() {
         return Collections.synchronizedList(new ArrayList<>());
     }
     
-    public CompletableFuture<Void> runAllChecksAsync();
+    CompletableFuture<Void> runAllChecksAsync();
 
-    public void reportError(CloudCheck.ErrorReport report);
+    void reportError(CloudCheck.ErrorReport report);
 
     default CheckSummary summary() {
         String category = this.getClass().getSimpleName().replace("Check", "");
@@ -149,13 +145,11 @@ public interface CloudCheck {
                     return Status.FAIL_EXCEPTION;
                 }
             })
-            .reduce(Status.PASS, (overall, current) -> {
-                return current == Status.FAIL_EXCEPTION 
-                    ? Status.FAIL_EXCEPTION
-                    : (current == Status.FAIL 
-                        ? Status.FAIL
-                        : overall);
-            });
+            .reduce(Status.PASS, (overall, current) -> current == Status.FAIL_EXCEPTION
+                ? Status.FAIL_EXCEPTION
+                : (current == Status.FAIL
+                    ? Status.FAIL
+                    : overall));
     }
 
     default Supplier<CheckResult> wrapCheck(Supplier<Status> check, AWSFinding title, Consumer<ErrorReport> errorReporter) {
@@ -177,7 +171,7 @@ public interface CloudCheck {
     default CompletableFuture<Void> runChecksInList(List<Supplier<CheckResult>> checksList, DataWriter writer){
         List<CompletableFuture<CheckResult>> checkFutures = checksList.stream()
             .map(supplier ->
-                CompletableFuture.supplyAsync(supplier::get)
+                CompletableFuture.supplyAsync(supplier)
                 .handle((result, throwable) -> {
                     if (throwable != null) {
                         AWSFinding title = (result != null ? result.title() : AWSFinding.ERROR_WITH_FINDING);
@@ -194,7 +188,7 @@ public interface CloudCheck {
             .toList();
         return CompletableFuture
             .allOf(checkFutures.toArray(CompletableFuture[]::new))
-            .thenAccept(__ -> {
+            .thenAccept(_ -> {
                 subCheckResults.clear();
                 checkFutures.forEach(cf -> subCheckResults.add(cf.join()));
             });

@@ -1,9 +1,9 @@
 package com.twelvesec.cloudscan;
 
+import com.twelvesec.cloudscan.CloudCheck.CheckSummary;
+
 import java.time.Duration;
 import java.util.List;
-
-import com.twelvesec.cloudscan.CloudCheck.CheckSummary;
 
 public class ReportPrinter {
     protected static final String CHECKS_SUMMARY = "Checks Summary";

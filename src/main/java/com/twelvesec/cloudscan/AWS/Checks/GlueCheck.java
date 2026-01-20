@@ -1,26 +1,16 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.glue.GlueAsyncClient;
+import software.amazon.awssdk.services.glue.model.*;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
-
-import software.amazon.awssdk.services.glue.GlueAsyncClient;
-import software.amazon.awssdk.services.glue.model.CatalogEncryptionMode;
-import software.amazon.awssdk.services.glue.model.ConnectionPasswordEncryption;
-import software.amazon.awssdk.services.glue.model.DataCatalogEncryptionSettings;
-import software.amazon.awssdk.services.glue.model.Database;
-import software.amazon.awssdk.services.glue.model.EncryptionAtRest;
-import software.amazon.awssdk.services.glue.model.GetDataCatalogEncryptionSettingsRequest;
-import software.amazon.awssdk.services.glue.model.GetDataCatalogEncryptionSettingsResponse;
-import software.amazon.awssdk.services.glue.model.GetDatabasesRequest;
-import software.amazon.awssdk.services.glue.model.GetTablesRequest;
 
 public class GlueCheck implements CloudCheck {
     private final DataWriter writer;
@@ -58,19 +48,17 @@ public class GlueCheck implements CloudCheck {
                 return false;
             }
 
-            String firstDatabaseName = databases.get(0).name();
+            String firstDatabaseName = databases.getFirst().name();
             
             GetTablesRequest tablesRequest = GetTablesRequest.builder()
                 .databaseName(firstDatabaseName)
                 .maxResults(1)
                 .build();
-                
-            boolean hasTables = !glue.getTables(tablesRequest)
+
+            return !glue.getTables(tablesRequest)
                 .get()
                 .tableList()
                 .isEmpty();
-
-            return hasTables;
         } catch (Exception e) {
             System.err.println(Text.EXCEPTION.getText().concat(e.getMessage()));
             return false;
@@ -118,8 +106,7 @@ public class GlueCheck implements CloudCheck {
 
         ObjectNode result = MAPPER.valueToTree(encryptionAtRest.toBuilder());
 
-        boolean isEncrypted = encryptionAtRest != null 
-            && encryptionAtRest.catalogEncryptionMode() != CatalogEncryptionMode.DISABLED;
+        boolean isEncrypted = encryptionAtRest.catalogEncryptionMode() != CatalogEncryptionMode.DISABLED;
 
         Status status = isEncrypted ? Status.PASS : Status.FAIL;
         writer.addToBuffer(AWSFinding.GLUE_METADATA_NOT_ENCRYPTED, result, status);

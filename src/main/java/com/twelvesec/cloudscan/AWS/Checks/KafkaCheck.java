@@ -1,30 +1,17 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
+import software.amazon.awssdk.services.kafka.model.*;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
-import software.amazon.awssdk.services.kafka.model.BrokerSoftwareInfo;
-import software.amazon.awssdk.services.kafka.model.ClientAuthentication;
-import software.amazon.awssdk.services.kafka.model.ClusterInfo;
-import software.amazon.awssdk.services.kafka.model.DescribeClusterRequest;
-import software.amazon.awssdk.services.kafka.model.DescribeClusterResponse;
-import software.amazon.awssdk.services.kafka.model.EnhancedMonitoring;
-import software.amazon.awssdk.services.kafka.model.KafkaVersion;
-import software.amazon.awssdk.services.kafka.model.ListKafkaVersionsRequest;
 
 public class KafkaCheck implements CloudCheck {
     private List<ClusterInfo> allClusters;

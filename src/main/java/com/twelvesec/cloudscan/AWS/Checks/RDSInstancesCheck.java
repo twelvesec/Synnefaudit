@@ -1,12 +1,14 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.PaginatorHelper;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.rds.RdsAsyncClient;
+import software.amazon.awssdk.services.rds.model.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,19 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import software.amazon.awssdk.services.rds.RdsAsyncClient;
-import software.amazon.awssdk.services.rds.model.DBClusterSnapshot;
-import software.amazon.awssdk.services.rds.model.DBEngineVersion;
-import software.amazon.awssdk.services.rds.model.DBInstance;
-import software.amazon.awssdk.services.rds.model.DBSnapshot;
-import software.amazon.awssdk.services.rds.model.DescribeDbEngineVersionsRequest;
-import software.amazon.awssdk.services.rds.model.DescribeDbEngineVersionsResponse;
-import software.amazon.awssdk.services.rds.model.DescribeDbParametersRequest;
-import software.amazon.awssdk.services.rds.model.DescribeDbParametersResponse;
-import software.amazon.awssdk.services.rds.model.DescribeEventSubscriptionsResponse;
-import software.amazon.awssdk.services.rds.model.EventSubscription;
 
 public class RDSInstancesCheck implements CloudCheck {
     private List<DBInstance> allDbInstances;
@@ -380,7 +369,7 @@ public class RDSInstancesCheck implements CloudCheck {
                 ObjectNode r = MAPPER.createObjectNode();
                 try {
                     DescribeDbParametersRequest paramsRequest = DescribeDbParametersRequest.builder()
-                        .dbParameterGroupName(db.dbParameterGroups().get(0).dbParameterGroupName())
+                        .dbParameterGroupName(db.dbParameterGroups().getFirst().dbParameterGroupName())
                         .build();
                     DescribeDbParametersResponse paramsResponse = rds.describeDBParameters(paramsRequest).join();
                     boolean isEncrypted = isConnectionEncrypted(db.engine(), paramsResponse);
@@ -410,25 +399,18 @@ public class RDSInstancesCheck implements CloudCheck {
     }
 
     private boolean isConnectionEncrypted(String engine, DescribeDbParametersResponse paramsResponse) {
-        switch (engine) {
-            case "sqlserver":
-                return paramsResponse.parameters().stream()
-                    .anyMatch(p -> "rds.force_ssl".equals(p.parameterName()) 
-                        && "1".equals(p.parameterValue()));
-            case "postgres":
-            case "aurora-postgresql":
-                return paramsResponse.parameters().stream()
-                    .anyMatch(p -> "rds.force_ssl".equals(p.parameterName()) 
-                        && "1".equals(p.parameterValue()));
-            case "mysql":
-            case "mariadb":
-            case "aurora-mysql":
-                return paramsResponse.parameters().stream()
-                    .anyMatch(p -> "require_secure_transport".equals(p.parameterName()) 
-                        && "ON".equalsIgnoreCase(p.parameterValue()));
-            default:
-                return false;
-        }
+        return switch (engine) {
+            case "sqlserver" -> paramsResponse.parameters().stream()
+                    .anyMatch(p -> "rds.force_ssl".equals(p.parameterName())
+                            && "1".equals(p.parameterValue()));
+            case "postgres", "aurora-postgresql" -> paramsResponse.parameters().stream()
+                    .anyMatch(p -> "rds.force_ssl".equals(p.parameterName())
+                            && "1".equals(p.parameterValue()));
+            case "mysql", "mariadb", "aurora-mysql" -> paramsResponse.parameters().stream()
+                    .anyMatch(p -> "require_secure_transport".equals(p.parameterName())
+                            && "ON".equalsIgnoreCase(p.parameterValue()));
+            default -> false;
+        };
     }
 
     private Status checkRDSCloudWatchLogsIntegration() {

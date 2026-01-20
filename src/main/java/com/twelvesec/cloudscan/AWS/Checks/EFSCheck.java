@@ -1,27 +1,20 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.backup.model.BackupException;
+import software.amazon.awssdk.services.efs.EfsAsyncClient;
+import software.amazon.awssdk.services.efs.model.*;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
-
-import software.amazon.awssdk.services.backup.model.BackupException;
-import software.amazon.awssdk.services.efs.EfsAsyncClient;
-import software.amazon.awssdk.services.efs.model.BackupPolicy;
-import software.amazon.awssdk.services.efs.model.DescribeBackupPolicyRequest;
-import software.amazon.awssdk.services.efs.model.DescribeFileSystemPolicyRequest;
-import software.amazon.awssdk.services.efs.model.DescribeFileSystemPolicyResponse;
-import software.amazon.awssdk.services.efs.model.FileSystemDescription;
-import software.amazon.awssdk.services.efs.model.PolicyNotFoundException;
 
 public class EFSCheck implements CloudCheck {
     private List<FileSystemDescription> allFileSystems;

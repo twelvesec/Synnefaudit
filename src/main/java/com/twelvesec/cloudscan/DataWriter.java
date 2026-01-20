@@ -1,5 +1,17 @@
 package com.twelvesec.cloudscan;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck.Status;
+import com.twelvesec.cloudscan.messages.Text;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -12,18 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.StreamSupport;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.CloudCheck.Status;
-import com.twelvesec.cloudscan.messages.Text;
 
 public class DataWriter {
     private final Path outputFilePath;
@@ -92,7 +92,7 @@ public class DataWriter {
                 writeFile(output, outputFilePath);
             } catch (Exception e) {
                 System.err.println("Failed to write .json output file: " + e.getMessage());
-                snapshot.forEach(buffer::put);
+                buffer.putAll(snapshot);
             }
 
             try {
@@ -101,7 +101,7 @@ public class DataWriter {
                 writeFile(summaryOutput, summaryFilePath);
             } catch (Exception e) {
                 System.err.println("Failed to write .json summary file: " + e.getMessage());
-                summarySnapshot.forEach(summaryBuffer::put);
+                summaryBuffer.putAll(summarySnapshot);
             }
         } finally {
             flushLock.unlock();

@@ -1,18 +1,5 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.time.*;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-import java.util.stream.IntStream;
-
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.AWS.AWSFinding;
@@ -20,31 +7,20 @@ import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
-import software.amazon.awssdk.services.iam.model.AccessKeyLastUsed;
-import software.amazon.awssdk.services.iam.model.AccessKeyMetadata;
-import software.amazon.awssdk.services.iam.model.AttachedPolicy;
-import software.amazon.awssdk.services.iam.model.GenerateCredentialReportResponse;
-import software.amazon.awssdk.services.iam.model.GetAccessKeyLastUsedRequest;
-import software.amazon.awssdk.services.iam.model.GetAccessKeyLastUsedResponse;
-import software.amazon.awssdk.services.iam.model.GetCredentialReportResponse;
-import software.amazon.awssdk.services.iam.model.GetLoginProfileRequest;
-import software.amazon.awssdk.services.iam.model.GetLoginProfileResponse;
-import software.amazon.awssdk.services.iam.model.ListAccessKeysRequest;
-import software.amazon.awssdk.services.iam.model.ListAccessKeysResponse;
-import software.amazon.awssdk.services.iam.model.ListAttachedUserPoliciesRequest;
-import software.amazon.awssdk.services.iam.model.ReportStateType;
-import software.amazon.awssdk.services.iam.model.User;
+import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
-import software.amazon.awssdk.services.kms.model.DescribeKeyRequest;
-import software.amazon.awssdk.services.kms.model.DescribeKeyResponse;
-import software.amazon.awssdk.services.kms.model.GetKeyRotationStatusRequest;
-import software.amazon.awssdk.services.kms.model.GetKeyRotationStatusResponse;
-import software.amazon.awssdk.services.kms.model.KeyManagerType;
-import software.amazon.awssdk.services.kms.model.KeyMetadata;
-import software.amazon.awssdk.services.kms.model.KeyState;
+import software.amazon.awssdk.services.kms.model.*;
+
+import java.time.*;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 public class AccessKeysCheck implements CloudCheck {
     private List<User> allUsers;
@@ -150,14 +126,13 @@ public class AccessKeysCheck implements CloudCheck {
                     if (keys.isEmpty()) {
                         r = MAPPER.createObjectNode().put(Text.RESULT.toString(), 
                                                     Text.NO_ACCESS_KEYS_FOUND.toString());
-                        s = Status.PASS;
                     } else {
                         ArrayNode keyArr = MAPPER.createArrayNode();
                         for (AccessKeyMetadata key : keys) {
                             boolean oldKey = key.createDate().isBefore(cutoff);
                             if (oldKey) { s = Status.FAIL; }
 
-                            ObjectNode keyNode = (ObjectNode) MAPPER.valueToTree(key.toBuilder());
+                            ObjectNode keyNode = MAPPER.valueToTree(key.toBuilder());
                             long daysOld = ChronoUnit.DAYS.between(key.createDate(), Instant.now());
                             keyNode.put(Text.AGEINDAYS.toString(), daysOld);
                             keyArr.add(keyNode);
@@ -212,7 +187,7 @@ public class AccessKeysCheck implements CloudCheck {
                         ).join()
                         .accessKeyMetadata().stream()
                         .map(key -> {
-                            ObjectNode keyNode = (ObjectNode) MAPPER.valueToTree(key.toBuilder());
+                            ObjectNode keyNode = MAPPER.valueToTree(key.toBuilder());
                             long ageDays = ChronoUnit.DAYS.between(key.createDate(), Instant.now());
                             keyNode.put(Text.AGEINDAYS.toString(), ageDays);
                             keyNode.put(Text.AGESTATUS.toString(), (key.createDate().isBefore(cutoff) ? Status.FAIL : Status.PASS).toString());
@@ -283,14 +258,13 @@ public class AccessKeysCheck implements CloudCheck {
                         ListAccessKeysRequest.builder().userName(username).build())
                         .join();
                     
-                    boolean hasEarlyKeys = false;
+                    boolean hasEarlyKeys;
                     ArrayNode accessKeysArray = MAPPER.createArrayNode();
 
                     hasEarlyKeys = keysResponse.accessKeyMetadata().stream()
-                        .map(key -> {
+                        .peek(key -> {
                             ObjectNode keyNode = MAPPER.valueToTree(key.toBuilder());
                             accessKeysArray.add(keyNode);
-                            return key;
                         })
                         .anyMatch(key -> Duration.between(user.createDate(), key.createDate()).toDays() <= 1);
                     
@@ -534,8 +508,8 @@ public class AccessKeysCheck implements CloudCheck {
         try {
             CompletableFuture<GetCredentialReportResponse> reportFuture =
                 iam.generateCredentialReport()
-                    .thenCompose(response -> pollForCredentialReport())
-                    .thenCompose(response -> iam.getCredentialReport());
+                    .thenCompose(_ -> pollForCredentialReport())
+                    .thenCompose(_ -> iam.getCredentialReport());
 
             GetCredentialReportResponse reportResponse = reportFuture.orTimeout(30, TimeUnit.SECONDS).join();
 
@@ -588,7 +562,7 @@ public class AccessKeysCheck implements CloudCheck {
                             throw new RuntimeException(e);
                         }
                     })
-                    .thenCompose(__ -> iam.generateCredentialReport())
+                    .thenCompose(_ -> iam.generateCredentialReport())
             )
             .reduce(
                 CompletableFuture.completedFuture(null),

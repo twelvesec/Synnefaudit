@@ -1,42 +1,18 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.services.ecr.EcrAsyncClient;
-import software.amazon.awssdk.services.ecr.model.DescribeImageScanFindingsRequest;
-import software.amazon.awssdk.services.ecr.model.DescribeImageScanFindingsResponse;
-import software.amazon.awssdk.services.ecr.model.DescribeImagesRequest;
-import software.amazon.awssdk.services.ecr.model.DescribeImagesResponse;
-import software.amazon.awssdk.services.ecr.model.GetLifecyclePolicyRequest;
-import software.amazon.awssdk.services.ecr.model.GetLifecyclePolicyResponse;
-import software.amazon.awssdk.services.ecr.model.GetRegistryScanningConfigurationRequest;
-import software.amazon.awssdk.services.ecr.model.GetRegistryScanningConfigurationResponse;
-import software.amazon.awssdk.services.ecr.model.ImageDetail;
-import software.amazon.awssdk.services.ecr.model.ImageIdentifier;
-import software.amazon.awssdk.services.ecr.model.ImageScanFinding;
-import software.amazon.awssdk.services.ecr.model.LifecyclePolicyNotFoundException;
-import software.amazon.awssdk.services.ecr.model.ListImagesFilter;
-import software.amazon.awssdk.services.ecr.model.ListImagesRequest;
-import software.amazon.awssdk.services.ecr.model.ListImagesResponse;
-import software.amazon.awssdk.services.ecr.model.RegistryScanningRule;
-import software.amazon.awssdk.services.ecr.model.ScanFrequency;
-import software.amazon.awssdk.services.ecr.model.TagStatus;
+import software.amazon.awssdk.services.ecr.model.*;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public class ECRCheck implements CloudCheck {
     private List<String> allRepositoryNames;
@@ -156,7 +132,7 @@ public class ECRCheck implements CloudCheck {
                             s = Status.PASS;
                             r = Text.ECR_NO_TAGGED_IMAGE_WITH_TIMESTAMP_FOUND.toString();
                         } else {
-                            String tag = latestImage.get().imageTags().get(0);
+                            String tag = latestImage.get().imageTags().getFirst();
 
                             DescribeImageScanFindingsResponse findingsResponse = ecr.describeImageScanFindings(
                                 DescribeImageScanFindingsRequest.builder()

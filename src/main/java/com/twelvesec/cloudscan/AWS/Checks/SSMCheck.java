@@ -1,18 +1,11 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.services.ssm.SsmAsyncClient;
 import software.amazon.awssdk.services.ssm.model.DescribeDocumentPermissionRequest;
 import software.amazon.awssdk.services.ssm.model.DescribeDocumentPermissionResponse;
@@ -21,6 +14,12 @@ import software.amazon.awssdk.services.ssmincidents.SsmIncidentsAsyncClient;
 import software.amazon.awssdk.services.ssmincidents.model.ListResponsePlansRequest;
 import software.amazon.awssdk.services.ssmincidents.model.ListResponsePlansResponse;
 import software.amazon.awssdk.services.ssmincidents.model.ResponsePlanSummary;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public class SSMCheck implements CloudCheck {
     private List<DocumentIdentifier> allDocuments;

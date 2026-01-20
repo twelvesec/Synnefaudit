@@ -1,5 +1,15 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.ec2.model.NetworkAcl;
+import software.amazon.awssdk.services.ec2.model.NetworkAclEntry;
+import software.amazon.awssdk.services.ec2.model.RuleAction;
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -8,18 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.CloudCheck.CheckResult;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.messages.Text;
-
-import software.amazon.awssdk.services.ec2.model.NetworkAcl;
-import software.amazon.awssdk.services.ec2.model.NetworkAclEntry;
-import software.amazon.awssdk.services.ec2.model.RuleAction;
 
 public class NetworkACLsCheck implements CloudCheck {
     private List<NetworkAcl> allNetworkACLs;
@@ -51,10 +49,10 @@ public class NetworkACLsCheck implements CloudCheck {
         writer.addToBuffer(report.finding(), report.message(), report.status());
     }
 
-    private Status checkNetworkACL(Predicate<NetworkAclEntry> violationCondition, AWSFinding finding, Status emptyStatus) {
+    private Status checkNetworkACL(Predicate<NetworkAclEntry> violationCondition, AWSFinding finding) {
         if (allNetworkACLs.isEmpty()) {
-            writer.addToBuffer(finding, Text.NO_NETWORK_ACLS_FOUND, emptyStatus);
-            return emptyStatus;
+            writer.addToBuffer(finding, Text.NO_NETWORK_ACLS_FOUND, Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
         }
 
         List<Map<String, Object>> result = allNetworkACLs.stream()
@@ -66,7 +64,7 @@ public class NetworkACLsCheck implements CloudCheck {
                             (entry.egress() ? Text.EGRESS.toString() : Text.INGRESS.toString()), 
                             entry.ruleNumber()),
                         entry -> createEntryResult(entry, violationCondition),
-                        (first, second) -> first,
+                        (first, _) -> first,
                         LinkedHashMap<String, Object>::new
                     ))
             ))
@@ -122,27 +120,27 @@ public class NetworkACLsCheck implements CloudCheck {
         Predicate<NetworkAclEntry> condition = isAllowRule()
             .and(isIngressFromInternet())
             .and(allPortsCondition());
-        return checkNetworkACL(condition, AWSFinding.NETWORK_ACL_WITH_ALL_PORTS_OPEN_TO_INTERNET, Status.NOT_APPLICABLE);
+        return checkNetworkACL(condition, AWSFinding.NETWORK_ACL_WITH_ALL_PORTS_OPEN_TO_INTERNET);
     }
 
     private Status NetworkACLAllowIngressFromTheInternetToPorts() {
         Predicate<NetworkAclEntry> condition = isAllowRule()
             .and(isIngressFromInternet())
             .and(somePortsCondition());
-        return checkNetworkACL(condition, AWSFinding.NETWORK_ACL_WITH_SOME_PORTS_OPEN_TO_INTERNET, Status.NOT_APPLICABLE);
+        return checkNetworkACL(condition, AWSFinding.NETWORK_ACL_WITH_SOME_PORTS_OPEN_TO_INTERNET);
     }
 
     private Status NetworkACLAllowIngressFromInternetToRDP() {
         Predicate<NetworkAclEntry> condition = isAllowRule()
             .and(isIngressFromInternet())
             .and(portCondition(3389));
-        return checkNetworkACL(condition, AWSFinding.NETWORK_ACL_WITH_RDP_OPEN_TO_INTERNET, Status.NOT_APPLICABLE);
+        return checkNetworkACL(condition, AWSFinding.NETWORK_ACL_WITH_RDP_OPEN_TO_INTERNET);
     }
 
     private Status NetworkACLAllowIngressFromInternetToSSH() {
         Predicate<NetworkAclEntry> condition = isAllowRule()
             .and(isIngressFromInternet())
             .and(portCondition(22));
-        return checkNetworkACL(condition, AWSFinding.NETWORK_ACL_WITH_SSH_OPEN_TO_INTERNET, Status.NOT_APPLICABLE);
+        return checkNetworkACL(condition, AWSFinding.NETWORK_ACL_WITH_SSH_OPEN_TO_INTERNET);
     }
 }

@@ -1,40 +1,25 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
-import software.amazon.awssdk.services.ec2.model.DescribeInstancesRequest;
-import software.amazon.awssdk.services.ec2.model.DescribeInstancesResponse;
-import software.amazon.awssdk.services.ec2.model.Filter;
-import software.amazon.awssdk.services.ec2.model.Instance;
-import software.amazon.awssdk.services.ec2.model.InstanceMetadataOptionsResponse;
-import software.amazon.awssdk.services.ec2.model.IpPermission;
-import software.amazon.awssdk.services.ec2.model.IpRange;
-import software.amazon.awssdk.services.ec2.model.Ipv6Range;
-import software.amazon.awssdk.services.ec2.model.MonitoringState;
-import software.amazon.awssdk.services.ec2.model.SecurityGroup;
+import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.ssm.SsmAsyncClient;
 import software.amazon.awssdk.services.ssm.model.DescribeInstanceInformationRequest;
 import software.amazon.awssdk.services.ssm.model.DescribeInstanceInformationResponse;
 import software.amazon.awssdk.services.ssm.model.InstanceInformationStringFilter;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class EC2Check implements CloudCheck {
     private List<Instance> allEC2Instances;
@@ -232,7 +217,7 @@ public class EC2Check implements CloudCheck {
 
                             Stream<String> v6 = perm.ipv6Ranges().stream()
                                 .map(Ipv6Range::cidrIpv6)
-                                .filter(cidr -> "::/0".equals(cidr));
+                                .filter("::/0"::equals);
 
                             return Stream.concat(v4, v6);
                         })
@@ -436,8 +421,8 @@ public class EC2Check implements CloudCheck {
         Integer permissionFromPort = permission.fromPort();
         Integer permissionToPort = permission.toPort();
         
-        final Integer fromPort;
-        final Integer toPort;
+        final int fromPort;
+        final int toPort;
 
         if (isAllProtocols && (permissionFromPort == null || permissionToPort == null)) {
             fromPort = 0;
@@ -495,7 +480,7 @@ public class EC2Check implements CloudCheck {
                             String.format("Not Public Ports (%s) found.", portsStr);
                         inner.put(Text.MESSAGE.toString(), message);
                     }
-                };
+                }
                 return Map.<String, Object>of(sg.groupId(), inner);
             })
             .toList();

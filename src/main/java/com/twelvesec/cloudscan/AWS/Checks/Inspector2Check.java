@@ -1,5 +1,15 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.inspector2.Inspector2AsyncClient;
+import software.amazon.awssdk.services.inspector2.model.*;
+import software.amazon.awssdk.services.sts.StsAsyncClient;
+import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,25 +17,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-
-import software.amazon.awssdk.services.inspector2.Inspector2AsyncClient;
-import software.amazon.awssdk.services.inspector2.model.AccountState;
-import software.amazon.awssdk.services.inspector2.model.BatchGetAccountStatusRequest;
-import software.amazon.awssdk.services.inspector2.model.BatchGetAccountStatusResponse;
-import software.amazon.awssdk.services.inspector2.model.Finding;
-import software.amazon.awssdk.services.inspector2.model.ListFindingsRequest;
-import software.amazon.awssdk.services.inspector2.model.ListFindingsResponse;
-import software.amazon.awssdk.services.inspector2.model.State;
-import software.amazon.awssdk.services.sts.StsAsyncClient;
-import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
-
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.messages.Text;
 
 public class Inspector2Check implements CloudCheck {
     private final DataWriter writer;
@@ -99,7 +90,7 @@ public class Inspector2Check implements CloudCheck {
         resourceStateNode.putObject("lambdaCode").put("status", account.resourceState().lambdaCode().status().toString());
         resultNode.putObject("state").put("status", account.state().status().toString());
 
-        inspector2enabled = status.equals(Status.PASS) ? false : true;
+        inspector2enabled = !status.equals(Status.PASS);
         writer.addToBuffer(AWSFinding.INSPECTOR2_NOT_ENABLED, resultNode, status);
         return status;
     }

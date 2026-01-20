@@ -1,14 +1,6 @@
 package com.twelvesec.cloudscan.AWS;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Supplier;
-
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
@@ -65,6 +57,13 @@ import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 import software.amazon.awssdk.services.support.SupportAsyncClient;
 import software.amazon.awssdk.services.wafv2.Wafv2AsyncClient;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 
 public class AWSDependencyFactory {
     private final Region region;
@@ -137,8 +136,7 @@ public class AWSDependencyFactory {
     }
 
     public void closeAllClients() {
-        toClose.stream()
-           .forEach((AutoCloseable client) -> {
+        toClose.forEach((AutoCloseable client) -> {
                try {
                    client.close();
                } catch (Exception e) {
@@ -233,13 +231,10 @@ public class AWSDependencyFactory {
 
     private String getMfaToken(String mfaSerial) {
         System.out.printf("Enter MFA token code for %s : ", mfaSerial);
-        Scanner scanner = new Scanner(System.in);
-        try {
+        try (Scanner scanner = new Scanner(System.in)) {
             return scanner.nextLine().trim();
         } catch (Exception e) {
             throw new RuntimeException("Failed to read MFA token from console", e);
-        } finally {
-            scanner.close();
         }
     }
 }

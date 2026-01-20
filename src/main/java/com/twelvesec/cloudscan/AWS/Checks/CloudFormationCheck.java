@@ -1,23 +1,22 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
 import software.amazon.awssdk.services.cloudformation.CloudFormationAsyncClient;
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksRequest;
 import software.amazon.awssdk.services.cloudformation.model.DescribeStacksResponse;
 import software.amazon.awssdk.services.cloudformation.model.Stack;
 import software.amazon.awssdk.services.cloudformation.model.StackSummary;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public class CloudFormationCheck implements CloudCheck {
     private List<StackSummary> allStacks;
@@ -66,7 +65,7 @@ public class CloudFormationCheck implements CloudCheck {
                         DescribeStacksRequest.builder().stackName(stackName).build()
                     ).join();
                     
-                    Stack stack = response.stacks().get(0);
+                    Stack stack = response.stacks().getFirst();
                     boolean protectionEnabled = stack.enableTerminationProtection() != null 
                                             && stack.enableTerminationProtection();
                     s = protectionEnabled ? Status.PASS : Status.FAIL;

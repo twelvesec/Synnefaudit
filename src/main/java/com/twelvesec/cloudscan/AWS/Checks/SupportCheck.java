@@ -1,28 +1,18 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.util.ArrayList;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.support.SupportAsyncClient;
+import software.amazon.awssdk.services.support.model.*;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
-
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.services.support.SupportAsyncClient;
-import software.amazon.awssdk.services.support.model.DescribeSeverityLevelsRequest;
-import software.amazon.awssdk.services.support.model.DescribeSeverityLevelsResponse;
-import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckSummariesRequest;
-import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorChecksRequest;
-import software.amazon.awssdk.services.support.model.SeverityLevel;
-import software.amazon.awssdk.services.support.model.TrustedAdvisorCheckDescription;
-import software.amazon.awssdk.services.support.model.TrustedAdvisorCheckSummary;
 
 public class SupportCheck implements CloudCheck {
     private final DataWriter writer;
@@ -48,8 +38,8 @@ public class SupportCheck implements CloudCheck {
     }
 
     private Status checkAmazonWebServicesPremiumSupportPlanIsNotSubscribed() {        
-        Status status = Status.FAIL;
-        List<String> result = new ArrayList<>();
+        Status status;
+        List<String> result;
 
         try {
             DescribeSeverityLevelsResponse sevResponse = support.describeSeverityLevels(

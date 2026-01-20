@@ -1,40 +1,21 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.PaginatorHelper;
 import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.services.iam.IamAsyncClient;
-import software.amazon.awssdk.services.iam.model.AttachedPolicy;
-import software.amazon.awssdk.services.iam.model.GetAccountSummaryResponse;
-import software.amazon.awssdk.services.iam.model.GetGroupRequest;
-import software.amazon.awssdk.services.iam.model.GetGroupResponse;
-import software.amazon.awssdk.services.iam.model.GetLoginProfileRequest;
-import software.amazon.awssdk.services.iam.model.Group;
-import software.amazon.awssdk.services.iam.model.ListAttachedGroupPoliciesRequest;
-import software.amazon.awssdk.services.iam.model.ListAttachedGroupPoliciesResponse;
-import software.amazon.awssdk.services.iam.model.ListMfaDevicesRequest;
-import software.amazon.awssdk.services.iam.model.ListMfaDevicesResponse;
-import software.amazon.awssdk.services.iam.model.MFADevice;
-import software.amazon.awssdk.services.iam.model.NoSuchEntityException;
-import software.amazon.awssdk.services.iam.model.SummaryKeyType;
-import software.amazon.awssdk.services.iam.model.User;
-import software.amazon.awssdk.services.iam.model.VirtualMFADevice;
+import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class MFACheck implements CloudCheck {
     private List<User> allUsers;
@@ -107,20 +88,14 @@ public class MFACheck implements CloudCheck {
         boolean anyMfaEnabled = summaryResp.summaryMap()
                                 .getOrDefault("AccountMFAEnabled", 0) == 1;
 
-        List<VirtualMFADevice> virtualDevs = iam.listVirtualMFADevices().join().virtualMFADevices();
-        boolean rootHasVirtual = virtualDevs.stream()
-            .anyMatch(d -> {
-                User u = d.user();
-                return u != null && u.arn() != null && u.arn().endsWith(":root");
-            });
-
+        List<VirtualMFADevice> virtualMFADevices = iam.listVirtualMFADevices().join().virtualMFADevices();
+        boolean rootHasVirtual = rootHasVirtualMFA(virtualMFADevices);
         boolean rootHasHardware = anyMfaEnabled && !rootHasVirtual;
 
         Object result;
         if (rootHasHardware) {
             String accountId = sts.getCallerIdentity(GetCallerIdentityRequest.builder().build()).join().account();
-            String rootArn   = "arn:aws:iam::" + accountId + ":root";
-            result = rootArn;
+            result = "arn:aws:iam::" + accountId + ":root";
         }
         else {
             result = Text.NO_HARDWARE_MFA_DEVICES_FOR_ROOT.toString();
@@ -134,24 +109,27 @@ public class MFACheck implements CloudCheck {
 
     private Status checkRootAccountWithVirtualMFA() {
         List<VirtualMFADevice> virtualMFADevices = iam.listVirtualMFADevices().join().virtualMFADevices();
-        
-        boolean hasVirtualMFA = virtualMFADevices.stream()
-            .anyMatch(device -> {
-                User user = device.user();
-                return user != null 
-                    && user.arn() != null 
-                    && user.arn().endsWith(":root");
-            });
+        boolean hasVirtualMFA = rootHasVirtualMFA(virtualMFADevices);
         
         Status status = hasVirtualMFA ? Status.FAIL : Status.PASS;
         Object result = hasVirtualMFA
             ? MAPPER.valueToTree(virtualMFADevices.stream()
-                .map(device -> device.toBuilder())
+                .map(VirtualMFADevice::toBuilder)
                 .collect(Collectors.toList()))
             : Text.NO_VIRTUAL_MFA_FOR_ROOT.toString();
         
         writer.addToBuffer(AWSFinding.ROOT_ACCOUNT_WITH_VIRTUAL_MFA, result, status);
         return status;
+    }
+
+    private boolean rootHasVirtualMFA(List<VirtualMFADevice> virtualMFADevices) {
+        return virtualMFADevices.stream()
+                .anyMatch(device -> {
+                    User user = device.user();
+                    return user != null
+                            && user.arn() != null
+                            && user.arn().endsWith(":root");
+                });
     }
 
     private Status checkUsersWithNoMFA() {
@@ -397,7 +375,7 @@ public class MFACheck implements CloudCheck {
 
     private Boolean hasLoginProfile(String userName) {
         iam.getLoginProfile(GetLoginProfileRequest.builder().userName(userName).build())
-            .thenApply(response -> true)
+            .thenApply(_ -> true)
             .exceptionally(ex -> {
                 if (ex.getCause() instanceof NoSuchEntityException) {
                     return false;

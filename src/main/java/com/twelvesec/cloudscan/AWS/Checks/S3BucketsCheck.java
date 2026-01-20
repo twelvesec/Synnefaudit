@@ -2,12 +2,21 @@ package com.twelvesec.cloudscan.AWS.Checks;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3control.S3ControlAsyncClient;
+import software.amazon.awssdk.services.s3control.model.GetPublicAccessBlockRequest;
+import software.amazon.awssdk.services.s3control.model.GetPublicAccessBlockResponse;
+import software.amazon.awssdk.services.s3control.model.PublicAccessBlockConfiguration;
+import software.amazon.awssdk.services.s3control.model.S3ControlException;
+import software.amazon.awssdk.services.sts.StsAsyncClient;
+import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,28 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.GetBucketAclRequest;
-import software.amazon.awssdk.services.s3.model.GetBucketAclResponse;
-import software.amazon.awssdk.services.s3.model.GetBucketEncryptionRequest;
-import software.amazon.awssdk.services.s3.model.GetBucketEncryptionResponse;
-import software.amazon.awssdk.services.s3.model.GetBucketLoggingRequest;
-import software.amazon.awssdk.services.s3.model.GetBucketLoggingResponse;
-import software.amazon.awssdk.services.s3.model.GetBucketPolicyRequest;
-import software.amazon.awssdk.services.s3.model.GetBucketPolicyResponse;
-import software.amazon.awssdk.services.s3.model.GetBucketVersioningRequest;
-import software.amazon.awssdk.services.s3.model.GetBucketVersioningResponse;
-import software.amazon.awssdk.services.s3.model.GetObjectLockConfigurationRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectLockConfigurationResponse;
-import software.amazon.awssdk.services.s3.model.S3Exception;
-import software.amazon.awssdk.services.s3control.S3ControlAsyncClient;
-import software.amazon.awssdk.services.s3control.model.GetPublicAccessBlockRequest;
-import software.amazon.awssdk.services.s3control.model.GetPublicAccessBlockResponse;
-import software.amazon.awssdk.services.s3control.model.PublicAccessBlockConfiguration;
-import software.amazon.awssdk.services.s3control.model.S3ControlException;
-import software.amazon.awssdk.services.sts.StsAsyncClient;
-import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
 public class S3BucketsCheck implements CloudCheck {
     private List<String> allS3BucketNames;
@@ -202,9 +189,8 @@ public class S3BucketsCheck implements CloudCheck {
                             policyNode.get("Statement").spliterator(), false
                         )
                         .anyMatch(stmt -> {
-                        JsonNode node = (JsonNode) stmt;
-                        boolean isDeny = "Deny".equalsIgnoreCase(node.path("Effect").asText());
-                        JsonNode cond = node.path("Condition").path("Bool")
+                            boolean isDeny = "Deny".equalsIgnoreCase(((JsonNode) stmt).path("Effect").asText());
+                        JsonNode cond = stmt.path("Condition").path("Bool")
                                             .path("aws:SecureTransport");
                         return isDeny && cond.asText().equalsIgnoreCase("false");
                         });
@@ -472,9 +458,8 @@ public class S3BucketsCheck implements CloudCheck {
                         
                         hasPolicyEnforcement = StreamSupport.stream(policyNode.get("Statement").spliterator(), false)
                             .anyMatch(stmt -> {
-                                JsonNode node = (JsonNode) stmt;
-                                boolean isDeny = "Deny".equalsIgnoreCase(node.path("Effect").asText());
-                                JsonNode condition = node.path("Condition");
+                                boolean isDeny = "Deny".equalsIgnoreCase(((JsonNode) stmt).path("Effect").asText());
+                                JsonNode condition = stmt.path("Condition");
                                 
                                 boolean requiresEncryption = 
                                     condition.path("Null").path("s3:x-amz-server-side-encryption").asText().equalsIgnoreCase("false") 
@@ -538,12 +523,11 @@ public class S3BucketsCheck implements CloudCheck {
                     boolean allowsWriteAccess = StreamSupport.stream(
                         policyNode.path("Statement").spliterator(), false)
                         .anyMatch(stmt -> {
-                            JsonNode statement = (JsonNode) stmt;
-                            String effect = statement.path("Effect").asText("");
-                            String action = statement.path("Action").asText("");
-                            JsonNode actions = statement.path("Action");
+                            String effect = stmt.path("Effect").asText("");
+                            String action = stmt.path("Action").asText("");
+                            JsonNode actions = stmt.path("Action");
                             
-                            boolean hasWriteAction = false;
+                            boolean hasWriteAction;
                             if (actions.isArray()) {
                                 hasWriteAction = StreamSupport.stream(actions.spliterator(), false)
                                     .anyMatch(a -> isWriteAction(a.asText("")));
@@ -886,7 +870,7 @@ public class S3BucketsCheck implements CloudCheck {
                 || "*".equals(action);
         } else if (actionNode.isArray()) {
             return StreamSupport.stream(actionNode.spliterator(), false)
-                .anyMatch(action -> hasListAction(action));
+                .anyMatch(this::hasListAction);
         }
         return false;
     }
@@ -902,7 +886,7 @@ public class S3BucketsCheck implements CloudCheck {
                 || "*".equals(action);
         } else if (actionNode.isArray()) {
             return StreamSupport.stream(actionNode.spliterator(), false)
-                .anyMatch(action -> hasReadAction(action));
+                .anyMatch(this::hasReadAction);
         }
         return false;
     }
@@ -919,7 +903,7 @@ public class S3BucketsCheck implements CloudCheck {
                 || "*".equals(action);
         } else if (actionNode.isArray()) {
             return StreamSupport.stream(actionNode.spliterator(), false)
-                .anyMatch(action -> hasWriteAction(action));
+                .anyMatch(this::hasWriteAction);
         }
         return false;
     }

@@ -1,21 +1,11 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.services.cloudwatch.model.MetricAlarm;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient;
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeMetricFiltersRequest;
@@ -24,6 +14,14 @@ import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup;
 import software.amazon.awssdk.services.cloudwatchlogs.model.MetricFilter;
 import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class CloudWatchCheck implements CloudCheck {
     private static final long LOW_RETENTION_THRESHOLD = 365;
@@ -212,7 +210,7 @@ public class CloudWatchCheck implements CloudCheck {
                     
                     List<MetricFilter> matchingFilters = metricFiltersResponse.metricFilters().stream()
                         .filter(filter -> filter.filterPattern().contains(filterPattern))
-                        .collect(Collectors.toList());
+                        .toList();
                     
                     if (matchingFilters.isEmpty()) {
                         s = Status.FAIL;
@@ -230,14 +228,14 @@ public class CloudWatchCheck implements CloudCheck {
                         } else {
                             List<MetricAlarm> matchingAlarms = allAlarms.stream()
                                 .filter(alarm -> expectedAlarmNames.contains(alarm.alarmName()))
-                                .collect(Collectors.toList());
+                                .toList();
                             
                             if (matchingAlarms.isEmpty()) {
                                 s = Status.FAIL;
                                 resultNode.put(Text.MESSAGE.toString(), Text.NO_MATCHING_ALARMS_FOUND.getText());
                             } else {
                                 boolean hasAlarmingAlarm = matchingAlarms.stream()
-                                    .anyMatch(alarm -> "ALARM".equals(alarm.stateValue()));
+                                    .anyMatch(alarm -> "ALARM".equals(alarm.stateValue().toString()));
                                 
                                 if (hasAlarmingAlarm) {
                                     s = Status.FAIL; 
@@ -297,7 +295,7 @@ public class CloudWatchCheck implements CloudCheck {
             AWSFinding.LOG_METRIC_FILTER_ORGANIZATIONS_CHANGES,
             "{ ($.eventSource = organizations.amazonaws.com) && (($.eventName = AcceptHandshake) || ($.eventName = AttachPolicy) || ($.eventName = CreateAccount) || ($.eventName = CreateOrganizationalUnit) || ($.eventName = CreatePolicy) || ($.eventName = DeclineHandshake) || ($.eventName = DeleteOrganization) || ($.eventName = DeleteOrganizationalUnit) || ($.eventName = DeletePolicy) || ($.eventName = DetachPolicy) || ($.eventName = DisablePolicyType) || ($.eventName = EnablePolicyType) || ($.eventName = InviteAccountToOrganization) || ($.eventName = LeaveOrganization) || ($.eventName = MoveAccount) || ($.eventName = RemoveAccountFromOrganization) || ($.eventName = UpdatePolicy) || ($.eventName = UpdateOrganizationalUnit)) }",
             "OrganizationsChanges",
-            Arrays.asList("OrganizationsChangesAlarm")
+            List.of("OrganizationsChangesAlarm")
         );
     }
 

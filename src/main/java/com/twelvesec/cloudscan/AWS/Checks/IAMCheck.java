@@ -1,69 +1,35 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.PaginatorHelper;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.services.accessanalyzer.AccessAnalyzerAsyncClient;
 import software.amazon.awssdk.services.accessanalyzer.model.AnalyzerSummary;
+import software.amazon.awssdk.services.accessanalyzer.model.FindingSummary;
 import software.amazon.awssdk.services.accessanalyzer.model.ListFindingsRequest;
 import software.amazon.awssdk.services.accessanalyzer.model.ListFindingsResponse;
-import software.amazon.awssdk.services.accessanalyzer.model.FindingSummary;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
-import software.amazon.awssdk.services.iam.model.AccessKeyMetadata;
-import software.amazon.awssdk.services.iam.model.AttachedPolicy;
-import software.amazon.awssdk.services.iam.model.GetAccountPasswordPolicyRequest;
-import software.amazon.awssdk.services.iam.model.GetAccountPasswordPolicyResponse;
-import software.amazon.awssdk.services.iam.model.GetLoginProfileRequest;
-import software.amazon.awssdk.services.iam.model.GetLoginProfileResponse;
-import software.amazon.awssdk.services.iam.model.GetPolicyRequest;
-import software.amazon.awssdk.services.iam.model.GetPolicyVersionRequest;
-import software.amazon.awssdk.services.iam.model.GetRoleRequest;
-import software.amazon.awssdk.services.iam.model.GetRoleResponse;
-import software.amazon.awssdk.services.iam.model.ListAccessKeysRequest;
-import software.amazon.awssdk.services.iam.model.ListAccessKeysResponse;
-import software.amazon.awssdk.services.iam.model.ListAttachedRolePoliciesRequest;
-import software.amazon.awssdk.services.iam.model.ListAttachedRolePoliciesResponse;
-import software.amazon.awssdk.services.iam.model.ListAttachedUserPoliciesRequest;
-import software.amazon.awssdk.services.iam.model.ListAttachedUserPoliciesResponse;
-import software.amazon.awssdk.services.iam.model.ListEntitiesForPolicyRequest;
-import software.amazon.awssdk.services.iam.model.ListEntitiesForPolicyResponse;
-import software.amazon.awssdk.services.iam.model.NoSuchEntityException;
-import software.amazon.awssdk.services.iam.model.PasswordPolicy;
-import software.amazon.awssdk.services.iam.model.Policy;
-import software.amazon.awssdk.services.iam.model.PolicyGroup;
-import software.amazon.awssdk.services.iam.model.PolicyRole;
-import software.amazon.awssdk.services.iam.model.PolicyUser;
-import software.amazon.awssdk.services.iam.model.Role;
-import software.amazon.awssdk.services.iam.model.User;
+import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class IAMCheck implements CloudCheck {
     private static final int MAX_KEY_AGE_DAYS = 90;
@@ -276,7 +242,7 @@ public class IAMCheck implements CloudCheck {
             passwordPolicyRetrieved = true;
         }
         return passwordPolicyRetrievalStatus == Status.PASS;
-}
+    }
 
     private Status checkIAMPasswordPolicyIsNotSet() {
         Status status = retrievePasswordPolicy() ? passwordPolicyRetrievalStatus : Status.FAIL;
@@ -285,7 +251,7 @@ public class IAMCheck implements CloudCheck {
     }
 
     private Status checkShortIAMPasswordPolicyReuse() { 
-        Status status = Status.FAIL;
+        Status status;
         String result;
         
         if (!retrievePasswordPolicy()) {
@@ -307,7 +273,6 @@ public class IAMCheck implements CloudCheck {
         ObjectNode result;
         
         if (!retrievePasswordPolicy()) {
-            System.out.println("[!] No password policy: \n\tpasswordPolicyRetrievalStatus: "+passwordPolicyRetrievalStatus+"\n\tcachedPasswordPolicyResult: "+cachedPasswordPolicyResult);
             status = passwordPolicyRetrievalStatus;
             result = cachedPasswordPolicyResult;
         } else {
@@ -459,7 +424,7 @@ public class IAMCheck implements CloudCheck {
                             if (act == null) {
                                 return Stream.of(Text.NULL_VALUE.getText());
                             } else if (act.isArray()) {
-                                return StreamSupport.stream(((ArrayNode)act).spliterator(), false)
+                                return StreamSupport.stream(act.spliterator(), false)
                                                     .map(JsonNode::asText);
                             }
                             return Stream.of(act.asText());
@@ -529,13 +494,13 @@ public class IAMCheck implements CloudCheck {
 
                     ArrayNode statements = Optional.ofNullable(policyNode.get("Statement"))
                         .map(n -> n.isArray() ? (ArrayNode)n : MAPPER.createArrayNode().add(n))
-                        .orElseGet(() -> MAPPER.createArrayNode());
+                        .orElseGet(MAPPER::createArrayNode);
 
                     List<String> principals = StreamSupport.stream(statements.spliterator(), false)
                         .flatMap(stmt -> {
                             JsonNode p = stmt.at("/Principal/AWS");
                             if (p.isArray()) {
-                                return StreamSupport.stream(((ArrayNode)p).spliterator(), false)
+                                return StreamSupport.stream(p.spliterator(), false)
                                                     .map(JsonNode::asText);
                             } else if (p.isTextual()) {
                                 return Stream.of(p.asText());
@@ -629,12 +594,12 @@ public class IAMCheck implements CloudCheck {
                             JsonNode r = stmt.get("Resource");
                             if (r == null) return Stream.empty();
                             if (r.isArray()) {
-                                return StreamSupport.stream(((ArrayNode) r).spliterator(), false)
+                                return StreamSupport.stream(r.spliterator(), false)
                                                     .map(JsonNode::asText);
                             }
                             return Stream.of(r.asText());
                         })
-                        .anyMatch(resource -> "*".equals(resource));
+                        .anyMatch("*"::equals);
 
                     ListEntitiesForPolicyResponse entities = iam.listEntitiesForPolicy(
                         ListEntitiesForPolicyRequest.builder().policyArn(arn).build()

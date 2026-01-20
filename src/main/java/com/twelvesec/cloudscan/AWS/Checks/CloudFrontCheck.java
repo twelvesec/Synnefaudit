@@ -1,12 +1,13 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
+import com.twelvesec.cloudscan.CloudCheck;
+import com.twelvesec.cloudscan.DataWriter;
+import com.twelvesec.cloudscan.SharedDataProvider;
+import com.twelvesec.cloudscan.messages.Text;
 import software.amazon.awssdk.services.cloudfront.CloudFrontAsyncClient;
-import software.amazon.awssdk.services.cloudfront.model.DistributionConfig;
-import software.amazon.awssdk.services.cloudfront.model.DistributionSummary;
-import software.amazon.awssdk.services.cloudfront.model.GeoRestriction;
-import software.amazon.awssdk.services.cloudfront.model.GeoRestrictionType;
-import software.amazon.awssdk.services.cloudfront.model.GetDistributionConfigRequest;
-import software.amazon.awssdk.services.cloudfront.model.GetDistributionConfigResponse;
+import software.amazon.awssdk.services.cloudfront.model.*;
 import software.amazon.awssdk.services.wafv2.Wafv2AsyncClient;
 import software.amazon.awssdk.services.wafv2.model.GetWebAclForResourceRequest;
 import software.amazon.awssdk.services.wafv2.model.GetWebAclForResourceResponse;
@@ -16,14 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.DataWriter;
-import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
-import com.twelvesec.cloudscan.messages.Text;
 
 public class CloudFrontCheck implements CloudCheck {
     private List<DistributionSummary> allDistributions;
@@ -60,9 +53,9 @@ public class CloudFrontCheck implements CloudCheck {
     }
 
     private Status checkCloudFrontIsNotConfigured() {
-        List<String> result = allDistributions.stream().map(d -> d.id()).toList();
-        Status status = (result != null && !result.isEmpty()) ? Status.PASS : Status.FAIL;
-        result = (result == null || result.isEmpty()) ? List.of(Text.NO_DISTRIBUTIONS_FOUND.toString()) : result;
+        List<String> result = allDistributions.stream().map(DistributionSummary::id).toList();
+        Status status = !result.isEmpty() ? Status.PASS : Status.FAIL;
+        result = result.isEmpty() ? List.of(Text.NO_DISTRIBUTIONS_FOUND.toString()) : result;
         writer.addToBuffer(AWSFinding.CLOUDFRONT_NOT_CONFIGURED, result, status);
         return status;
     }

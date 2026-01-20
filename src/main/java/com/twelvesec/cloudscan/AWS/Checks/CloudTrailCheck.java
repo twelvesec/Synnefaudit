@@ -1,62 +1,28 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
-import com.twelvesec.cloudscan.CloudCheck.CheckResult;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
-import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.messages.Text;
-
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
-import software.amazon.awssdk.services.cloudtrail.model.DescribeTrailsRequest;
-import software.amazon.awssdk.services.cloudtrail.model.DescribeTrailsResponse;
-import software.amazon.awssdk.services.cloudtrail.model.Event;
-import software.amazon.awssdk.services.cloudtrail.model.EventSelector;
-import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsRequest;
-import software.amazon.awssdk.services.cloudtrail.model.GetEventSelectorsResponse;
-import software.amazon.awssdk.services.cloudtrail.model.GetInsightSelectorsRequest;
-import software.amazon.awssdk.services.cloudtrail.model.GetInsightSelectorsResponse;
-import software.amazon.awssdk.services.cloudtrail.model.GetTrailStatusRequest;
-import software.amazon.awssdk.services.cloudtrail.model.GetTrailStatusResponse;
-import software.amazon.awssdk.services.cloudtrail.model.InsightNotEnabledException;
-import software.amazon.awssdk.services.cloudtrail.model.ListTrailsRequest;
-import software.amazon.awssdk.services.cloudtrail.model.ListTrailsResponse;
-import software.amazon.awssdk.services.cloudtrail.model.LookupAttribute;
-import software.amazon.awssdk.services.cloudtrail.model.LookupAttributeKey;
-import software.amazon.awssdk.services.cloudtrail.model.LookupEventsRequest;
-import software.amazon.awssdk.services.cloudtrail.model.ReadWriteType;
-import software.amazon.awssdk.services.cloudtrail.model.Trail;
-import software.amazon.awssdk.services.cloudtrail.model.TrailInfo;
-import software.amazon.awssdk.services.cloudwatch.model.DescribeAlarmsRequest;
-import software.amazon.awssdk.services.cloudwatch.model.DescribeAlarmsResponse;
+import software.amazon.awssdk.services.cloudtrail.model.*;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient;
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeMetricFiltersRequest;
-import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeMetricFiltersResponse;
 import software.amazon.awssdk.services.cloudwatchlogs.model.FilterLogEventsRequest;
 import software.amazon.awssdk.services.cloudwatchlogs.model.FilterLogEventsResponse;
 import software.amazon.awssdk.services.cloudwatchlogs.model.FilteredLogEvent;
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup;
-import software.amazon.awssdk.services.cloudwatchlogs.model.MetricFilter;
-import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
-import software.amazon.awssdk.services.ec2.model.DescribeRegionsRequest;
-import software.amazon.awssdk.services.ec2.model.DescribeRegionsResponse;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class CloudTrailCheck implements CloudCheck {
     private List<TrailInfo> allTrails;
@@ -170,7 +136,7 @@ public class CloudTrailCheck implements CloudCheck {
         if (rootEvents.isEmpty()) {
             resultNode.add(Text.NO_ROOT_ACTIVITY_FOUND.toString());
         } else {
-            resultNode.addAll((ArrayNode)MAPPER.valueToTree(rootEvents));
+            resultNode.add(MAPPER.valueToTree(rootEvents));
         }
 
         Status status = rootEvents.isEmpty() ? Status.PASS : Status.FAIL;
@@ -267,19 +233,19 @@ public class CloudTrailCheck implements CloudCheck {
 
     private List<String> getTrailsWithObjectLevelLoggingForBucket(String bucketName, boolean checkReadEvents) {
         return allTrails.stream()
-            .filter(trail -> {
+            .map(TrailInfo::name)
+            .filter(name -> {
                 try {
                     GetEventSelectorsResponse eventSelectorsResponse = sharedDataProvider
-                        .getEventSelectorsForTrail(trail.name()).join();
+                        .getEventSelectorsForTrail(name).join();
                     return eventSelectorsResponse.eventSelectors().stream()
-                        .anyMatch(selector -> 
+                        .anyMatch(selector ->
                             hasS3ObjectLoggingConfigured(selector, bucketName, checkReadEvents)
                         );
                 } catch (Exception e) {
                     return false;
                 }
             })
-            .map(TrailInfo::name)
             .collect(Collectors.toList());
     }
 
@@ -296,7 +262,7 @@ public class CloudTrailCheck implements CloudCheck {
                     DescribeTrailsRequest.builder().trailNameList(trail.trailARN()).build()
                 ).join();
                                 
-                Trail trailDetails = describeResponse.trailList().get(0);
+                Trail trailDetails = describeResponse.trailList().getFirst();
                 
                 boolean hasCloudWatchIntegration = trailDetails.cloudWatchLogsLogGroupArn() != null
                                                 && !trailDetails.cloudWatchLogsLogGroupArn().isEmpty();
@@ -418,7 +384,7 @@ public class CloudTrailCheck implements CloudCheck {
                                 if (responseDescr.trailList().isEmpty()) {
                                     return null;
                                 }
-                                Trail trailDetails = responseDescr.trailList().get(0);
+                                Trail trailDetails = responseDescr.trailList().getFirst();
                                 boolean isMultiRegion = trailDetails.isMultiRegionTrail() != null
                                                     && trailDetails.isMultiRegionTrail();
                                 String homeRegion = trailDetails.homeRegion();
@@ -435,7 +401,7 @@ public class CloudTrailCheck implements CloudCheck {
                             }
                         })
                         .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
+                        .toList();
 
                     boolean trailLoggingInRegionFound = !trailLoggingInRegion.isEmpty() 
                                                     && !trailLoggingInRegion.contains(Text.EXCEPTION.getText());
@@ -479,7 +445,7 @@ public class CloudTrailCheck implements CloudCheck {
                     DescribeTrailsRequest request = DescribeTrailsRequest.builder().trailNameList(name).build();
                     DescribeTrailsResponse response = cloudTrail.describeTrails(request).join();
                     
-                    Trail trailDetails = response.trailList().get(0);
+                    Trail trailDetails = response.trailList().getFirst();
                     boolean validationEnabled = trailDetails.logFileValidationEnabled() != null 
                                             && trailDetails.logFileValidationEnabled();
                     
@@ -517,7 +483,7 @@ public class CloudTrailCheck implements CloudCheck {
                     DescribeTrailsRequest describeRequest = DescribeTrailsRequest.builder().trailNameList(name).build();
                     DescribeTrailsResponse describeResponse = cloudTrail.describeTrails(describeRequest).join();
                     
-                    Trail trailDetails = describeResponse.trailList().get(0);
+                    Trail trailDetails = describeResponse.trailList().getFirst();
                     boolean isMultiRegion = trailDetails.isMultiRegionTrail() != null 
                                         && trailDetails.isMultiRegionTrail();
                     
@@ -566,7 +532,7 @@ public class CloudTrailCheck implements CloudCheck {
                     DescribeTrailsRequest request = DescribeTrailsRequest.builder().trailNameList(name).build();
                     DescribeTrailsResponse response = cloudTrail.describeTrails(request).join();
                     
-                    Trail trailDetails = response.trailList().get(0);
+                    Trail trailDetails = response.trailList().getFirst();
                     boolean hasKmsKey = trailDetails.kmsKeyId() != null 
                                     && !trailDetails.kmsKeyId().isEmpty();
                     

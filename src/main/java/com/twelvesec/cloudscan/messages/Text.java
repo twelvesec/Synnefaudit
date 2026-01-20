@@ -5,7 +5,6 @@ public enum Text {
 
     NO_CLOUDFORMATION_STACKS_FOUND("No CloudFormation stacks found."),
 
-    EBS_ENCRYPTION_ENABLED_BY_DEFAULT("EBS encryption is enabled by default."),
     EBS_NO_VOLUMES_FOUND("No EBS volumes found."),
 
     NO_EC2_INSTANCES_FOUND("No EC2 instances found."),
@@ -29,8 +28,6 @@ public enum Text {
     GROUP_WITHOUT_ADMINISTRATOR_ACCESS("Group does not have AdministratorAccess attached."),
     NO_USERS_IN_ADMINISTRATORACCESS_GROUPS("No users found in AdministratorAccess groups."),
     USERS_IN_ADMINISTRATORACCESS_GROUPS("Users found in groups with AdministratorAccess attached."),
-    NO_MFA_FOR_CONSOLE_USER("No MFA device found set up for console user."),
-    NO_CONSOLE_USERS_FOUND("No console users have been found."),
     NO_USERS_WITH_CONSOLE_PASSWORD_FOUND("No users found with Console Password enabled."),
 
     NO_ACCOUNT_STATUS_FROM_INSPECTOR2("No account status returned from Inspector2."),
@@ -53,16 +50,13 @@ public enum Text {
     PREMIUM_SUPPORT_NOT_SUBSCRIBED("Amazon Web Services Premium Support Plan not subscribed: "),
 
     NO_LOG_GROUPS_FOUND("No CloudWatch Log Groups defined."),
-    ALL_LOG_GROUPS_WITH_KMS_ASSOCIATED("Every log group has a KMS key associated."),
 
     NO_KMS_KEYS_FOUND("No KMS Keys found."),
     KEY_IS_AWS_MANAGED("Key is AWS Managed."),
-    KEY_PENDING_DELETION("Key is pending deletion."),
     KMS_KEY_SCHEDULED_FOR_DELETION("KMS key has been scheduled for deletion."),
     KMS_KEY_NOT_SCHEDULED_FOR_DELETION("KMS key has not been scheduled for deletion,"),
     KMS_KEY_IS_DISABLED("KMS key has been disabled."),
     KMS_KEY_NOT_CUSTOMER_MANAGED("KMS key is not customer managed."),
-    CREDENTIAL_REPORT_NOT_READY("Credential Report is not ready."),
     NO_ROOT_ACCOUNT_ACCESS_KEY("No root account access key found."),
     ROOT_ACCOUNT_ACCESS_KEY_PRESENT("Root account access key found."),
     AGE_NUM_DAYS(" (Age: %d days)"),
@@ -103,7 +97,6 @@ public enum Text {
     PASSWORD_POLICY_NOT_SET("Password policy not set : "),
     PASSWORD_REUSE_PREVENTION("Password reuse prevention : "),
     NO_IAM_POLICIES_FOUND("No IAM Policies found."),
-    WILDCARD_DETECTED("Wildcard (*) detected."),
     ALLOWED_DANGEROUS_ACTIONS("Allowed Dangerous Actions : "),
     CROSS_ACCOUNT_PRINCIPALS_FOUND("Cross-account principals found : "),
     ONLY_SAME_ACCOUNT_OR_AWS_SERVICE_PRINCIPALS("Only same-account root or AWS service principals."),
@@ -156,7 +149,6 @@ public enum Text {
     NO_LIFECYCLE_POLICY_FOUND("No Lifecycle Policy found : "),
 
     ROUTE53_PUBLIC_HOSTED_ZONE_QUERY_LOGGING_DISABLED("Public Hosted Zone with query logging disabled : "),
-    ROUTE53_NOT_ENABLED("Route53 is not enabled."),
     NO_HOSTED_ZONES_FOUND("No hosted zones found."),
     NO_A_RECORDS_FOUND_IN_HOSTED_ZONES("No A records found in any hosted zone"),
 
@@ -194,13 +186,10 @@ public enum Text {
     POLICYGROUPS("PolicyGroups"),
     ENTITIES("entities"),
     FINDINGS("findings"),
-    DATABASE("database"),
-    INSTANCE("instance"),
     AGEINDAYS("ageInDays"),
     AGESTATUS("ageStatus"),
     ATTACHEDPOLICIES("attachedPolicies"),
     ACCESSKEYS("accessKeys"),
-    EVENTS("events"),
     USERCREATIONDATE("userCreationDate"),
     USERS_WITH_MFA("usersWithMFA"),
     USERS_WITHOUT_MFA("usersWithoutMFA"),
