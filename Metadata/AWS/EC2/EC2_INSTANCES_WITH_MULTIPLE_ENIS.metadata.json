@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_INSTANCES_WITH_MULTIPLE_ENIS",
+  "CheckTitle": "EC2 instances found using multiple ENIs",
+  "Severity": "Low",
+  "Description": "EC2 instances have been observed using multiple Elastic Network Interfaces (ENIs).",
+  "Risk": "Having multiple ENIs can result in dual-homed instances, meaning instances that have multiple subnets. This increases management complexity and can enable unintended routing and policy bypass.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-17",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure EC2 instances do not use more that one ENI, unless necessary as per business requirements. In that case, make sure to limit access to the interfaces according to Least Privilege.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-eni.html#detach_eni, https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/scenarios-enis.html"
+    }
+  },
+  "Notes": ""
+}

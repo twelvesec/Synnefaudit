@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "LAUNCH_TEMPLATES_IMDSV2_REQUIRED",
+  "CheckTitle": "EC2 Launch Template without IMDSv2 enabled and required",
+  "Severity": "Low",
+  "Description": "EC2 Launch Templates have been configured without Instance Metadata Service Version 2 (IMDSv2) enabled and required.",
+  "Risk": "Not requiring the use of IMDSv2 for metadata access, EC2s are not protected by it against Server-Side Request Forgery (SSRF) attacks, a web vulnerability where an attacker tricks a server into making unintended requests to resources. IMDSv2 requires the use of a session token to access instance metadata, making it more secure than IMDSv1, which does not have this additional layer of protection.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-170",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure to enable and require IMDSv2 for all EC2 instances launched through launch templates.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-options.html"
+    }
+  },
+  "Notes": ""
+}

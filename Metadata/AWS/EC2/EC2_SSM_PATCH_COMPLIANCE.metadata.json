@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_SSM_PATCH_COMPLIANCE",
+  "CheckTitle": "EC2 instances non-compliant with Systems Manager patching requirements",
+  "Severity": "Low",
+  "Description": "SSM-managed EC2 instances have not applied required security updates by reporting their patch compliance status against defined baselines.",
+  "Risk": "Non-compliant, unpatched instances expose known vulnerabilities, enabling remote code execution and data breaches, which directly threatens the confidentiality, integrity, and availability of your systems.",
+  "RelatedUrls": "https://docs.aws.amazon.com/systems-manager/latest/userguide/patch-manager-find-noncompliant-nodes.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Adopt automated patch management with Systems Manager by defining strict patch baselines and promptly installing critical updates, complemented by defense-in-depth practices like staged rollouts and compliance alerting.",
+      "Urls": "https://docs.aws.amazon.com/systems-manager/latest/userguide/compliance-fixing.html"
+    }
+  },
+  "Notes": ""
+}

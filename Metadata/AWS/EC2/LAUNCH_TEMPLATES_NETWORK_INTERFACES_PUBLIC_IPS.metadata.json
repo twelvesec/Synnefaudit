@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "LAUNCH_TEMPLATES_NETWORK_INTERFACES_PUBLIC_IPS",
+  "CheckTitle": "EC2 Launch Templates assign public IPs to network interfaces",
+  "Severity": "High",
+  "Description": "EC2 Launch Templates have been found to assign public IPs to network interfaces.",
+  "Risk": "Configuring interfaces to be reachable from the internet risks exposing EC2 resources.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-25",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Limit access to EC2 resources from the internet, in accordance with least privilege.",
+      "Urls": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/create-launch-template.html#change-network-interface"
+    }
+  },
+  "Notes": ""
+}

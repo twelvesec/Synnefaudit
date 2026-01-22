@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "TRANSIT_GATEWAYS_AUTO_ACCEPT_VPC_ATTACH",
+  "CheckTitle": "EC2 Transit Gateways auto-accepting VPC attachments",
+  "Severity": "High",
+  "Description": "Transit Gateways have been found automatically accepting VPC attachment requests.",
+  "Risk": "Enabling auto-accept for VPC attachment requests on transit gateways may result in unauthorized VPC connections.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-23",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "EC2 Transit Gateways should be configured to not automatically accept all VPC attachment requests.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/tgw/tgw-transit-gateways.html"
+    }
+  },
+  "Notes": ""
+}

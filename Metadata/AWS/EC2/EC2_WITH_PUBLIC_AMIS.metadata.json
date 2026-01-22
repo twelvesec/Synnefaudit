@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_WITH_PUBLIC_AMIS",
+  "CheckTitle": "Public EC2 AMIs found",
+  "Severity": "High",
+  "Description": "EC2 AMIs have been identified as publicly accessible.",
+  "Risk": "Having EC2 AMIs available to the internet could lead to unauthorized access and misuse of AMI data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-intro.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure EC2 AMIs are not available to the internet. AMIs should share access specific accounts, according to least privilege.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/usingsharedamis-finding.html, https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-explicit.html, https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/cancel-sharing-an-AMI.html"
+    }
+  },
+  "Notes": ""
+}

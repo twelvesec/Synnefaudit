@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_PARAVIRTUAL_VIRTUALIZATION_USED",
+  "CheckTitle": "EC2 Paravirtual Virtualization type in use",
+  "Severity": "Medium",
+  "Description": "EC2 instances found having the virtualization type set to paravirtual. Linux Amazon Machine Images (AMIs) use one of two types of virtualization: paravirtual (PV) or hardware virtual machine (HVM). The main differences between PV and HVM AMIs are the way in which they boot and whether they can take advantage of special hardware extensions (CPU, network, and storage) for better performance.",
+  "Risk": "Currently, paravirtual (PV) virtualization lacks modern performance and security improvements.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-24",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "New EC2 instances use Hardware Virtual Machine (HVM) by default, and legacy instances should migrate from paravirtual (PV) to HVM, for enhanced performance, scalability, and security.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-resize.html, https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html"
+    }
+  },
+  "Notes": ""
+}

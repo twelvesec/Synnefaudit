@@ -12,6 +12,12 @@ public enum Text {
     NO_NON_RFV1918_INGRESS_FOUND("No non-RFC1918 ingress rules."),
     INGRESS_FROM_NON_PRIVATE_CIDRS("Ingress from non-private CIDRs : "),
     NO_INSTANCES_USING_GROUP("No instances found using the group."),
+    NO_LAUNCH_TEMPLATES_FOUND("No Launch Templates found."),
+    NO_LAUNCH_TEMPLATE_VERSIONS_FOUND("No launch template versions found"),
+    NO_TRANSIT_GATEWAYS_FOUND("No Transit Gateways found."),
+    NO_AMIS_FOUND("No AMIs found."),
+    NO_ACCOUNT_LEVEL_IMDS_DEFAULTS("No account-level IMDS defaults configured."),
+    NO_COMPLIANCE_DATA_FOUND("No compliance data found."),
 
     ECR_NO_REPOSITORIES_FOUND("No repositories found."),
     ECR_NO_TAGGED_IMAGES_FOUND_IN_REPOSITORY("No tagged images found in repository."),
