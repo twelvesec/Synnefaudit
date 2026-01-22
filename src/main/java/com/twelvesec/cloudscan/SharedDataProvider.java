@@ -81,10 +81,13 @@ import software.amazon.awssdk.services.ssm.SsmAsyncClient;
 import software.amazon.awssdk.services.ssm.model.DocumentIdentifier;
 import software.amazon.awssdk.services.ssm.model.ListDocumentsRequest;
 import software.amazon.awssdk.services.ssm.model.ListDocumentsResponse;
+import software.amazon.awssdk.services.sts.StsAsyncClient;
+import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 import software.amazon.awssdk.services.support.SupportAsyncClient;
 import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckResultRequest;
 import software.amazon.awssdk.services.support.model.DescribeTrustedAdvisorCheckResultResponse;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -121,6 +124,7 @@ public class SharedDataProvider {
     private S3AsyncClient s3;
     private SnsAsyncClient sns;
     private SsmAsyncClient ssm;
+    private StsAsyncClient sts;
     private SupportAsyncClient support;
 
     public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AthenaAsyncClient athena,
@@ -130,7 +134,7 @@ public class SharedDataProvider {
             SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
             KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, RdsAsyncClient rds, 
             Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
-            SsmAsyncClient ssm, SupportAsyncClient support) {
+            SsmAsyncClient ssm, StsAsyncClient sts, SupportAsyncClient support) {
         this.accessAnalyzer = accessAnalyzer;
         this.acm = acm;
         this.athena = athena;
@@ -155,7 +159,8 @@ public class SharedDataProvider {
         this.resourceexplorer2 = resourceexplorer2;
         this.s3 = s3;
         this.sns = sns;
-        this. ssm = ssm;
+        this.ssm = ssm;
+        this.sts = sts;
         this.support = support;
     }
 
@@ -325,6 +330,35 @@ public class SharedDataProvider {
         Supplier<CompletableFuture<List<NetworkAcl>>> loader = () ->
             ec2.describeNetworkAcls()
                 .thenApply(DescribeNetworkAclsResponse::networkAcls);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<LaunchTemplate>> getAllLaunchTemplates() {
+        String key = "ec2:launchtemplates";
+        Supplier<CompletableFuture<List<LaunchTemplate>>> loader = () ->
+            ec2.describeLaunchTemplates(DescribeLaunchTemplatesRequest.builder().build())
+                .thenApply(DescribeLaunchTemplatesResponse::launchTemplates);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<TransitGateway>> getAllTransitGateways() {
+        String key = "ec2:transitgateways";
+        Supplier<CompletableFuture<List<TransitGateway>>> loader = () ->
+            ec2.describeTransitGateways(DescribeTransitGatewaysRequest.builder().build())
+                .thenApply(DescribeTransitGatewaysResponse::transitGateways);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Image>> getAllAMIs() {
+        String key = "ec2:amis";
+        Supplier<CompletableFuture<List<Image>>> loader = () -> sts.getCallerIdentity(GetCallerIdentityRequest.builder().build())
+            .thenCompose(identity -> {
+                String accountId = identity.account();
+                return ec2.describeImages(DescribeImagesRequest.builder()
+                    .owners(Collections.singletonList(accountId))
+                    .build())
+                    .thenApply(DescribeImagesResponse::images);
+        });
         return getCachedData(key, loader);
     }
 

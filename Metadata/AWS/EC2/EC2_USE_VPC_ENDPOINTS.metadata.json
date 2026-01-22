@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_USE_VPC_ENDPOINTS",
+  "CheckTitle": "EC2 instances without configured VPC endpoints",
+  "Severity": "Medium",
+  "Description": "VPCs found not having a VPC endpoint created for Amazon EC2 services.",
+  "Risk": "Not using a private EC2 endpoint could lead to unintended EC2 API calls.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-10, https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/interface-vpc-endpoints.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure a VPC endpoint has been configured for EC2 services in each VPC requiring EC2 API access.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/privatelink/create-interface-endpoint.html#create-interface-endpoint-aws, https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/interface-vpc-endpoints.html#endpoint-policy"
+    }
+  },
+  "Notes": ""
+}

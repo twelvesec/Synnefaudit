@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EC2_INSTANCES_WITHOUT_TAGS",
+  "CheckTitle": "EC2 instances without tags",
+  "Severity": "Low",
+  "Description": "EC2 instances have been found without any tags.",
+  "Risk": "Tagging EC2 instances and other resources assists in their management, by categorizing them.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "EC2 instances should have tags for quick identification and better management.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags_Console.html, https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/check-ec2-instances-for-mandatory-tags-at-launch.html"
+    }
+  },
+  "Notes": ""
+}

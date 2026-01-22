@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ACCOUNT_LEVEL_IMDSV2",
+  "CheckTitle": "IMDSv2 is not required for EC2 instances at account level",
+  "Severity": "Medium",
+  "Description": "Instance Metadata Service Version 2 (IMDSv2) is not required by default for all EC2 instances on the account level.",
+  "Risk": "Not requiring the use of IMDSv2 for metadata access, EC2s are not protected by it against Server-Side Request Forgery (SSRF) attacks, a web vulnerability where an attacker tricks a server into making unintended requests to resources. IMDSv2 requires the use of a session token to access instance metadata, making it more secure than IMDSv1, which does not have this additional layer of protection.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-IMDS-new-instances.html#configure-IMDS-new-instances",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make sure IMDSv2 is enforced by default for all EC2 instances, and make sure any existing EC2 instances have also been configured appropriately.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-IMDS-new-instances.html#set-imdsv2-account-defaults"
+    }
+  },
+  "Notes": ""
+}

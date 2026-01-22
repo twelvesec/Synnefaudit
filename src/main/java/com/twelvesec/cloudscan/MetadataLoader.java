@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class MetadataLoader {
@@ -91,15 +90,11 @@ public final class MetadataLoader {
     }
 
     private static String getProviderBasePath() {
-        String providerDir;
-        switch(App.getProvider()) {
-            case Provider.AWS:
-                providerDir = "AWS";
-                break;
-            default:
-                providerDir = "Unknown";
-        }
-        
+        String providerDir = switch (App.getProvider()) {
+            case Provider.AWS -> "AWS";
+            default -> "Unknown";
+        };
+
         return Paths.get(METADATA_DIR, providerDir).toString();
     }
 
