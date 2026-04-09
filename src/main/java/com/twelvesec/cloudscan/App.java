@@ -1,11 +1,33 @@
 package com.twelvesec.cloudscan;
 
-import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+
 import com.twelvesec.cloudscan.AWS.Checks.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
+import com.twelvesec.cloudscan.AWS.AWSDependencyFactory;
 import com.twelvesec.cloudscan.CloudCheck.CheckSummary;
 import com.twelvesec.cloudscan.CloudCheck.Provider;
+import static com.twelvesec.cloudscan.ReportPrinter.CHECKS_SUMMARY;
 import com.twelvesec.cloudscan.messages.Text;
-import org.apache.commons.cli.*;
+
 import software.amazon.awssdk.profiles.Profile;
 import software.amazon.awssdk.profiles.ProfileFile;
 import software.amazon.awssdk.regions.Region;
@@ -49,21 +71,6 @@ import software.amazon.awssdk.services.ssmincidents.SsmIncidentsAsyncClient;
 import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.support.SupportAsyncClient;
 import software.amazon.awssdk.services.wafv2.Wafv2AsyncClient;
-
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
-import static com.twelvesec.cloudscan.ReportPrinter.CHECKS_SUMMARY;
 
 public class App {
     private static Provider PROVIDER;

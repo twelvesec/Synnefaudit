@@ -38,7 +38,8 @@ public class NetworkACLsCheck implements CloudCheck {
                     wrapCheck(this::NetworkACLWithAllPortsOpenToTheInternet,        AWSFinding.NETWORK_ACL_WITH_ALL_PORTS_OPEN_TO_INTERNET, this::reportError),
                     wrapCheck(this::NetworkACLAllowIngressFromTheInternetToPorts,   AWSFinding.NETWORK_ACL_WITH_SOME_PORTS_OPEN_TO_INTERNET, this::reportError),
                     wrapCheck(this::NetworkACLAllowIngressFromInternetToRDP,        AWSFinding.NETWORK_ACL_WITH_RDP_OPEN_TO_INTERNET, this::reportError),
-                    wrapCheck(this::NetworkACLAllowIngressFromInternetToSSH,        AWSFinding.NETWORK_ACL_WITH_SSH_OPEN_TO_INTERNET, this::reportError)
+                    wrapCheck(this::NetworkACLAllowIngressFromInternetToSSH,        AWSFinding.NETWORK_ACL_WITH_SSH_OPEN_TO_INTERNET, this::reportError),
+                    wrapCheck(this::checkUnusedNetworkAccessControlLists,           AWSFinding.UNUSED_NETWORK_ACLS_EXIST, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -142,5 +143,38 @@ public class NetworkACLsCheck implements CloudCheck {
             .and(isIngressFromInternet())
             .and(portCondition(22));
         return checkNetworkACL(condition, AWSFinding.NETWORK_ACL_WITH_SSH_OPEN_TO_INTERNET);
+    }
+
+    private Status checkUnusedNetworkAccessControlLists() {
+        if (allNetworkACLs.isEmpty()) {
+            writer.addToBuffer(AWSFinding.UNUSED_NETWORK_ACLS_EXIST,
+                            Text.NO_NETWORK_ACLS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String,Object>> result = allNetworkACLs.stream()
+            .map(nacl -> {
+                Status s;
+                ObjectNode r;
+                try {
+                    boolean isUnused = nacl.associations().isEmpty();
+                    boolean passes = !isUnused;
+                    s = passes ? Status.PASS : Status.FAIL;
+                    r = MAPPER.valueToTree(nacl.toBuilder());
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+
+                Map<String,Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(nacl.networkAclId(), inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.UNUSED_NETWORK_ACLS_EXIST, result, status);
+        return status;
     }
 }

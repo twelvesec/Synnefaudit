@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "UNUSED_NETWORK_ACLS_EXIST",
+  "CheckTitle": "Unused Network ACLs found",
+  "Severity": "Low",
+  "Description": "Network ACLs have been found that are not associated with a subnet.",
+  "Risk": "Unused ACLs could be dangerous in the case of overly permissive rules, or misused association, and could be used along with other methods to gain access to subnets with critical data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-16",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure unused network ACLs are deleted, or associated with a subnet.",
+      "Urls": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html#vpc-network-acl-delete"
+    }
+  },
+  "Notes": ""
+}

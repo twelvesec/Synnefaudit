@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "UNUSED_ELASTIC_IPS_EXIST",
+  "CheckTitle": "Elastic IPs without associated instance",
+  "Severity": "Low",
+  "Description": "Elastic IPs found without an associated instance or network interface.",
+  "Risk": "Unused Elastic IPs can consume resources and raise costs, along with complicating the overall management of the environment.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Evaluate all unassigned Elastic IPs, and either delete or associate them with an instance or primary network interface when required.",
+      "Urls": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-ec2-elastic-ip.html, https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_AssociateAddress.html"
+    }
+  },
+  "Notes": ""
+}

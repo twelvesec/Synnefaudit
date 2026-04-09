@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "UNUSED_NETWORK_INTERFACES_EXIST",
+  "CheckTitle": "Unused network interfaces exist",
+  "Severity": "Low",
+  "Description": "Network Interfaces have been found unattached to an instance.",
+  "Risk": "EC2 Network Interfaces work as virtual network cards, and can cost in resources when remaining unused.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network-interface-attachments.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure any unused network interfaces are deleted, or attached to an EC2 instance.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/network-interface-attachments.html"
+    }
+  },
+  "Notes": ""
+}

@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,7 +96,8 @@ public class IAMCheck implements CloudCheck {
                     wrapCheck(this::checkIAMPasswordPolicyRequireNumber,                AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_NUMBER, this::reportError),
                     wrapCheck(this::checkIAMPasswordPolicyRequireSymbol,                AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_SYMBOL, this::reportError),
                     wrapCheck(this::checkIAMPasswordPolicyRequireUppercase,             AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_UPPERCASE, this::reportError),
-                    wrapCheck(this::checkIAMPasswordPolicyMinimumLength,                AWSFinding.IAM_PASSWORD_POLICY_MINIMUM_LENGTH, this::reportError)
+                    wrapCheck(this::checkIAMPasswordPolicyMinimumLength,                AWSFinding.IAM_PASSWORD_POLICY_MINIMUM_LENGTH, this::reportError),
+                    wrapCheck(this::checkUnusedUserConsoleAccessDisabled,               AWSFinding.UNUSED_CONSOLE_ACCESS_ENABLED, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -160,11 +162,11 @@ public class IAMCheck implements CloudCheck {
         List<Map<String, Object>> result = allAnalyzers.stream()
             .map((AnalyzerSummary summary) -> {
                 String name = summary.name();
-                ObjectNode summanyNode = MAPPER.valueToTree(summary.toBuilder());
+                ObjectNode summaryNode = MAPPER.valueToTree(summary.toBuilder());
 
                 Map<String,Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), Status.PASS);
-                inner.put(Text.RESULT.toString(), summanyNode);
+                inner.put(Text.RESULT.toString(), summaryNode);
                 return Map.<String, Object>of(name, inner);
             })
             .toList();
@@ -274,13 +276,12 @@ public class IAMCheck implements CloudCheck {
         
         if (!retrievePasswordPolicy()) {
             status = passwordPolicyRetrievalStatus;
-            result = cachedPasswordPolicyResult;
         } else {
             Integer maxAge = cachedPasswordPolicy.maxPasswordAge();
             boolean passes = maxAge != null && maxAge <= MAX_KEY_AGE_DAYS;
             status = passes ? Status.PASS : Status.FAIL;
-            result = cachedPasswordPolicyResult;
         }
+        result = cachedPasswordPolicyResult;
         writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_MAX_AGE, result, status);
         return status;
     }
@@ -291,13 +292,12 @@ public class IAMCheck implements CloudCheck {
         
         if (!retrievePasswordPolicy()) {
             status = passwordPolicyRetrievalStatus;
-            result = cachedPasswordPolicyResult;
         } else {
             Integer minLength = cachedPasswordPolicy.minimumPasswordLength();
             boolean passes = minLength != null && minLength >= MIN_PASSWD_LENGTH;
             status = passes ? Status.PASS : Status.FAIL;
-            result = cachedPasswordPolicyResult;
         }
+        result = cachedPasswordPolicyResult;
         writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_MINIMUM_LENGTH, result, status);
         return status;
     }
@@ -308,13 +308,12 @@ public class IAMCheck implements CloudCheck {
         
         if (!retrievePasswordPolicy()) {
             status = passwordPolicyRetrievalStatus;
-            result = cachedPasswordPolicyResult;
         } else {
             Boolean requireUppercase = cachedPasswordPolicy.requireUppercaseCharacters();
             boolean passes = requireUppercase != null && requireUppercase;
             status = passes ? Status.PASS : Status.FAIL;
-            result = cachedPasswordPolicyResult;
         }
+        result = cachedPasswordPolicyResult;
         writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_UPPERCASE, result, status);
         return status;
     }
@@ -325,13 +324,12 @@ public class IAMCheck implements CloudCheck {
         
         if (!retrievePasswordPolicy()) {
             status = passwordPolicyRetrievalStatus;
-            result = cachedPasswordPolicyResult;
         } else {
             Boolean requireLowercase = cachedPasswordPolicy.requireLowercaseCharacters();
             boolean passes = requireLowercase != null && requireLowercase;
             status = passes ? Status.PASS : Status.FAIL;
-            result = cachedPasswordPolicyResult;
         }
+        result = cachedPasswordPolicyResult;
         writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_LOWERCASE, result, status);
         return status;
     }
@@ -339,16 +337,15 @@ public class IAMCheck implements CloudCheck {
     private Status checkIAMPasswordPolicyRequireNumber() {
         Status status;
         ObjectNode result;
-        
+
         if (!retrievePasswordPolicy()) {
             status = passwordPolicyRetrievalStatus;
-            result = cachedPasswordPolicyResult;
         } else {
             Boolean requireNumber = cachedPasswordPolicy.requireNumbers();
             boolean passes = requireNumber != null && requireNumber;
             status = passes ? Status.PASS : Status.FAIL;
-            result = cachedPasswordPolicyResult;
         }
+        result = cachedPasswordPolicyResult;
         writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_NUMBER, result, status);
         return status;
     }
@@ -359,13 +356,12 @@ public class IAMCheck implements CloudCheck {
         
         if (!retrievePasswordPolicy()) {
             status = passwordPolicyRetrievalStatus;
-            result = cachedPasswordPolicyResult;
         } else {
             Boolean requireSymbol = cachedPasswordPolicy.requireSymbols();
             boolean passes = requireSymbol != null && requireSymbol;
             status = passes ? Status.PASS : Status.FAIL;
-            result = cachedPasswordPolicyResult;
         }
+        result = cachedPasswordPolicyResult;
         writer.addToBuffer(AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_SYMBOL, result, status);
         return status;
     }
@@ -981,5 +977,69 @@ public class IAMCheck implements CloudCheck {
             }
         }
         return false;
+    }
+
+    private Status checkUnusedUserConsoleAccessDisabled() {
+        if (allUsers.isEmpty()) {
+            writer.addToBuffer(AWSFinding.UNUSED_CONSOLE_ACCESS_ENABLED,
+                            Text.NO_IAM_USERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String,Object>> result = allUsers.stream()
+            .map(user -> {
+                Status s;
+                JsonNode r;
+                try {
+                    GetLoginProfileResponse loginProfile = iam.getLoginProfile(
+                        GetLoginProfileRequest.builder().userName(user.userName()).build()
+                    ).join();
+
+                    GetUserResponse userDetail = iam.getUser(
+                        GetUserRequest.builder().userName(user.userName()).build()
+                    ).join();
+
+                    boolean isUnused;
+                    if (userDetail.user().passwordLastUsed() == null) {
+                        if (loginProfile.loginProfile().createDate() != null) {
+                            long daysSinceCreation = ChronoUnit.DAYS.between(loginProfile.loginProfile().createDate(), Instant.now());
+                            isUnused = daysSinceCreation > MAX_KEY_AGE_DAYS;
+                        } else {
+                            isUnused = true;
+                        }
+                    } else {
+                        long daysSinceLastUse = ChronoUnit.DAYS.between(
+                            userDetail.user().passwordLastUsed(), Instant.now());
+                        isUnused = daysSinceLastUse > MAX_KEY_AGE_DAYS;
+                    }
+
+                    s = !isUnused ? Status.PASS : Status.FAIL;
+                    r = MAPPER.valueToTree(Map.of(
+                        Text.USER.toString(), userDetail.user().toBuilder(),
+                        Text.LOGIN_PROFILE.toString(), loginProfile.loginProfile().toBuilder()
+                    ));
+                } catch (CompletionException e) {
+                    if (e.getCause() instanceof NoSuchEntityException) {
+                        s = Status.PASS;
+                        r = MAPPER.createObjectNode().put(Text.MESSAGE.toString(), Text.NO_CONSOLE_ACCESS.toString());
+                    } else {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getCause().getMessage()));
+                    }
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+
+                Map<String,Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(user.userName(), inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.UNUSED_CONSOLE_ACCESS_ENABLED, result, status);
+        return status;
     }
 }

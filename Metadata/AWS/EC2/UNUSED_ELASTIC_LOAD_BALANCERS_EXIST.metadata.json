@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "UNUSED_ELASTIC_LOAD_BALANCERS_EXIST",
+  "CheckTitle": "UNUSED_ELASTIC_LOAD_BALANCERS_EXIST",
+  "Severity": "Low",
+  "Description": "Elastic Load Balancers have been found with target health status not set to 'healthy'.",
+  "Risk": "Sending traffic to unhealthy targets can lead to fails and HTTP errors, or overloading of existing healthy targets.",
+  "RelatedUrls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Investigate all targets without status 'healthy', and analyze logs and use the AWS Health Check Troubleshooting tools to determine any misconfigurations or connectivity issues.",
+      "Urls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/edit-target-group-attributes.html"
+    }
+  },
+  "Notes": ""
+}

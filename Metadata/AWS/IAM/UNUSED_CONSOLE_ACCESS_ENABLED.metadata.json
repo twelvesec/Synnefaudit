@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "UNUSED_CONSOLE_ACCESS_ENABLED",
+  "CheckTitle": "Users with unused console access found",
+  "Severity": "Low",
+  "Description": "Users with console access have been found with general or console inactivity greater than 90 days.",
+  "Risk": "Console access that remains unused for different users could lead to unauthorized access to resources, due to valid long-term credentials, and potentially mismanaged users.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-8",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Disable console access for inactive users, and ensure access is provided following the principle of least privilege.",
+      "Urls": "https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-8, https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_finding-unused.html"
+    }
+  },
+  "Notes": ""
+}

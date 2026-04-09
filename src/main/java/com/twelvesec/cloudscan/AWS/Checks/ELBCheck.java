@@ -50,7 +50,8 @@ public class ELBCheck implements CloudCheck {
                     wrapCheck(this::checkPubliclyAccessibleLoadBalancers,                       AWSFinding.PUBLICLY_ACCESSIBLE_LOAD_BALANCERS, this::reportError),
                     wrapCheck(this::checkAlbsDefensiveMitigationButNotDroppingInvalidHeaders,   AWSFinding.ELB_ALBS_DEFENSIVE_MITIGATION_NOT_DROPPING_HEADERS, this::reportError),
                     wrapCheck(this::checkELBInsecureSSLCiphers,                                 AWSFinding.ELB_INSECURE_SSL_CIPHERS, this::reportError),
-                    wrapCheck(this::checkELBWithoutListeners,                                   AWSFinding.ELB_WITHOUT_LISTENERS, this::reportError)
+                    wrapCheck(this::checkELBWithoutListeners,                                   AWSFinding.ELB_WITHOUT_LISTENERS, this::reportError),
+                    wrapCheck(this::checkUnusedElasticLoadBalancersDeleted,                     AWSFinding.UNUSED_ELASTIC_LOAD_BALANCERS_EXIST, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -445,6 +446,51 @@ public class ELBCheck implements CloudCheck {
         
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.ELB_WITHOUT_LISTENERS, result, status);
+        return status;
+    }
+
+    private Status checkUnusedElasticLoadBalancersDeleted() {
+        if (allLoadBalancers.isEmpty()) {
+            writer.addToBuffer(AWSFinding.UNUSED_ELASTIC_LOAD_BALANCERS_EXIST,
+                            Text.NO_ELBS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String,Object>> result = allLoadBalancers.stream()
+            .map(lb -> {
+                String arn = lb.loadBalancerArn();
+                Status s;
+                ObjectNode r;
+                try {
+                    DescribeTargetGroupsResponse tgResponse = elb.describeTargetGroups(
+                        DescribeTargetGroupsRequest.builder().loadBalancerArn(arn).build()
+                    ).join();
+
+                    boolean hasActiveTargets = tgResponse.targetGroups().stream()
+                        .anyMatch(tg -> {
+                            DescribeTargetHealthResponse healthResponse = elb.describeTargetHealth(
+                                DescribeTargetHealthRequest.builder().targetGroupArn(tg.targetGroupArn()).build()
+                            ).join();
+                            return healthResponse.targetHealthDescriptions().stream()
+                                .anyMatch(thd -> "healthy".equals(thd.targetHealth().stateAsString()));
+                        });
+
+                    s = hasActiveTargets ? Status.PASS : Status.FAIL;
+                    r = MAPPER.valueToTree(lb.toBuilder());
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+
+                Map<String,Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(arn, inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.UNUSED_ELASTIC_LOAD_BALANCERS_EXIST, result, status);
         return status;
     }
 }

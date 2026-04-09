@@ -1,27 +1,53 @@
 package com.twelvesec.cloudscan.AWS.Checks;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.cloudscan.AWS.AWSFinding;
 import com.twelvesec.cloudscan.CloudCheck;
 import com.twelvesec.cloudscan.DataWriter;
 import com.twelvesec.cloudscan.SharedDataProvider;
 import com.twelvesec.cloudscan.messages.Text;
-import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
-import software.amazon.awssdk.services.ec2.model.*;
-import software.amazon.awssdk.services.ssm.SsmAsyncClient;
-import software.amazon.awssdk.services.ssm.model.*;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
+import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
+import software.amazon.awssdk.services.ec2.model.Address;
+import software.amazon.awssdk.services.ec2.model.DescribeImageAttributeRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeImageAttributeResponse;
+import software.amazon.awssdk.services.ec2.model.DescribeLaunchTemplateVersionsRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeLaunchTemplateVersionsResponse;
+import software.amazon.awssdk.services.ec2.model.GetInstanceMetadataDefaultsRequest;
+import software.amazon.awssdk.services.ec2.model.GetInstanceMetadataDefaultsResponse;
+import software.amazon.awssdk.services.ec2.model.HttpTokensState;
+import software.amazon.awssdk.services.ec2.model.Image;
+import software.amazon.awssdk.services.ec2.model.ImageAttributeName;
+import software.amazon.awssdk.services.ec2.model.Instance;
+import software.amazon.awssdk.services.ec2.model.InstanceMetadataOptionsResponse;
+import software.amazon.awssdk.services.ec2.model.LaunchTemplate;
+import software.amazon.awssdk.services.ec2.model.LaunchTemplateVersion;
+import software.amazon.awssdk.services.ec2.model.MonitoringState;
+import software.amazon.awssdk.services.ec2.model.NetworkInterface;
+import software.amazon.awssdk.services.ec2.model.TransitGateway;
+import software.amazon.awssdk.services.ec2.model.VpcEndpoint;
+import software.amazon.awssdk.services.ssm.SsmAsyncClient;
+import software.amazon.awssdk.services.ssm.model.DescribeInstanceInformationRequest;
+import software.amazon.awssdk.services.ssm.model.DescribeInstanceInformationResponse;
+import software.amazon.awssdk.services.ssm.model.InstanceInformationStringFilter;
+import software.amazon.awssdk.services.ssm.model.ListComplianceItemsRequest;
+import software.amazon.awssdk.services.ssm.model.ListComplianceItemsResponse;
 
 public class EC2Check implements CloudCheck {
     private List<Instance> allEC2Instances;
     private List<VpcEndpoint> allVPCEndpoints;
     private List<LaunchTemplate> allLaunchTemplates;
     private List<TransitGateway> allTransitGateways;
+    private List<Address> allElasticIPs;
+    private List<NetworkInterface> allNetworkInterfaces;
     private List<Image> allAMIs;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
@@ -57,6 +83,14 @@ public class EC2Check implements CloudCheck {
             })
             .thenCompose(AMIs -> {
                 this.allAMIs = AMIs;
+                return sharedDataProvider.getAllElasticIPs();
+            })
+            .thenCompose(elasticIPs -> {
+                this.allElasticIPs = elasticIPs;
+                return sharedDataProvider.getAllNetworkInterfaces();
+            })
+            .thenCompose(networkInterfaces -> {
+                this.allNetworkInterfaces = networkInterfaces;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkEC2InstancesWithPublicIPs,                         AWSFinding.EC2_INSTANCES_WTH_PUBLIC_IPS, this::reportError),
                     wrapCheck(this::checkEC2InstancesWithDetailedMonitoringDisabled,        AWSFinding.EC2_INSTANCES_WITH_DETAILED_MONITORING_DISABLED, this::reportError),
@@ -73,7 +107,9 @@ public class EC2Check implements CloudCheck {
                     wrapCheck(this::checkEC2VpcEndpoints,                                   AWSFinding.EC2_USE_VPC_ENDPOINTS, this::reportError),
                     wrapCheck(this::checkAccountLevelIMDSv2,                                AWSFinding.ACCOUNT_LEVEL_IMDSV2, this::reportError),
                     wrapCheck(this::checkEC2InstancesTags,                                  AWSFinding.EC2_INSTANCES_WITHOUT_TAGS, this::reportError),
-                    wrapCheck(this::checkPublicAMIs,                                        AWSFinding.EC2_WITH_PUBLIC_AMIS, this::reportError)
+                    wrapCheck(this::checkPublicAMIs,                                        AWSFinding.EC2_WITH_PUBLIC_AMIS, this::reportError),
+                    wrapCheck(this::checkUnusedElasticIPsDeleted,                           AWSFinding.UNUSED_ELASTIC_IPS_EXIST, this::reportError),
+                    wrapCheck(this::checkUnusedNetworkInterfacesDeleted,                    AWSFinding.UNUSED_NETWORK_INTERFACES_EXIST, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -561,7 +597,7 @@ public class EC2Check implements CloudCheck {
 
         List<Map<String, Object>> result = allAMIs.stream()
             .map(ami -> {
-                boolean violation = false;
+                boolean violation;
                 try {
                     DescribeImageAttributeResponse response = ec2.describeImageAttribute(
                         DescribeImageAttributeRequest.builder()
@@ -586,6 +622,72 @@ public class EC2Check implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.EC2_WITH_PUBLIC_AMIS, result, status);
+        return status;
+    }
+
+    private Status checkUnusedElasticIPsDeleted() {
+        if (allElasticIPs.isEmpty()) {
+            writer.addToBuffer(AWSFinding.UNUSED_ELASTIC_IPS_EXIST,
+                            Text.NO_ELASTIC_IPS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String,Object>> result = allElasticIPs.stream()
+            .map(eip -> {
+                Status s;
+                ObjectNode r;
+                try {
+                    boolean hasInstanceAssociation = eip.associationId() != null && !eip.associationId().isEmpty();
+                    boolean hasNetworkInterfaceAssociation = eip.networkInterfaceId() != null && !eip.networkInterfaceId().isEmpty();
+                    s = hasInstanceAssociation || hasNetworkInterfaceAssociation ? Status.PASS : Status.FAIL;
+                    r = MAPPER.valueToTree(eip.toBuilder());
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+
+                Map<String,Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(eip.allocationId(), inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.UNUSED_ELASTIC_IPS_EXIST, result, status);
+        return status;
+    }
+
+    private Status checkUnusedNetworkInterfacesDeleted() {
+        if (allNetworkInterfaces.isEmpty()) {
+            writer.addToBuffer(AWSFinding.UNUSED_NETWORK_INTERFACES_EXIST,
+                            Text.NO_NETWORK_INTERFACES_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String,Object>> result = allNetworkInterfaces.stream()
+            .map(ni -> {
+                Status s;
+                ObjectNode r;
+                try {
+                    boolean isUnused = "available".equals(ni.statusAsString());
+                    boolean passes = !isUnused;
+                    s = passes ? Status.PASS : Status.FAIL;
+                    r = MAPPER.valueToTree(ni.toBuilder());
+                } catch (Exception e) {
+                    s = Status.FAIL_EXCEPTION;
+                    r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                }
+
+                Map<String,Object> inner = new HashMap<>();
+                inner.put(Text.STATUS.toString(), s);
+                inner.put(Text.RESULT.toString(), r);
+                return Map.<String,Object>of(ni.networkInterfaceId(), inner);
+            })
+            .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.UNUSED_NETWORK_INTERFACES_EXIST, result, status);
         return status;
     }
 }

@@ -18,6 +18,10 @@ public enum Text {
     NO_AMIS_FOUND("No AMIs found."),
     NO_ACCOUNT_LEVEL_IMDS_DEFAULTS("No account-level IMDS defaults configured."),
     NO_COMPLIANCE_DATA_FOUND("No compliance data found."),
+    NO_ELASTIC_IPS_FOUND("No Elastic IPs found."),
+    NO_NETWORK_INTERFACES_FOUND("No Network Interfaces found."),
+    NO_INSTANCES_ASSOCIATED_WITH_ADDRESS("No instances associated with this address."),
+    INSTANCES_ASSOCIATED_WITH_ADDRESS("Instances found associated with this address."),
 
     ECR_NO_REPOSITORIES_FOUND("No repositories found."),
     ECR_NO_TAGGED_IMAGES_FOUND_IN_REPOSITORY("No tagged images found in repository."),
@@ -114,6 +118,7 @@ public enum Text {
     NO_MANAGED_POLICIES_FOUND("No managed policies found."),
     NO_NON_IAM_STS_POLICIES_ATTACHED("No non-IAM/STS policies attached."),
     FAILED_TO_RETRIEVE_PASSWORD_POLICY("Failed to retrieve password policy"),
+    NO_CONSOLE_ACCESS("No console access."),
 
     NO_SECURITY_AUDIT_ROLE_FOUND("No Security Audit role found."),
     NO_SUPPORT_ROLE_FOUND("No Support role found."),
@@ -196,6 +201,8 @@ public enum Text {
     AGESTATUS("ageStatus"),
     ATTACHEDPOLICIES("attachedPolicies"),
     ACCESSKEYS("accessKeys"),
+    LOGIN_PROFILE("loginProfile"),
+    USER("user"),
     USERCREATIONDATE("userCreationDate"),
     USERS_WITH_MFA("usersWithMFA"),
     USERS_WITHOUT_MFA("usersWithoutMFA"),

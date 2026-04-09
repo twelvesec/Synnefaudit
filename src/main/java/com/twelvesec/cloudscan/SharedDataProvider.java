@@ -99,33 +99,33 @@ import java.util.stream.Collectors;
 public class SharedDataProvider {
     private final ConcurrentMap<String, CompletableFuture<?>> cache = new ConcurrentHashMap<>();
 
-    private AccessAnalyzerAsyncClient accessAnalyzer;
-    private AcmAsyncClient acm;
-    private AthenaAsyncClient athena;
-    private CloudFormationAsyncClient cloudformation;
-    private CloudFrontAsyncClient cf;
-    private CloudTrailAsyncClient cloudTrail;
-    private CloudWatchAsyncClient cloudWatch;
-    private CloudWatchLogsAsyncClient cloudwatchlogs;
-    private DynamoDbAsyncClient dynamodb;
-    private Ec2AsyncClient ec2;
-    private EcrAsyncClient ecr;
-    private EfsAsyncClient efs;
-    private ElasticLoadBalancingV2AsyncClient elb;
-    private SecretsManagerAsyncClient secretsmanager;
-    private GuardDutyAsyncClient guardduty;
-    private IamAsyncClient iam;
-    private KafkaAsyncClient kafka;
-    private KmsAsyncClient kms;
-    private LambdaAsyncClient lambda;
-    private RdsAsyncClient rds;
-    private Route53AsyncClient route53;
-    private ResourceExplorer2AsyncClient resourceexplorer2;
-    private S3AsyncClient s3;
-    private SnsAsyncClient sns;
-    private SsmAsyncClient ssm;
-    private StsAsyncClient sts;
-    private SupportAsyncClient support;
+    private final AccessAnalyzerAsyncClient accessAnalyzer;
+    private final AcmAsyncClient acm;
+    private final AthenaAsyncClient athena;
+    private final CloudFormationAsyncClient cloudformation;
+    private final CloudFrontAsyncClient cf;
+    private final CloudTrailAsyncClient cloudTrail;
+    private final CloudWatchAsyncClient cloudWatch;
+    private final CloudWatchLogsAsyncClient cloudwatchlogs;
+    private final DynamoDbAsyncClient dynamodb;
+    private final Ec2AsyncClient ec2;
+    private final EcrAsyncClient ecr;
+    private final EfsAsyncClient efs;
+    private final ElasticLoadBalancingV2AsyncClient elb;
+    private final SecretsManagerAsyncClient secretsmanager;
+    private final GuardDutyAsyncClient guardduty;
+    private final IamAsyncClient iam;
+    private final KafkaAsyncClient kafka;
+    private final KmsAsyncClient kms;
+    private final LambdaAsyncClient lambda;
+    private final RdsAsyncClient rds;
+    private final Route53AsyncClient route53;
+    private final ResourceExplorer2AsyncClient resourceexplorer2;
+    private final S3AsyncClient s3;
+    private final SnsAsyncClient sns;
+    private final SsmAsyncClient ssm;
+    private final StsAsyncClient sts;
+    private final SupportAsyncClient support;
 
     public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AthenaAsyncClient athena,
             CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
@@ -359,6 +359,22 @@ public class SharedDataProvider {
                     .build())
                     .thenApply(DescribeImagesResponse::images);
         });
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Address>> getAllElasticIPs() {
+        String key = "ec2:elasticips";
+        Supplier<CompletableFuture<List<Address>>> loader = () ->
+                ec2.describeAddresses(DescribeAddressesRequest.builder().build())
+                        .thenApply(DescribeAddressesResponse::addresses);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<NetworkInterface>> getAllNetworkInterfaces() {
+        String key = "ec2:networkinterfaces";
+        Supplier<CompletableFuture<List<NetworkInterface>>> loader = () ->
+                ec2.describeNetworkInterfaces(DescribeNetworkInterfacesRequest.builder().build())
+                        .thenApply(DescribeNetworkInterfacesResponse::networkInterfaces);
         return getCachedData(key, loader);
     }
 
