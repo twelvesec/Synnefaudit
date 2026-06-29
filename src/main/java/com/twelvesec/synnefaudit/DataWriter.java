@@ -49,6 +49,10 @@ public class DataWriter {
         this.summaryFilePath = outputDirectory.resolve(summaryFileName);
     }
 
+    public Path getOutputFilePath() {
+        return this.outputFilePath;
+    }
+
     public void addToBuffer(AWSFinding title, Object data, Status status) {
         JsonNode node = MAPPER.valueToTree(data);
         addToBuffer(title, node, status);

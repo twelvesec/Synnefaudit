@@ -1,5 +1,6 @@
 package com.twelvesec.synnefaudit;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -7,7 +8,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -25,11 +25,8 @@ import org.apache.commons.cli.ParseException;
 import com.twelvesec.synnefaudit.AWS.AWSDependencyFactory;
 import com.twelvesec.synnefaudit.CloudCheck.CheckSummary;
 import com.twelvesec.synnefaudit.CloudCheck.Provider;
-import static com.twelvesec.synnefaudit.ReportPrinter.CHECKS_SUMMARY;
 import com.twelvesec.synnefaudit.messages.Text;
 
-import software.amazon.awssdk.profiles.Profile;
-import software.amazon.awssdk.profiles.ProfileFile;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.accessanalyzer.AccessAnalyzerAsyncClient;
 import software.amazon.awssdk.services.account.AccountAsyncClient;
@@ -74,11 +71,14 @@ import software.amazon.awssdk.services.wafv2.Wafv2AsyncClient;
 
 public class App {
     private static Provider PROVIDER;
-
     private static Region region;
     private static String profileInput;
     private static Path outfilePath;
     private static boolean useEnv;
+
+    private static String outputFormat = "all";
+    private static String fromJsonPath = null;
+
     private static AWSDependencyFactory awsDependencyFactory;
     
     private static IamAsyncClient iam;
@@ -133,14 +133,22 @@ public class App {
     static void main(String[] args) {
         Instant start = Instant.now();
         printer = new ReportPrinter();
-
-        PROVIDER = Provider.AWS; 
+        PROVIDER = Provider.AWS;
 
         retrieveUserParameters(args);
+
+        if (fromJsonPath != null) {
+            System.out.println("Executing local standalone translation from historical source payload: " + fromJsonPath);
+            Path inputSource = Paths.get(fromJsonPath);
+            Path outputDestinationHtml = inputSource.resolveSibling(
+                    inputSource.getFileName().toString().replace(".json", "") + "-compiled.html"
+            );
+            HtmlReportGenerator.generate(inputSource, outputDestinationHtml);
+            System.exit(0);
+        }
+
         writer = new DataWriter(outfilePath);
-        
         setAWSClients();
-        
         executor = Executors.newVirtualThreadPerTaskExecutor();
 
         try {
@@ -149,30 +157,44 @@ public class App {
                 elb, secretsmanager, guardduty, iam, kafka, kms, lambda, rds, route53, resourceexplorer2, s3, sns, ssm, sts, support);
 
             List<CloudCheck> checks = getAWSChecks();
-
-            printer.printSectionHeader(CHECKS_SUMMARY);
+            printer.printSectionHeader(ReportPrinter.CHECKS_SUMMARY);
 
             List<CompletableFuture<CheckSummary>> futures = checks.stream()
-                .map(check -> check.runAllChecksAsync()
-                    .thenApply(_ -> {
-                        CheckSummary summary = check.summary();
-                        synchronized (System.out) {
-                            printer.printIndividualStatus(summary);
-                        }
-                        return summary;
-                    }))
-                .toList();
+                    .map(check -> check.runAllChecksAsync()
+                            .thenApply(_ -> {
+                                CheckSummary summary = check.summary();
+                                synchronized (System.out) {
+                                    printer.printIndividualStatus(summary);
+                                }
+                                return summary;
+                            }))
+                    .toList();
 
             CompletableFuture<Void> allChecks = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenAccept(_ -> {
-                    List<CheckSummary> summaries = futures.stream()
-                        .map(CompletableFuture::join)
-                        .collect(Collectors.toList());
-                    writer.flush();
-                    printer.printOverallStatus(summaries);
-                });
+                    .thenAccept(_ -> {
+                        List<CheckSummary> summaries = futures.stream()
+                                .map(CompletableFuture::join)
+                                .collect(Collectors.toList());
+                        writer.flush();
+                        printer.printOverallStatus(summaries);
+                    });
 
             allChecks.join();
+
+            if ("html".equalsIgnoreCase(outputFormat) || "all".equalsIgnoreCase(outputFormat)) {
+                Path generatedJson = writer.getOutputFilePath();
+                Path targetHtml = generatedJson.resolveSibling(
+                        generatedJson.getFileName().toString().replace(".json", ".html")
+                );
+                HtmlReportGenerator.generate(generatedJson, targetHtml);
+
+                if ("html".equalsIgnoreCase(outputFormat)) {
+                    try {
+                        Files.deleteIfExists(generatedJson);
+                        Files.deleteIfExists(generatedJson.resolveSibling(generatedJson.getFileName().toString().replace(".json", "-summary.json")));
+                    } catch (IOException ignored) {}
+                }
+            }
 
             exitCode = 0;
         } catch (Exception e) {
@@ -181,7 +203,9 @@ public class App {
             exitCode = 1;
         } finally {
             executor.shutdown();
-            awsDependencyFactory.closeAllClients();
+            if (awsDependencyFactory != null) {
+                awsDependencyFactory.closeAllClients();
+            }
             Instant end = Instant.now();
             Duration elapsed = Duration.between(start, end);
             printer.printRuntime(elapsed);
@@ -196,31 +220,12 @@ public class App {
     private static void retrieveUserParameters(String[] args) {
         Options options = new Options();
 
-        options.addOption(Option.builder()
-                .longOpt("region")
-                .hasArg()
-                .argName("REGION")
-                .desc("AWS region (e.g. us-east-1)")
-                .required()
-                .build());
-        options.addOption(Option.builder()
-                .longOpt("outdir")
-                .hasArg()
-                .argName("OUTDIR")
-                .desc("Output directory path")
-                .required()
-                .build());
-        options.addOption(Option.builder()
-                .longOpt("profile")
-                .hasArg()
-                .argName("PROFILE")
-                .desc("AWS CLI profile name")
-                .build());
-        options.addOption(Option.builder()
-                .longOpt("env")
-                .desc("Use AWS credentials from environment variables")
-                .hasArg(false)
-                .build());
+        options.addOption(Option.builder().longOpt("region").hasArg().argName("REGION").desc("AWS region").build());
+        options.addOption(Option.builder().longOpt("outdir").hasArg().argName("OUTDIR").desc("Output directory path").build());
+        options.addOption(Option.builder().longOpt("profile").hasArg().argName("PROFILE").desc("AWS CLI profile name").build());
+        options.addOption(Option.builder().longOpt("env").desc("Use AWS credentials from environment variables").build());
+        options.addOption(Option.builder().longOpt("format").hasArg().argName("FORMAT").desc("Output formats: json | html | all (default)").build());
+        options.addOption(Option.builder().longOpt("from-json").hasArg().argName("JSON_PATH").desc("Compile HTML directly from a previously generated JSON file").build());
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -233,16 +238,28 @@ public class App {
             return;
         }
 
-        String regionInput  = cmd.getOptionValue("region");
-        String outdirInput  = cmd.getOptionValue("outdir");
-        profileInput        = cmd.getOptionValue("profile");
-        useEnv              = cmd.hasOption("env");
+        if (cmd.hasOption("format")) {
+            outputFormat = cmd.getOptionValue("format").toLowerCase();
+        }
+        if (cmd.hasOption("from-json")) {
+            fromJsonPath = cmd.getOptionValue("from-json");
+            return;
+        }
+
+        String regionInput = cmd.getOptionValue("region");
+        String outdirInput = cmd.getOptionValue("outdir");
+        profileInput = cmd.getOptionValue("profile");
+        useEnv = cmd.hasOption("env");
+
+        if (regionInput == null || outdirInput == null) {
+            System.err.println("Error: Operational live security scanning routines require both --region and --outdir specifications.");
+            new HelpFormatter().printHelp("java -jar synnefaudit.jar", options);
+            System.exit(1);
+        }
 
         if ((profileInput == null && !useEnv) || (profileInput != null && useEnv)) {
             System.err.println("Error: You must specify exactly one of --profile or --env.");
-            new HelpFormatter().printHelp("java -jar synnefaudit.jar", options);
             System.exit(2);
-            return;
         }
 
         try {
@@ -250,7 +267,6 @@ public class App {
         } catch (IllegalArgumentException iae) {
             System.err.print("Error: please provide a valid AWS region.\n");
             System.exit(3);
-            return;
         }
 
         try {
@@ -258,36 +274,11 @@ public class App {
             if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
                 System.err.print("Error: path in outdir parameter does not exist or is not a directory.\n");
                 System.exit(4);
-                return;
             }
             outfilePath = dirPath;
         } catch (InvalidPathException ipe) {
             System.err.print("Error: path in outdir parameter is not a valid directory path.\n");
             System.exit(5);
-            return;
-        }
-
-        if (!useEnv) {
-            ProfileFile credentials = ProfileFile.builder()
-                .content(Paths.get(System.getProperty("user.home"), ".aws", "credentials"))
-                .type(ProfileFile.Type.CREDENTIALS)
-                .build();
-
-            ProfileFile configs = ProfileFile.builder()
-                .content(Paths.get(System.getProperty("user.home"), ".aws", "config"))
-                .type(ProfileFile.Type.CONFIGURATION)
-                .build();
-
-            ProfileFile combined = ProfileFile.aggregator()
-                .addFile(credentials)
-                .addFile(configs)
-                .build();
-
-            Map<String, Profile> profileMap = combined.profiles();
-            if (!profileMap.containsKey(profileInput)) {
-                System.err.print("Error: AWS profile was not found in ~/.aws/credentials.\n");
-                System.exit(6);
-            }
         }
     }
 

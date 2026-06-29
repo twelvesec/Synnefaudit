@@ -42,6 +42,13 @@ Call the program using the following parameters:
 --region {region} --profile {profile} --outdir {absolute-path-to-output-directory}
 ```
 
+If there is already a JSON output you want to use to create an HTML file, run:
+```
+--from-json {absolute-path-to-json-file}
+```
+
+You may also use `--help` for more options.
+
 # Output
 
 The tool generates 2 json files: 1 detailed that includes the output received for each item, and 1 summary
