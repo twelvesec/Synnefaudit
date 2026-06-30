@@ -1,6 +1,7 @@
 package com.twelvesec.synnefaudit;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -80,7 +81,7 @@ public class App {
     private static String fromJsonPath = null;
 
     private static AWSDependencyFactory awsDependencyFactory;
-    
+
     private static IamAsyncClient iam;
     private static CloudFrontAsyncClient cf;
     private static Wafv2AsyncClient waf;
@@ -137,6 +138,8 @@ public class App {
 
         retrieveUserParameters(args);
 
+        printer.printLogo();
+
         if (fromJsonPath != null) {
             System.out.println("Executing local standalone translation from historical source payload: " + fromJsonPath);
             Path inputSource = Paths.get(fromJsonPath);
@@ -153,8 +156,8 @@ public class App {
 
         try {
             sharedDataProvider = new SharedDataProvider(
-                accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, dynamodb, ec2, ecr, efs, 
-                elb, secretsmanager, guardduty, iam, kafka, kms, lambda, rds, route53, resourceexplorer2, s3, sns, ssm, sts, support);
+                    accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, dynamodb, ec2, ecr, efs,
+                    elb, secretsmanager, guardduty, iam, kafka, kms, lambda, rds, route53, resourceexplorer2, s3, sns, ssm, sts, support);
 
             List<CloudCheck> checks = getAWSChecks();
             printer.printSectionHeader(ReportPrinter.CHECKS_SUMMARY);
@@ -219,7 +222,7 @@ public class App {
 
     private static void retrieveUserParameters(String[] args) {
         Options options = new Options();
-
+        options.addOption(Option.builder("h").longOpt("help").desc("Show this help message").build());
         options.addOption(Option.builder().longOpt("region").hasArg().argName("REGION").desc("AWS region").build());
         options.addOption(Option.builder().longOpt("outdir").hasArg().argName("OUTDIR").desc("Output directory path").build());
         options.addOption(Option.builder().longOpt("profile").hasArg().argName("PROFILE").desc("AWS CLI profile name").build());
@@ -229,18 +232,25 @@ public class App {
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
+
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            System.out.println(e.getMessage());
-            new HelpFormatter().printHelp("java -jar synnefaudit.jar", options);
+            System.err.println("Error: " + e.getMessage());
+            printGroupedHelp();
             System.exit(1);
             return;
+        }
+
+        if (cmd.hasOption("help")) {
+            printGroupedHelp();
+            System.exit(0);
         }
 
         if (cmd.hasOption("format")) {
             outputFormat = cmd.getOptionValue("format").toLowerCase();
         }
+
         if (cmd.hasOption("from-json")) {
             fromJsonPath = cmd.getOptionValue("from-json");
             return;
@@ -252,71 +262,114 @@ public class App {
         useEnv = cmd.hasOption("env");
 
         if (regionInput == null || outdirInput == null) {
-            System.err.println("Error: Operational live security scanning routines require both --region and --outdir specifications.");
-            new HelpFormatter().printHelp("java -jar synnefaudit.jar", options);
+            System.err.println("Error: Live security scans require BOTH --region and --outdir specifications.");
+            printGroupedHelp();
             System.exit(1);
         }
 
         if ((profileInput == null && !useEnv) || (profileInput != null && useEnv)) {
-            System.err.println("Error: You must specify exactly one of --profile or --env.");
+            System.err.println("Error: You must specify exactly ONE authentication method: --profile OR --env.");
+            printGroupedHelp();
             System.exit(2);
         }
 
         try {
             region = Region.of(regionInput);
         } catch (IllegalArgumentException iae) {
-            System.err.print("Error: please provide a valid AWS region.\n");
+            System.err.println("Error: Please provide a valid AWS region (e.g., us-east-1).");
             System.exit(3);
         }
 
         try {
             Path dirPath = Paths.get(outdirInput);
             if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
-                System.err.print("Error: path in outdir parameter does not exist or is not a directory.\n");
+                System.err.println("Error: The path specified in --outdir does not exist or is not a directory.");
                 System.exit(4);
             }
             outfilePath = dirPath;
         } catch (InvalidPathException ipe) {
-            System.err.print("Error: path in outdir parameter is not a valid directory path.\n");
+            System.err.println("Error: The path specified in --outdir is structurally invalid.");
             System.exit(5);
         }
     }
 
+    private static void printGroupedHelp() {
+        HelpFormatter formatter = new HelpFormatter();
+        PrintWriter pw = new PrintWriter(System.out);
+
+        formatter.printUsage(pw, 100, "synnefaudit [options]");
+        pw.println();
+        pw.println("=================================================================================");
+        pw.println(" SYNNEFAUDIT SECURITY DASHBOARD CLI ");
+        pw.println("=================================================================================");
+        pw.println("This program executes live AWS architecture scans or builds HTML reports locally.");
+        pw.println();
+
+        pw.println("GLOBAL OPTIONS (Optional):");
+        Options generalOpts = new Options();
+        generalOpts.addOption(Option.builder("h").longOpt("help").desc("Show this grouped help menu context.").build());
+        generalOpts.addOption(Option.builder().longOpt("format").hasArg().argName("FORMAT").desc("Output strategy variations: json | html | all (default value)").build());
+        formatter.printOptions(pw, 100, generalOpts, 2, 4);
+        pw.println();
+
+        pw.println("LIVE SCAN MODE OPTIONS (Requires target destination properties):");
+        Options liveCoreOpts = new Options();
+        liveCoreOpts.addOption(Option.builder().longOpt("region").hasArg().argName("REGION").desc("Target cloud scope deployment geography").build());
+        liveCoreOpts.addOption(Option.builder().longOpt("outdir").hasArg().argName("OUTDIR").desc("Target path where audit assets drop").build());
+        formatter.printOptions(pw, 100, liveCoreOpts, 2, 4);
+        pw.println();
+
+        pw.println("LIVE SCAN AUTHENTICATION (Specify exactly ONE option below):");
+        Options authOpts = new Options();
+        authOpts.addOption(Option.builder().longOpt("profile").hasArg().argName("PROFILE").desc("Named credential map stored via local AWS config file").build());
+        authOpts.addOption(Option.builder().longOpt("env").desc("Pulls active execution variables straight out of environmental runtime memory environment").build());
+        formatter.printOptions(pw, 100, authOpts, 2, 4);
+        pw.println();
+
+        pw.println("REPORT COMPILATION MODE OPTIONS (Isolated processing path):");
+        Options compileOpts = new Options();
+        compileOpts.addOption(Option.builder().longOpt("from-json").hasArg().argName("JSON_PATH").desc("Skips live network requests entirely to forge HTML visualizations directly from a local log source").build());
+        formatter.printOptions(pw, 100, compileOpts, 2, 4);
+        pw.println("_________________________________________________________________________________");
+
+        pw.flush();
+    }
+
     private static List<CloudCheck> getAWSChecks() {
         return List.of(
-            new AccessKeysCheck(writer, sharedDataProvider, iam, kms),
-            new ACMCertificatesCheck(writer, sharedDataProvider, acm),
-            new AthenaCheck(writer, sharedDataProvider, athena),
-            new CloudFormationCheck(writer, sharedDataProvider, cloudformation),
-            new CloudFrontCheck(writer, sharedDataProvider, cf, waf),
-            new CloudTrailCheck(writer, sharedDataProvider, cloudTrail, cloudWatchLogs),
-            new CloudWatchCheck(writer, sharedDataProvider, sts, cloudWatchLogs),
-            new DynamoDBCheck(writer, sharedDataProvider, dynamodb),
-            new EBSCheck(writer, sharedDataProvider, ec2),
-            new EC2Check(writer, sharedDataProvider, ec2, ssm),
-            new EC2SecurityGroupCheck(writer, sharedDataProvider, ec2),
-            new ECRCheck(writer, sharedDataProvider, ecr),
-            new EFSCheck(writer, sharedDataProvider, efs),
-            new ELBCheck(writer, sharedDataProvider, elb, waf),
-            new EnabledServicesCheck(writer, sharedDataProvider, secretsmanager, drs,
-                                    macie2, securityHub, waf),
-            new GeneralCheck(writer, sharedDataProvider, accountClient, backup, codeBuild, orgs, sts),
-            new GlueCheck(writer, glue),
-            new GuardDutyCheck(writer, sharedDataProvider, guardduty),
-            new IAMCheck(writer, sharedDataProvider, iam, accessAnalyzer, sts),
-            new Inspector2Check(writer, inspector2, sts),
-            new KafkaCheck(writer, sharedDataProvider, kafka),
-            new KMSCheck(writer, sharedDataProvider, kms, cloudWatch),
-            new LambdaCheck(writer, sharedDataProvider, lambda),
-            new MFACheck(writer, sharedDataProvider, iam, sts),
-            new NetworkACLsCheck(writer, sharedDataProvider),
-            new RDSInstancesCheck(writer, sharedDataProvider, rds),
-            new Route53Check(writer, sharedDataProvider, route53),
-            new S3BucketsCheck(writer, awsDependencyFactory, sharedDataProvider, s3, s3control, sts),
-            new SNSTopicsCheck(writer, sharedDataProvider, sns),
-            new SSMCheck(writer, sharedDataProvider, ssm, ssm_inc),
-            new SupportCheck(writer, support),
-            new VPCsCheck(writer, sharedDataProvider, ec2, networkFirewall, iam)
+                new AccessKeysCheck(writer, sharedDataProvider, iam, kms),
+                new ACMCertificatesCheck(writer, sharedDataProvider, acm),
+                new AthenaCheck(writer, sharedDataProvider, athena),
+                new CloudFormationCheck(writer, sharedDataProvider, cloudformation),
+                new CloudFrontCheck(writer, sharedDataProvider, cf, waf),
+                new CloudTrailCheck(writer, sharedDataProvider, cloudTrail, cloudWatchLogs),
+                new CloudWatchCheck(writer, sharedDataProvider, sts, cloudWatchLogs),
+                new DynamoDBCheck(writer, sharedDataProvider, dynamodb),
+                new EBSCheck(writer, sharedDataProvider, ec2),
+                new EC2Check(writer, sharedDataProvider, ec2, ssm),
+                new EC2SecurityGroupCheck(writer, sharedDataProvider, ec2),
+                new ECRCheck(writer, sharedDataProvider, ecr),
+                new EFSCheck(writer, sharedDataProvider, efs),
+                new ELBCheck(writer, sharedDataProvider, elb, waf),
+                new EnabledServicesCheck(writer, sharedDataProvider, secretsmanager, drs,
+                        macie2, securityHub, waf),
+                new GeneralCheck(writer, sharedDataProvider, accountClient, backup, codeBuild, orgs, sts),
+                new GlueCheck(writer, glue),
+                new GuardDutyCheck(writer, sharedDataProvider, guardduty),
+                new IAMCheck(writer, sharedDataProvider, iam, accessAnalyzer, sts),
+                new Inspector2Check(writer, inspector2, sts),
+                new KafkaCheck(writer, sharedDataProvider, kafka),
+                new KMSCheck(writer, sharedDataProvider, kms, cloudWatch),
+                new LambdaCheck(writer, sharedDataProvider, lambda),
+                new MFACheck(writer, sharedDataProvider, iam, sts),
+                new NetworkACLsCheck(writer, sharedDataProvider),
+                new RDSInstancesCheck(writer, sharedDataProvider, rds),
+                new Route53Check(writer, sharedDataProvider, route53),
+                new S3BucketsCheck(writer, awsDependencyFactory, sharedDataProvider, s3, s3control, sts),
+                new SNSTopicsCheck(writer, sharedDataProvider, sns),
+                new SSMCheck(writer, sharedDataProvider, ssm, ssm_inc),
+                new SupportCheck(writer, support),
+                new VPCsCheck(writer, sharedDataProvider, ec2, networkFirewall, iam)
         );
     }
 
