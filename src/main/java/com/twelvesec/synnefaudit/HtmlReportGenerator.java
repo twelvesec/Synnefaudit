@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,6 +29,12 @@ public class HtmlReportGenerator {
             JsonNode rootNode = MAPPER.readTree(jsonFile);
             StringBuilder rowsHtml = new StringBuilder();
 
+            int totalChecks = 0;
+            int passCount = 0;
+            int failCount = 0;
+            int exceptionCount = 0;
+            int napplCount = 0;
+
             Iterator<Map.Entry<String, JsonNode>> fields = rootNode.fields();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> entry = fields.next();
@@ -37,6 +45,14 @@ public class HtmlReportGenerator {
                 String status = checkPayload.has("status") ? checkPayload.get("status").asText() : "UNKNOWN";
                 String liveSeverity = checkPayload.has("severity") ? checkPayload.get("severity").asText() : "UNKNOWN";
                 JsonNode dataNode = checkPayload.get("data");
+
+                totalChecks++;
+                switch (status.toUpperCase()) {
+                    case "PASS" -> passCount++;
+                    case "FAIL" -> failCount++;
+                    case "FAIL_EXCEPTION" -> exceptionCount++;
+                    case "NOT_APPLICABLE" -> napplCount++;
+                }
 
                 CheckMetadata metadata = MetadataLoader.get(checkId);
 
@@ -62,6 +78,12 @@ public class HtmlReportGenerator {
                         descBuilder.append("<p style='margin:0; font-size:12px; color:#ba2525;'><strong>Risk:</strong> ")
                                 .append(escapeHtml(metadata.getRisk())).append("</p>");
                     }
+                    if (metadata.getRelatedUrls() != null) {
+                        String relatedUrlsHtml = renderUrls(metadata.getRelatedUrls());
+                        if (!relatedUrlsHtml.isEmpty()) {
+                            descBuilder.append("<div style='margin-top:8px; font-size:12px;'><strong>References:</strong> ").append(relatedUrlsHtml).append("</div>");
+                        }
+                    }
                     if (descBuilder.length() > 0) {
                         descriptionHtml = descBuilder.toString();
                     }
@@ -72,14 +94,6 @@ public class HtmlReportGenerator {
                     remediationHtml = renderRemediation(metadata.getRemediation());
                 }
 
-                StringBuilder linksBuilder = new StringBuilder();
-                if (metadata != null) {
-                    linksBuilder.append(renderUrls(metadata.getRelatedUrls()));
-                    if (metadata.getRemediation() != null && metadata.getRemediation().getRecommendation() != null) {
-                        linksBuilder.append(renderUrls(metadata.getRemediation().getRecommendation().getUrls()));
-                    }
-                }
-                String totalLinksHtml = linksBuilder.length() == 0 ? "<em>None</em>" : linksBuilder.toString();
                 String affectedResourcesHtml = renderAffectedResources(dataNode);
 
                 rowsHtml.append(String.format("""
@@ -90,7 +104,6 @@ public class HtmlReportGenerator {
                         <td><span class="badge badge-severity severity-%s">%s</span></td>
                         <td>%s</td>
                         <td>%s</td>
-                        <td class="text-center">%s</td>
                         <td>%s</td>
                     </tr>
                     """,
@@ -98,11 +111,13 @@ public class HtmlReportGenerator {
                         escapeHtml(checkName), escapeHtml(checkId),
                         status.toLowerCase(), escapeHtml(status.replace("_", " ")),
                         severity.toLowerCase(), escapeHtml(severity.replace("_", " ")),
-                        descriptionHtml, remediationHtml, totalLinksHtml, affectedResourcesHtml
+                        descriptionHtml, remediationHtml, affectedResourcesHtml
                 ));
             }
 
-            String fullHtml = getHtmlTemplate(rowsHtml.toString());
+            String generationTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+            String fullHtml = getHtmlTemplate(rowsHtml.toString(), generationTime, totalChecks, passCount, failCount, exceptionCount, napplCount);
             try (FileWriter writer = new FileWriter(targetHtmlPath.toFile())) {
                 writer.write(fullHtml);
             }
@@ -208,7 +223,7 @@ public class HtmlReportGenerator {
         }
 
         finalBuilder.append("<details style='margin-top: 6px;'>")
-                .append("<summary style='font-size: 11px; color: #4A154B; font-weight: normal; cursor:pointer;'>Toggle JSON details</summary>")
+                .append("<summary style='font-size: 11px; color: #4A154B; font-weight: normal; cursor:pointer;'>Toggle Structural JSON Code</summary>")
                 .append("<pre><code class='language-json'>").append(escapeHtml(dataNode.toPrettyString())).append("</code></pre>")
                 .append("</details></div>");
 
@@ -263,6 +278,13 @@ public class HtmlReportGenerator {
             }
         }
 
+        if (rem.getRecommendation() != null && rem.getRecommendation().getUrls() != null) {
+            String recUrlsHtml = renderUrls(rem.getRecommendation().getUrls());
+            if (!recUrlsHtml.isEmpty()) {
+                sb.append("<div style='margin-top:8px; font-size:12px;'><strong>References:</strong> ").append(recUrlsHtml).append("</div>");
+            }
+        }
+
         return sb.length() == 0 ? "No remediation steps provided." : sb.toString();
     }
 
@@ -302,7 +324,7 @@ public class HtmlReportGenerator {
                 .replace("'", "&#x27;");
     }
 
-    private static String getHtmlTemplate(String tableRows) {
+    private static String getHtmlTemplate(String tableRows, String timestamp, int total, int pass, int fail, int exception, int nappl) {
         return """
         <!DOCTYPE html>
         <html lang="en">
@@ -313,47 +335,52 @@ public class HtmlReportGenerator {
                 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f6f8; color: #333; margin: 0; padding: 24px; }
                 .container { max-width: 100%; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
                 
-                /* Elegant Top Banner styling */
-                .header-area { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #eaeaea; padding-bottom: 16px; margin-bottom: 24px; }
+                .header-area { border-bottom: 2px solid #eaeaea; padding-bottom: 14px; margin-bottom: 24px; }
+                .title-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
                 h1 { color: #4A154B; margin: 0; font-size: 26px; font-weight: 700; }
+                .timestamp-label { font-size: 13px; color: #64748b; background: #f1f5f9; padding: 6px 12px; border-radius: 6px; font-weight: 500; border: 1px solid #e2e8f0; }
                 
-                /* Modern Controls Card Component */
+                .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+                .metric-card { padding: 16px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: transform 0.2s; }
+                .metric-card:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.04); }
+                .metric-label { font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; color: #64748b; }
+                .metric-value { font-size: 28px; font-weight: 800; line-height: 1; margin-top: 4px; }
+                
+                .card-total { border-left: 4px solid #4A154B; } .card-total .metric-value { color: #4A154B; }
+                .card-pass { border-left: 4px solid #28a745; } .card-pass .metric-value { color: #155724; }
+                .card-fail { border-left: 4px solid #dc3545; } .card-fail .metric-value { color: #721c24; }
+                .card-exception { border-left: 4px solid #fd7e14; } .card-exception .metric-value { color: #b24700; }
+                .card-nappl { border-left: 4px solid #ffc107; } .card-nappl .metric-value { color: #856404; }
+
                 .controls-card { background: #fdfdfd; border: 1px solid #e3e8ed; padding: 20px; border-radius: 10px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.01); }
                 
-                /* Search Box Input Styling */
                 .search-wrapper { position: relative; width: 100%; }
                 .search-input { width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; transition: all 0.2s ease; background: #fff; color: #1e293b; }
                 .search-input:focus { outline: none; border-color: #4A154B; box-shadow: 0 0 0 3px rgba(74, 21, 75, 0.15); }
                 .search-input::placeholder { color: #94a3b8; }
                 
-                /* Modern Filter Pill/Chip Architecture CSS grid */
                 .filter-row { display: flex; flex-wrap: wrap; gap: 20px; font-size: 13px; }
                 .filter-section-group { display: flex; flex-direction: column; gap: 6px; }
                 .filter-section-group strong { color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
                 .chips-container { display: flex; flex-wrap: wrap; gap: 8px; }
                 
-                /* Base Pill-Chip Config */
                 .filter-chip { display: inline-flex; align-items: center; padding: 6px 14px; border: 1px solid #cbd5e1; background: #fff; color: #475569; border-radius: 20px; font-weight: 500; cursor: pointer; user-select: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-size: 12px; }
-                .filter-chip input[type="checkbox"] { display: none; } /* Hide technical boxes natively */
+                .filter-chip input[type="checkbox"] { display: none; } 
                 .filter-chip:hover { border-color: #94a3b8; background: #f8fafc; transform: translateY(-1px); }
                 
-                /* Active Pill States using modern container selector mappings */
                 .filter-chip:has(input:checked) { border-width: 1px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
                 
-                /* Active Status Filter Custom Visual Colors mapping */
                 .filter-chip:has(input:checked).chip-pass { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
                 .filter-chip:has(input:checked).chip-fail { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
                 .filter-chip:has(input:checked).chip-exception { background-color: #ffe3cc; color: #b24700; border-color: #ffd1b3; }
                 .filter-chip:has(input:checked).chip-nappl { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
                 
-                /* Active Severity Filter Custom Colors mapping */
                 .filter-chip:has(input:checked).chip-critical { background-color: #58181F; color: #ffffff; border-color: #58181F; }
                 .filter-chip:has(input:checked).chip-high { background-color: #dc3545; color: #ffffff; border-color: #dc3545; }
                 .filter-chip:has(input:checked).chip-medium { background-color: #fd7e14; color: #212529; border-color: #fd7e14; }
                 .filter-chip:has(input:checked).chip-low { background-color: #28a745; color: #ffffff; border-color: #28a745; }
                 .filter-chip:has(input:checked).chip-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
 
-                /* Data Table Layout alignments config */
                 table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; text-align: left; table-layout: fixed; }
                 th { background-color: #4A154B; color: white; padding: 14px 10px; cursor: pointer; user-select: none; position: relative; font-weight: 600; font-size: 13px; }
                 th:hover { background-color: #632066; }
@@ -363,17 +390,14 @@ public class HtmlReportGenerator {
                 tr:hover { background-color: #fdfbfe; }
                 .text-center { text-align: center; }
                 
-                /* Column Width Layouts definitions */
-                th:nth-child(1), td:nth-child(1) { width: 12%; } /* Check Name */
-                th:nth-child(2), td:nth-child(2) { width: 11%; } /* Check ID */
-                th:nth-child(3), td:nth-child(3) { width: 7%; }  /* Status */
-                th:nth-child(4), td:nth-child(4) { width: 6%; }  /* Severity */
-                th:nth-child(5), td:nth-child(5) { width: 15%; } /* Description & Risk */
-                th:nth-child(6), td:nth-child(6) { width: 18%; } /* Remediation */
-                th:nth-child(7), td:nth-child(7) { width: 4%; }  /* Links */
-                th:nth-child(8), td:nth-child(8) { width: 27%; } /* Evidence Payload */
+                th:nth-child(1), td:nth-child(1) { width: 12%; } 
+                th:nth-child(2), td:nth-child(2) { width: 11%; } 
+                th:nth-child(3), td:nth-child(3) { width: 7%; }  
+                th:nth-child(4), td:nth-child(4) { width: 6%; }  
+                th:nth-child(5), td:nth-child(5) { width: 18%; } 
+                th:nth-child(6), td:nth-child(6) { width: 21%; } 
+                th:nth-child(7), td:nth-child(7) { width: 25%; } 
                 
-                /* Column Display Badges */
                 .badge { display: block; padding: 5px 4px; font-weight: bold; border-radius: 4px; font-size: 10px; text-align: center; text-transform: uppercase; width: 100%; box-sizing: border-box; }
                 .status-pass { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
                 .status-fail { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
@@ -387,7 +411,6 @@ public class HtmlReportGenerator {
                 .severity-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
                 .severity-unknown { background-color: #6c757d; color: #ffffff; }
 
-                /* Collapsible drawers configuration blocks */
                 .resource-container { width: 100%; }
                 .resource-item { background: #f8f9fa; border-left: 3px solid #4A154B; padding: 4px 8px; margin-bottom: 5px; font-family: monospace; font-size: 11px; border-radius: 0 4px 4px 0; }
                 .resource-summary-text { font-size: 11px; margin-bottom: 4px; color: #495057; }
@@ -407,18 +430,50 @@ public class HtmlReportGenerator {
 
                 details { background: #fafafa; border: 1px solid #ced4da; border-radius: 4px; padding: 4px; }
                 summary { font-weight: bold; cursor: pointer; outline: none; padding: 2px; }
-                pre { background: #272822; color: #f8f8f2; padding: 8px; overflow-x: auto; border-radius: 4px; max-height: 300px; font-size: 11px; margin-top: 4px; }
+                pre { background: #1e1e1e; color: #d4d4d4; padding: 8px; overflow-x: auto; border-radius: 4px; max-height: 300px; font-size: 11px; margin-top: 4px; border: 1px solid #2d2d2d; }
+                
+                .json-key     { color: #9cdcfe; font-weight: 600; }  
+                .json-string  { color: #ce9178; }                    
+                .json-number  { color: #b5cea8; }                    
+                .json-boolean { color: #569cd6; font-weight: 600; }  
+                .json-null    { color: #748294; font-style: italic; } 
             </style>
         </head>
         <body>
             <div class="container">
                 <div class="header-area">
-                    <h1>Synnefaudit Security Dashboard</h1>
+                    <div class="title-row">
+                        <h1>Synnefaudit Security Dashboard</h1>
+                        <div class="timestamp-label">Generated on: {{TIMESTAMP}}</div>
+                    </div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card card-total">
+                        <span class="metric-label">Total Checks</span>
+                        <span class="metric-value">{{TOTAL}}</span>
+                    </div>
+                    <div class="metric-card card-pass">
+                        <span class="metric-label">Passed</span>
+                        <span class="metric-value">{{PASS}}</span>
+                    </div>
+                    <div class="metric-card card-fail">
+                        <span class="metric-label">Failed</span>
+                        <span class="metric-value">{{FAIL}}</span>
+                    </div>
+                    <div class="metric-card card-exception">
+                        <span class="metric-label">Exceptions</span>
+                        <span class="metric-value">{{EXCEPTION}}</span>
+                    </div>
+                    <div class="metric-card card-nappl">
+                        <span class="metric-label">Not Applicable</span>
+                        <span class="metric-value">{{NAPPL}}</span>
+                    </div>
                 </div>
                 
                 <div class="controls-card">
                     <div class="search-wrapper">
-                        <input type="text" id="globalSearch" class="search-input" placeholder="Search parameters, rule sets, diagnostic metrics, or entities...">
+                        <input type="text" id="globalSearch" class="search-input" placeholder="Search parameters, rule sets, diagnostic metrics, or code entities...">
                     </div>
                     
                     <div class="filter-row">
@@ -454,12 +509,11 @@ public class HtmlReportGenerator {
                             <th onclick="sortTable(3)">Severity</th>
                             <th onclick="sortTable(4)">Description & Risks</th>
                             <th onclick="sortTable(5)">Remediation Guide</th>
-                            <th>Links</th>
                             <th>Evidence Payload</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        """ + tableRows + """
+                        {{TABLE_ROWS}}
                     </tbody>
                 </table>
             </div>
@@ -468,6 +522,29 @@ public class HtmlReportGenerator {
                 const searchInput = document.getElementById('globalSearch');
                 const tableBody = document.getElementById('tableBody');
                 const rows = Array.from(tableBody.getElementsByTagName('tr'));
+
+                function colorizeJsonString(rawJsonStr) {
+                    let escaped = rawJsonStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    return escaped.replace(/("(\\\\u[a-zA-Z0-9]{4}|\\\\[^u]|[^\\\\"])*"(\\s*:)?|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d+)?)/g, function (match) {
+                        let tokenClass = 'number';
+                        if (/^"/.test(match)) {
+                            if (/:$/.test(match)) {
+                                tokenClass = 'key';
+                            } else {
+                                tokenClass = 'string';
+                            }
+                        } else if (/true|false/.test(match)) {
+                            tokenClass = 'boolean';
+                        } else if (/null/.test(match)) {
+                            tokenClass = 'null';
+                        }
+                        return '<span class="json-' + tokenClass + '">' + match + '</span>';
+                    });
+                }
+
+                document.querySelectorAll('pre code.language-json').forEach(block => {
+                    block.innerHTML = colorizeJsonString(block.textContent);
+                });
 
                 function filterTable() {
                     const query = searchInput.value.toLowerCase();
@@ -534,6 +611,13 @@ public class HtmlReportGenerator {
             </script>
         </body>
         </html>
-        """;
+        """
+                .replace("{{TIMESTAMP}}", timestamp)
+                .replace("{{TOTAL}}", String.valueOf(total))
+                .replace("{{PASS}}", String.valueOf(pass))
+                .replace("{{FAIL}}", String.valueOf(fail))
+                .replace("{{EXCEPTION}}", String.valueOf(exception))
+                .replace("{{NAPPL}}", String.valueOf(nappl))
+                .replace("{{TABLE_ROWS}}", tableRows);
     }
 }

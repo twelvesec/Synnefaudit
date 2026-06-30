@@ -51,10 +51,14 @@ You may also use `--help` for more options.
 
 # Output
 
-The tool generates 2 json files: 1 detailed that includes the output received for each item, and 1 summary
+The tool generates 3 files: 1 detailed JSON file that includes the output received for each item, 1 JSON summary and 1 detailed HTML
 
 Example console output:
 
 ![Checks Summary Table](images/console_output_1.png)
 
 ![Final Report Table](images/console_output_2.png)
+
+Example HTML file output:
+
+![Example HTML file preview](images/HTML_file_preview.png)
