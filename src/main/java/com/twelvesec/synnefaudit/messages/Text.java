@@ -119,6 +119,7 @@ public enum Text {
     NO_NON_IAM_STS_POLICIES_ATTACHED("No non-IAM/STS policies attached."),
     FAILED_TO_RETRIEVE_PASSWORD_POLICY("Failed to retrieve password policy"),
     NO_CONSOLE_ACCESS("No console access."),
+    No_INLINE_POLICIES("No inline policies found."),
 
     NO_SECURITY_AUDIT_ROLE_FOUND("No Security Audit role found."),
     NO_SUPPORT_ROLE_FOUND("No Support role found."),
@@ -195,6 +196,7 @@ public enum Text {
     POLICYUSERS("PolicyUsers"),
     POLICYROLES("PolicyRoles"),
     POLICYGROUPS("PolicyGroups"),
+    POLICYDOC("policyDocument"),
     ENTITIES("entities"),
     FINDINGS("findings"),
     AGEINDAYS("ageInDays"),

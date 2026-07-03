@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_INLINE_POLICY_KMS_FULL_ACCESS",
+  "CheckTitle": "Inline Policies allow full access to KMS",
+  "Severity": "Low",
+  "Description": "IAM roles or users have been observed with inline policies attached that allow full \"*\" access to KMS (Key Management Service).",
+  "Risk": "Granting full access to KMS may result in data exposure, key deletion, or modified key policies and grants.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html#inline-policies, https://docs.aws.amazon.com/kms/latest/developerguide/iam-policies.html, https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-21",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider limiting access to resources in accordance with the principle of least privilege, and avoid making use of wildcards on policy declarations.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_manage-edit.html"
+    }
+  },
+  "Notes": ""
+}

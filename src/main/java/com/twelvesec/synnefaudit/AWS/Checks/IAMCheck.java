@@ -97,7 +97,10 @@ public class IAMCheck implements CloudCheck {
                     wrapCheck(this::checkIAMPasswordPolicyRequireSymbol,                AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_SYMBOL, this::reportError),
                     wrapCheck(this::checkIAMPasswordPolicyRequireUppercase,             AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_UPPERCASE, this::reportError),
                     wrapCheck(this::checkIAMPasswordPolicyMinimumLength,                AWSFinding.IAM_PASSWORD_POLICY_MINIMUM_LENGTH, this::reportError),
-                    wrapCheck(this::checkUnusedUserConsoleAccessDisabled,               AWSFinding.UNUSED_CONSOLE_ACCESS_ENABLED, this::reportError)
+                    wrapCheck(this::checkUnusedUserConsoleAccessDisabled,               AWSFinding.UNUSED_CONSOLE_ACCESS_ENABLED, this::reportError),
+                    wrapCheck(this::checkIAMInlinePoliciesCloudTrailFullAccess,         AWSFinding.IAM_INLINE_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
+                    wrapCheck(this::checkIAMInlinePoliciesKMSFullAccess,                AWSFinding.IAM_INLINE_POLICY_KMS_FULL_ACCESS, this::reportError),
+                    wrapCheck(this::checkIAMInlinePoliciesAdminAccess,                  AWSFinding.IAM_INLINE_POLICY_ADMIN_ACCESS, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -1041,5 +1044,150 @@ public class IAMCheck implements CloudCheck {
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.UNUSED_CONSOLE_ACCESS_ENABLED, result, status);
         return status;
+    }
+
+    private Status checkIAMInlinePoliciesCloudTrailFullAccess() {
+        return checkInlinePolicyPrivileges(AWSFinding.IAM_INLINE_POLICY_CLOUDTRAIL_FULL_ACCESS, "cloudtrail:*");
+    }
+
+    private Status checkIAMInlinePoliciesKMSFullAccess() {
+        return checkInlinePolicyPrivileges(AWSFinding.IAM_INLINE_POLICY_KMS_FULL_ACCESS, "kms:*");
+    }
+
+    private Status checkIAMInlinePoliciesAdminAccess() {
+        return checkInlinePolicyPrivileges(AWSFinding.IAM_INLINE_POLICY_ADMIN_ACCESS, "*");
+    }
+
+    private Status checkInlinePolicyPrivileges(AWSFinding finding, String targetAction) {
+        if (allRoles.isEmpty() && allUsers.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_IAM_USERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        Stream<Map<String, Object>> roleStream = allRoles.stream().map(role ->
+            processIdentityInlinePolicies(
+                role.roleName(),
+                role.arn(),
+                targetAction,
+                name -> iam.listRolePolicies(ListRolePoliciesRequest.builder().roleName(name).build()).join().policyNames(),
+                (roleName, polName) -> iam.getRolePolicy(GetRolePolicyRequest.builder().roleName(roleName).policyName(polName).build()).join().policyDocument()
+            )
+        );
+
+        Stream<Map<String, Object>> userStream = allUsers.stream().map(user ->
+            processIdentityInlinePolicies(
+                user.userName(),
+                user.arn(),
+                targetAction,
+                name -> iam.listUserPolicies(ListUserPoliciesRequest.builder().userName(name).build()).join().policyNames(),
+                (userName, polName) -> iam.getUserPolicy(GetUserPolicyRequest.builder().userName(userName).policyName(polName).build()).join().policyDocument()
+            )
+        );
+
+        List<Map<String, Object>> result = Stream.concat(roleStream, userStream).toList();
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
+        return status;
+    }
+
+    private Map<String, Object> processIdentityInlinePolicies(
+            String identityName,
+            String identityArn,
+            String targetAction,
+            java.util.function.Function<String, List<String>> policyLister,
+            java.util.function.BiFunction<String, String, String> policyFetcher) {
+
+        Status identityStatus = Status.PASS;
+        ArrayNode policiesArray = MAPPER.createArrayNode();
+
+        try {
+            List<String> policyNames = policyLister.apply(identityName);
+
+            if (policyNames.isEmpty()) {
+                policiesArray.add(MAPPER.createObjectNode().put(Text.MESSAGE.toString(), Text.No_INLINE_POLICIES.toString()));
+            } else {
+                for (String policyName : policyNames) {
+                    ObjectNode policyNode = MAPPER.createObjectNode();
+                    policyNode.put(Text.POLICY.toString(), policyName);
+
+                    try {
+                        String doc = policyFetcher.apply(identityName, policyName);
+                        String decodedDoc = java.net.URLDecoder.decode(doc, java.nio.charset.StandardCharsets.UTF_8);
+                        policyNode.set(Text.POLICYDOC.toString(), MAPPER.readTree(decodedDoc));
+
+                        if (hasFullAccess(doc, targetAction)) {
+                            identityStatus = Status.FAIL;
+                            policyNode.put(Text.STATUS.toString(), Status.FAIL.toString());
+                        } else {
+                            policyNode.put(Text.STATUS.toString(), Status.PASS.toString());
+                        }
+                    } catch (Exception e) {
+                        identityStatus = Status.FAIL_EXCEPTION;
+                        policyNode.put(Text.STATUS.toString(), Status.FAIL_EXCEPTION.toString());
+                        policyNode.put(Text.ERROR.toString(), e.getMessage());
+                    }
+                    policiesArray.add(policyNode);
+                }
+            }
+        } catch (Exception e) {
+            identityStatus = Status.FAIL_EXCEPTION;
+            policiesArray.add(MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage())));
+        }
+
+        Map<String, Object> inner = new HashMap<>();
+        inner.put(Text.STATUS.toString(), identityStatus);
+        inner.put(Text.RESULT.toString(), policiesArray);
+        return Map.of(identityArn, inner);
+    }
+
+    private boolean hasFullAccess(String policyDocJson, String targetAction) throws JsonProcessingException {
+        try {
+            String decoded = java.net.URLDecoder.decode(policyDocJson, java.nio.charset.StandardCharsets.UTF_8);
+            JsonNode root = MAPPER.readTree(decoded);
+            JsonNode statementNode = root.get("Statement");
+            if (statementNode == null) {
+                return false;
+            }
+            if (statementNode.isArray()) {
+                for (JsonNode statement : statementNode) {
+                    if (checkStatementForAction(statement, targetAction)) {
+                        return true;
+                    }
+                }
+            } else if (statementNode.isObject()) {
+                return checkStatementForAction(statementNode, targetAction);
+            }
+        } catch (Exception e) {
+            throw e;
+        }
+        return false;
+    }
+
+    private boolean checkStatementForAction(JsonNode statement, String targetAction) {
+        JsonNode effectNode = statement.get("Effect");
+        if (effectNode == null || !"Allow".equalsIgnoreCase(effectNode.asText())) {
+            return false;
+        }
+        JsonNode actionNode = statement.get("Action");
+        JsonNode resourceNode = statement.get("Resource");
+        if (actionNode == null || resourceNode == null) {
+            return false;
+        }
+        boolean matchesAction = jsonNodeContains(actionNode, targetAction);
+        boolean matchesResource = jsonNodeContains(resourceNode, "*");
+        return matchesAction && matchesResource;
+    }
+
+    private boolean jsonNodeContains(JsonNode node, String value) {
+        if (node.isTextual()) {
+            return value.equalsIgnoreCase(node.asText());
+        } else if (node.isArray()) {
+            for (JsonNode element : node) {
+                if (element.isTextual() && value.equalsIgnoreCase(element.asText())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_INLINE_POLICY_ADMIN_ACCESS",
+  "CheckTitle": "Inline Policies allow full admin access",
+  "Severity": "High",
+  "Description": "IAM roles or users have been observed with inline policies attached that allow full \"*\" administrative privileges.",
+  "Risk": "Granting full admin privileges does comply with the principle of least privilege, and a compromised identity may result in data exfiltration or deletion, configuration changes or lateral movement. User attached policies in general are also not considered a good practice, due to the increased management complexity.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html#inline-policies, https://docs.aws.amazon.com/controltower/latest/controlreference/iam-rules.html#ct-iam-pr-1-description, https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-1, https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-2",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Remove any IAM policies that full admin access, and avoid attaching policies directly on users. Instead, users should inherit permissions from groups or roles.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_manage-edit.html"
+    }
+  },
+  "Notes": ""
+}

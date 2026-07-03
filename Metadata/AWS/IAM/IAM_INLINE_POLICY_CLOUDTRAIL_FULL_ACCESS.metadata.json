@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_INLINE_POLICY_CLOUDTRAIL_FULL_ACCESS",
+  "CheckTitle": "Inline Policies allow full access to CloudTrail",
+  "Severity": "Low",
+  "Description": "IAM roles or users have been observed with inline policies attached that allow full \"*\" access to CloudTrail.",
+  "Risk": "Granting full access to CloudTrail could affect trails, lead to modified configurations, audit data deletion or compromised logs and event data. Attackers could makes use of any of the prior methods to evade detection and hinder incident response.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html#inline-policies, https://docs.aws.amazon.com/kms/latest/developerguide/iam-policies.html, https://docs.aws.amazon.com/securityhub/latest/userguide/iam-controls.html#iam-21",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider limiting access to resources and services, such as CloudTrail, according to the principle of least privilege. Important actions such as update and deletion of data should be provided sporadically and on a need-to-have basis to limit data exposure and ensure data integrity.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_manage-edit.html"
+    }
+  },
+  "Notes": ""
+}
