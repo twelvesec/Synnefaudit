@@ -143,9 +143,17 @@ public class App {
         if (fromJsonPath != null) {
             System.out.println("Executing local standalone translation from historical source payload: " + fromJsonPath);
             Path inputSource = Paths.get(fromJsonPath);
-            Path outputDestinationHtml = inputSource.resolveSibling(
-                    inputSource.getFileName().toString().replace(".json", "") + "-compiled.html"
-            );
+            Path outputDestinationHtml;
+
+            if (outfilePath != null) {
+                outputDestinationHtml = outfilePath.resolve(
+                        inputSource.getFileName().toString().replace(".json", "") + "-compiled.html"
+                );
+            } else {
+                outputDestinationHtml = inputSource.resolveSibling(
+                        inputSource.getFileName().toString().replace(".json", "") + "-compiled.html"
+                );
+            }
             HtmlReportGenerator.generate(inputSource, outputDestinationHtml);
             System.exit(0);
         }
@@ -253,6 +261,20 @@ public class App {
 
         if (cmd.hasOption("from-json")) {
             fromJsonPath = cmd.getOptionValue("from-json");
+            String outdirInput = cmd.getOptionValue("outdir");
+            if (outdirInput != null) {
+                try {
+                    Path dirPath = Paths.get(outdirInput);
+                    if (!Files.exists(dirPath) || !Files.isDirectory(dirPath)) {
+                        System.err.println("Error: The path specified in --outdir does not exist or is not a directory.");
+                        System.exit(4);
+                    }
+                    outfilePath = dirPath;
+                } catch (InvalidPathException ipe) {
+                    System.err.println("Error: The path specified in --outdir is structurally invalid.");
+                    System.exit(5);
+                }
+            }
             return;
         }
 

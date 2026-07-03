@@ -133,13 +133,17 @@ public class HtmlReportGenerator {
             return "<span class='text-muted'>No resource details recorded.</span>";
         }
 
-        List<String> itemsHtml = new ArrayList<>();
+        List<String> failItems = new ArrayList<>();
+        List<String> exceptionItems = new ArrayList<>();
+        List<String> passItems = new ArrayList<>();
+        List<String> notApplicableItems = new ArrayList<>();
+        List<String> otherItems = new ArrayList<>();
         StringBuilder fallbacksHtml = new StringBuilder();
 
         if (dataNode.isArray()) {
             for (JsonNode element : dataNode) {
                 if (element.isTextual()) {
-                    itemsHtml.add(String.format("<div class='resource-summary-text'>%s</div>", escapeHtml(element.asText())));
+                    otherItems.add(String.format("<div class='resource-summary-text'>%s</div>", escapeHtml(element.asText())));
                 } else if (element.isObject()) {
                     Iterator<Map.Entry<String, JsonNode>> fields = element.fields();
                     boolean identityExtracted = false;
@@ -155,25 +159,44 @@ public class HtmlReportGenerator {
                             itemSb.append("<div class='resource-item'>");
                             itemSb.append("<strong>").append(escapeHtml(key)).append("</strong>");
 
+                            String itemStatus = "UNKNOWN";
+                            if (val.has("status") && val.get("status").isTextual()) {
+                                itemStatus = val.get("status").asText().toUpperCase();
+                            }
+
                             Iterator<Map.Entry<String, JsonNode>> subFields = val.fields();
                             while (subFields.hasNext()) {
                                 Map.Entry<String, JsonNode> subField = subFields.next();
-                                if (subField.getValue().has("status")) {
-                                    String subStatus = subField.getValue().get("status").asText();
+                                JsonNode subVal = subField.getValue();
+                                if (subVal.isObject() && subVal.has("status")) {
+                                    String subStatus = subVal.get("status").asText();
                                     itemSb.append(String.format("<span class='mini-status-badge status-%s'>%s: %s</span>",
                                             subStatus.toLowerCase(), escapeHtml(subField.getKey()), escapeHtml(subStatus.replace("_", " "))));
+
+                                    if ("UNKNOWN".equals(itemStatus)) {
+                                        itemStatus = subStatus.toUpperCase();
+                                    }
                                 }
                             }
+
                             if (val.has("status") && !val.has("result")) {
                                 String rootSubStatus = val.get("status").asText();
                                 itemSb.append(String.format("<span class='mini-status-badge status-%s'>%s</span>",
                                         rootSubStatus.toLowerCase(), escapeHtml(rootSubStatus.replace("_", " "))));
                             }
+
                             if (val.has("message")) {
                                 itemSb.append(" <small class='text-muted'>(").append(escapeHtml(val.get("message").asText())).append(")</small>");
                             }
                             itemSb.append("</div>");
-                            itemsHtml.add(itemSb.toString());
+
+                            switch (itemStatus) {
+                                case "FAIL" -> failItems.add(itemSb.toString());
+                                case "FAIL_EXCEPTION" -> exceptionItems.add(itemSb.toString());
+                                case "PASS" -> passItems.add(itemSb.toString());
+                                case "NOT_APPLICABLE" -> notApplicableItems.add(itemSb.toString());
+                                default -> otherItems.add(itemSb.toString());
+                            }
                         }
                     }
 
@@ -204,23 +227,11 @@ public class HtmlReportGenerator {
             finalBuilder.append(fallbacksHtml);
         }
 
-        if (!itemsHtml.isEmpty()) {
-            if (itemsHtml.size() > 3) {
-                finalBuilder.append(String.format("""
-                    <details class='resources-drawer'>
-                        <summary>View Tracked Resources (%d)</summary>
-                        <div class='drawer-content'>
-                    """, itemsHtml.size()));
-                for (String html : itemsHtml) {
-                    finalBuilder.append(html);
-                }
-                finalBuilder.append("</div></details>");
-            } else {
-                for (String html : itemsHtml) {
-                    finalBuilder.append(html);
-                }
-            }
-        }
+        appendResourceGroup(finalBuilder, failItems, "FAIL", "fail");
+        appendResourceGroup(finalBuilder, exceptionItems, "FAIL EXCEPTION", "fail_exception");
+        appendResourceGroup(finalBuilder, passItems, "PASS", "pass");
+        appendResourceGroup(finalBuilder, notApplicableItems, "NOT APPLICABLE", "not_applicable");
+        appendResourceGroup(finalBuilder, otherItems, "OTHER / UNKNOWN", "unknown");
 
         finalBuilder.append("<details style='margin-top: 6px;'>")
                 .append("<summary style='font-size: 11px; color: #4A154B; font-weight: normal; cursor:pointer;'>Toggle Structural JSON Code</summary>")
@@ -228,6 +239,31 @@ public class HtmlReportGenerator {
                 .append("</details></div>");
 
         return finalBuilder.toString();
+    }
+
+    private static void appendResourceGroup(StringBuilder sb, List<String> items, String groupLabel, String statusClass) {
+        if (items.isEmpty()) return;
+
+        sb.append("<div class='resource-group' style='margin-top: 8px; margin-bottom: 8px;'>");
+        sb.append(String.format("<div style='margin-bottom: 4px;'><span class='mini-status-badge status-%s' style='margin-left:0;'>%s (%d)</span></div>",
+                statusClass, groupLabel, items.size()));
+
+        if (items.size() > 3) {
+            sb.append(String.format("""
+                <details class='resources-drawer'>
+                    <summary>View Tracked Resources (%d)</summary>
+                    <div class='drawer-content'>
+                """, items.size()));
+            for (String html : items) {
+                sb.append(html);
+            }
+            sb.append("</div></details>");
+        } else {
+            for (String html : items) {
+                sb.append(html);
+            }
+        }
+        sb.append("</div>");
     }
 
     private static boolean hasNestedStatus(JsonNode node) {
@@ -380,6 +416,7 @@ public class HtmlReportGenerator {
                 .filter-chip:has(input:checked).chip-medium { background-color: #fd7e14; color: #212529; border-color: #fd7e14; }
                 .filter-chip:has(input:checked).chip-low { background-color: #28a745; color: #ffffff; border-color: #28a745; }
                 .filter-chip:has(input:checked).chip-info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+                .filter-chip:has(input:checked).chip-unknown { background-color: #6c757d; color: #ffffff; border-color: #6c757d; }
 
                 table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; text-align: left; table-layout: fixed; }
                 th { background-color: #4A154B; color: white; padding: 14px 10px; cursor: pointer; user-select: none; position: relative; font-weight: 600; font-size: 13px; }
@@ -403,7 +440,8 @@ public class HtmlReportGenerator {
                 .status-fail { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
                 .status-fail_exception { background-color: #ffe3cc; color: #b24700; border: 1px solid #ffd1b3; } 
                 .status-not_applicable { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; } 
-                
+                .status-unknown { background-color: #6c757d; color: #ffffff; border: 1px solid #5a6268; }
+
                 .severity-critical { background-color: #58181F; color: #ffffff; }
                 .severity-high { background-color: #dc3545; color: #ffffff; }
                 .severity-medium { background-color: #fd7e14; color: #212529; }
@@ -495,6 +533,7 @@ public class HtmlReportGenerator {
                                 <label class="filter-chip chip-medium"><input type="checkbox" class="severity-chk" value="MEDIUM" checked onchange="filterTable()">MEDIUM</label>
                                 <label class="filter-chip chip-low"><input type="checkbox" class="severity-chk" value="LOW" checked onchange="filterTable()">LOW</label>
                                 <label class="filter-chip chip-info"><input type="checkbox" class="severity-chk" value="INFO" checked onchange="filterTable()">INFO</label>
+                                <label class="filter-chip chip-unknown"><input type="checkbox" class="severity-chk" value="UNKNOWN" checked onchange="filterTable()">UNKNOWN</label>
                             </div>
                         </div>
                     </div>
@@ -569,7 +608,7 @@ public class HtmlReportGenerator {
                 let currentSortCol = -1;
                 let sortAscending = true;
 
-                const severityWeights = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3, 'INFO': 4 };
+                const severityWeights = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3, 'INFO': 4, 'UNKNOWN': 5 };
 
                 function sortTable(colIndex) {
                     if (currentSortCol === colIndex) {
