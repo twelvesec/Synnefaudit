@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_CUSTOMER_MANAGED_POLICY_ADMIN_ACCESS",
+  "CheckTitle": "IAM Policies provide full Admin Privileges",
+  "Severity": "High",
+  "Description": "Customer-Managed Policies (CMPs) have been observed providing full *:* administrative privileges.",
+  "Risk": "Policies granting full administrative privileges do not follow the principle of least privilege, and may be granting additional accessed which are not required for the affected identities.",
+  "RelatedUrls": "https://docs.aws.amazon.com/privateca/latest/userguide/auth-CustManagedPolicies.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#bp-use-aws-defined-policies",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "AWS Managed Policies should be used whenever possible, and Customer Managed Policies should be defined in order to further limit access, according to the requirements of each identity (Role, Group, User). Evaluate all IAM identities with excessive privileges (such as full administrative access) and update permissions according to least privilege. Avoid making use of wildcards on policy documents, and regularly review policies using Access Analyzer.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.html, https://aws.amazon.com/iam/access-analyzer/, "
+    }
+  },
+  "Notes": ""
+}

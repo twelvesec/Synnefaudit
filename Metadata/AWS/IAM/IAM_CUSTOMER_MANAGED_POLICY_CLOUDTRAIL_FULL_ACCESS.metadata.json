@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_CUSTOMER_MANAGED_POLICY_CLOUDTRAIL_FULL_ACCESS",
+  "CheckTitle": "IAM Policies provide full CloudTrail access",
+  "Severity": "Medium",
+  "Description": "Customer-Managed Policies (CMPs) have been observed providing full cloudtrail:* access.",
+  "Risk": "Policies granting full access to CloudTrail allows a principal to modify or delete trails, logging and query events. Excessive access to such services may allow a malicious actor to tamper with log data and hinder auditing and incident response.",
+  "RelatedUrls": "https://docs.aws.amazon.com/privateca/latest/userguide/auth-CustManagedPolicies.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#bp-use-aws-defined-policies",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make use of Customer Managed Policies in order to limit access to CloudTrail resources according to the principle of least privilege. Avoid making use of wildcards on policy documents, and regularly review policies using Access Analyzer.",
+      "Urls": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/security_iam_id-based-policy-examples.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.html"
+    }
+  },
+  "Notes": ""
+}

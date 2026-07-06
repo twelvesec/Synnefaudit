@@ -120,6 +120,7 @@ public enum Text {
     FAILED_TO_RETRIEVE_PASSWORD_POLICY("Failed to retrieve password policy"),
     NO_CONSOLE_ACCESS("No console access."),
     No_INLINE_POLICIES("No inline policies found."),
+    NO_IAM_CUSTOMER_MANAGED_POLICIES_FOUND("No customer-managed IAM policies found."),
 
     NO_SECURITY_AUDIT_ROLE_FOUND("No Security Audit role found."),
     NO_SUPPORT_ROLE_FOUND("No Support role found."),

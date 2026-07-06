@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_CUSTOMER_MANAGED_POLICY_PERMISSIVE_ROLE_ASSUMPTION",
+  "CheckTitle": "IAM Policies grant permissive role assumption",
+  "Severity": "Medium",
+  "Description": "Customer-Managed Policies (CMPs) have been observed granting AssumeRole on unrestricted (*) resources.",
+  "Risk": "Overly permissive AssumeRole permissions expands the attack surface by enabling a principal to assume roles across multiple resources. This increases the potential impact of compromised credentials, and the risk of unauthorized access.",
+  "RelatedUrls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Limit the scope of AssumeRole policies according to the principle of least privilege. Instead of wildcard (*) resources, specific the required role ARNs for the user according to their needs and requirements.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_permissions-to-switch.html#roles-usingrole-createpolicy"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_CUSTOMER_MANAGED_POLICY_KMS_FULL_ACCESS",
+  "CheckTitle": "IAM Policies provide full KMS access",
+  "Severity": "Medium",
+  "Description": "Customer-Managed Policies (CMPs) have been observed providing full kms:* access.",
+  "Risk": "Policies granting full access to KMS (Key Management Service) allows a principal to update or delete key policies and keys, as well as access and decrypt data. Excessive access to KMS affected the integrity and confidentiality of data, and may even be utilized of privilege escalation.",
+  "RelatedUrls": "https://docs.aws.amazon.com/privateca/latest/userguide/auth-CustManagedPolicies.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#bp-use-aws-defined-policies",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make use of Customer Managed Policies in order to limit access to KMS according to least privilege. Avoid using wildcards on policy documents, and delegate limited access to specific principles.",
+      "Urls": "https://docs.aws.amazon.com/kms/latest/developerguide/least-privilege.html, https://docs.aws.amazon.com/kms/latest/developerguide/control-access.html, https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_create.htm"
+    }
+  },
+  "Notes": ""
+}

@@ -100,7 +100,11 @@ public class IAMCheck implements CloudCheck {
                     wrapCheck(this::checkUnusedUserConsoleAccessDisabled,               AWSFinding.UNUSED_CONSOLE_ACCESS_ENABLED, this::reportError),
                     wrapCheck(this::checkIAMInlinePoliciesCloudTrailFullAccess,         AWSFinding.IAM_INLINE_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
                     wrapCheck(this::checkIAMInlinePoliciesKMSFullAccess,                AWSFinding.IAM_INLINE_POLICY_KMS_FULL_ACCESS, this::reportError),
-                    wrapCheck(this::checkIAMInlinePoliciesAdminAccess,                  AWSFinding.IAM_INLINE_POLICY_ADMIN_ACCESS, this::reportError)
+                    wrapCheck(this::checkIAMInlinePoliciesAdminAccess,                  AWSFinding.IAM_INLINE_POLICY_ADMIN_ACCESS, this::reportError),
+                    wrapCheck(this::checkIAMCustomerManagedPoliciesAdminAccess,                 AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_ADMIN_ACCESS, this::reportError),
+                    wrapCheck(this::checkIAMCustomerManagedPoliciesCloudTrailFullAccess,        AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
+                    wrapCheck(this::checkIAMCustomerManagedPoliciesKMSFullAccess,               AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_KMS_FULL_ACCESS, this::reportError),
+                    wrapCheck(this::checkIAMCustomerManagedPoliciesPermissiveRoleAssumption,    AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_PERMISSIVE_ROLE_ASSUMPTION, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -1187,6 +1191,136 @@ public class IAMCheck implements CloudCheck {
                     return true;
                 }
             }
+        }
+        return false;
+    }
+
+    private Status checkIAMCustomerManagedPoliciesAdminAccess() {
+        return checkManagedPolicyPrivileges( AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_ADMIN_ACCESS, "*");
+    }
+
+    private Status checkIAMCustomerManagedPoliciesCloudTrailFullAccess() {
+        return checkManagedPolicyPrivileges(AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_CLOUDTRAIL_FULL_ACCESS, "cloudtrail:*");
+    }
+
+    private Status checkIAMCustomerManagedPoliciesKMSFullAccess() {
+        return checkManagedPolicyPrivileges(AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_KMS_FULL_ACCESS, "kms:*");
+    }
+
+    private Status checkIAMCustomerManagedPoliciesPermissiveRoleAssumption() {
+        return checkManagedPolicyPrivileges(AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_PERMISSIVE_ROLE_ASSUMPTION, "sts:AssumeRole");
+    }
+
+    private Status checkManagedPolicyPrivileges(AWSFinding finding, String targetAction) {
+        List<Policy> customPolicies = allPolicies.stream()
+                .filter(p -> p.arn() != null && !p.arn().startsWith("arn:aws:iam::aws:policy"))
+                .toList();
+
+        if (customPolicies.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_IAM_CUSTOMER_MANAGED_POLICIES_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = customPolicies.stream().map(policy -> {
+            String policyArn = policy.arn();
+            Status policyStatus = Status.PASS;
+            ObjectNode policyNode = MAPPER.createObjectNode();
+            policyNode.put(Text.POLICY.toString(), policy.policyName());
+
+            try {
+                String doc = iam.getPolicyVersion(GetPolicyVersionRequest.builder()
+                        .policyArn(policyArn)
+                        .versionId(policy.defaultVersionId())
+                        .build()).join().policyVersion().document();
+
+                String decodedDoc = java.net.URLDecoder.decode(doc, java.nio.charset.StandardCharsets.UTF_8);
+                JsonNode policyJsonNode = MAPPER.readTree(decodedDoc);
+                policyNode.set(Text.POLICYDOC.toString(), policyJsonNode);
+
+                boolean isOverlyPermissive;
+                if (finding == AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_PERMISSIVE_ROLE_ASSUMPTION) {
+                    isOverlyPermissive = hasPermissiveRoleAssumption(policyJsonNode);
+                } else {
+                    isOverlyPermissive = hasFullAccess(doc, targetAction);
+                }
+
+                if (isOverlyPermissive) {
+                    policyStatus = Status.FAIL;
+                    policyNode.put(Text.STATUS.toString(), Status.FAIL.toString());
+                } else {
+                    policyNode.put(Text.STATUS.toString(), Status.PASS.toString());
+                }
+            } catch (Exception e) {
+                policyStatus = Status.FAIL_EXCEPTION;
+                policyNode.put(Text.STATUS.toString(), Status.FAIL_EXCEPTION.toString());
+                policyNode.put(Text.ERROR.toString(), e.getMessage());
+            }
+            Map<String, Object> inner = new HashMap<>();
+            inner.put(Text.STATUS.toString(), policyStatus);
+            inner.put(Text.RESULT.toString(), MAPPER.createArrayNode().add(policyNode));
+            return Map.<String, Object>of(policyArn, inner);
+        }).toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
+        return status;
+    }
+
+    private boolean hasPermissiveRoleAssumption(JsonNode policyJson) {
+        JsonNode statementNode = policyJson.path("Statement");
+        if (statementNode.isMissingNode()) {
+            return false;
+        }
+        if (statementNode.isArray()) {
+            for (JsonNode statement : statementNode) {
+                if (evaluateStatementForPermissiveRoleAssumption(statement)) {
+                    return true;
+                }
+            }
+        } else {
+            return evaluateStatementForPermissiveRoleAssumption(statementNode);
+        }
+        return false;
+    }
+
+    private boolean evaluateStatementForPermissiveRoleAssumption(JsonNode statement) {
+        String effect = statement.path("Effect").asText();
+        if (!"Allow".equalsIgnoreCase(effect)) {
+            return false;
+        }
+
+        JsonNode resourceNode = statement.path("Resource");
+        if (resourceNode.isMissingNode() || !hasWildcard(resourceNode)) {
+            return false;
+        }
+
+        JsonNode actionNode = statement.path("Action");
+        if (actionNode.isMissingNode()) {
+            return false;
+        }
+
+        Set<String> targetActions = Set.of("sts:assumerole", "sts:*", "*");
+        if (actionNode.isArray()) {
+            for (JsonNode action : actionNode) {
+                if (targetActions.contains(action.asText().toLowerCase())) {
+                    return true;
+                }
+            }
+        } else {
+            return targetActions.contains(actionNode.asText().toLowerCase());
+        }
+        return false;
+    }
+
+    private boolean hasWildcard(JsonNode resourceNode) {
+        if (resourceNode.isArray()) {
+            for (JsonNode res : resourceNode) {
+                if (res.asText().contains("*")) {
+                    return true;
+                }
+            }
+        } else {
+            return resourceNode.asText().contains("*");
         }
         return false;
     }
