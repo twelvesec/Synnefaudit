@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "IAM_INLINE_POLICY_ALLOWS_PRIVILEGE_ESCALATION",
+  "CheckTitle": "Inline Policies allow Privilege Escalation",
+  "Severity": "High",
+  "Description": "IAM Inline Policies grant dangerous permissions that may lead to privilege escalation (iam:passrole, iam:*, etc).",
+  "Risk": "Granting broad or excessive inline policies, may result in an identity gaining access to view and affect different resources across the organization.",
+  "RelatedUrls": "https://docs.aws.amazon.com/controltower/latest/controlreference/iam-rules.html#ct-iam-pr-1-description, https://docs.aws.amazon.com/controltower/latest/controlreference/iam-rules.html#ct-iam-pr-4-description, https://docs.aws.amazon.com/controltower/latest/controlreference/iam-rules.html#ct-iam-pr-5-description",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Limit access to resources according to least privileges and avoid making use of wildcards (*) in policy documents, to limit the risk of privilege escalation and unauthorized access.",
+      "Urls": "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege, https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html"
+    }
+  },
+  "Notes": ""
+}

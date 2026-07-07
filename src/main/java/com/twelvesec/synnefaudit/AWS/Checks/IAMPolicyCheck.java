@@ -29,6 +29,37 @@ public class IAMPolicyCheck implements CloudCheck {
     private final SharedDataProvider sharedDataProvider;
     private final IamAsyncClient iam;
 
+    private static final Set<String> DANGEROUS_ACTIONS = Set.of(
+            "iam:*",
+
+            "iam:passrole",
+            "iam:createpolicyversion",
+            "iam:setdefaultpolicyversion",
+            "iam:updateassumerolepolicy",
+
+            "iam:putuserpolicy",
+            "iam:putgrouppolicy",
+            "iam:putrolepolicy",
+            "iam:attachuserpolicy",
+            "iam:attachgrouppolicy",
+            "iam:attachrolepolicy",
+            "iam:detachuserpolicy",
+            "iam:addusertogroup",
+
+            "iam:createaccesskey",
+            "iam:updateaccesskey",
+            "iam:deleteaccesskey",
+            "iam:createloginprofile",
+            "iam:updateloginprofile",
+
+            "lambda:updatefunctioncode",
+            "lambda:updatefunctionconfiguration",
+            "glue:updatedevendpoint",
+            "cloudformation:updatestack",
+            "apprunner:updateservice",
+            "bedrock-agentcore:invokeagentruntimecommand"
+    );
+
     public IAMPolicyCheck(DataWriter writer, SharedDataProvider sharedDataProvider, IamAsyncClient iam) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
@@ -38,29 +69,30 @@ public class IAMPolicyCheck implements CloudCheck {
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         return sharedDataProvider.getAllRoles()
-            .thenCompose(roles -> {
-                this.allRoles = roles;
-                return sharedDataProvider.getAllUsers();
-            })
-            .thenCompose(users -> {
-                this.allUsers = users;
-                return sharedDataProvider.getAllPolicies();
-            })
-            .thenCompose(policies -> {
-                this.allPolicies = policies;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkIAMPolicyAllowsPrivilegeEscalation,                    AWSFinding.IAM_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
-                    wrapCheck(this::checkOverlyPermissiveManagedPolicies,                       AWSFinding.IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES, this::reportError),
-                    wrapCheck(this::checkIAMInlinePoliciesCloudTrailFullAccess,                 AWSFinding.IAM_INLINE_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
-                    wrapCheck(this::checkIAMInlinePoliciesKMSFullAccess,                        AWSFinding.IAM_INLINE_POLICY_KMS_FULL_ACCESS, this::reportError),
-                    wrapCheck(this::checkIAMInlinePoliciesAdminAccess,                          AWSFinding.IAM_INLINE_POLICY_ADMIN_ACCESS, this::reportError),
-                    wrapCheck(this::checkIAMCustomerManagedPoliciesAdminAccess,                 AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_ADMIN_ACCESS, this::reportError),
-                    wrapCheck(this::checkIAMCustomerManagedPoliciesCloudTrailFullAccess,        AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
-                    wrapCheck(this::checkIAMCustomerManagedPoliciesKMSFullAccess,               AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_KMS_FULL_ACCESS, this::reportError),
-                    wrapCheck(this::checkIAMCustomerManagedPoliciesPermissiveRoleAssumption,    AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_PERMISSIVE_ROLE_ASSUMPTION, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+                .thenCompose(roles -> {
+                    this.allRoles = roles;
+                    return sharedDataProvider.getAllUsers();
+                })
+                .thenCompose(users -> {
+                    this.allUsers = users;
+                    return sharedDataProvider.getAllPolicies();
+                })
+                .thenCompose(policies -> {
+                    this.allPolicies = policies;
+                    List<Supplier<CheckResult>> checksList = List.of(
+                            wrapCheck(this::checkIAMPolicyAllowsPrivilegeEscalation,                    AWSFinding.IAM_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
+                            wrapCheck(this::checkIAMInlinePoliciesAllowsPrivilegeEscalation,            AWSFinding.IAM_INLINE_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
+                            wrapCheck(this::checkOverlyPermissiveManagedPolicies,                       AWSFinding.IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES, this::reportError),
+                            wrapCheck(this::checkIAMInlinePoliciesCloudTrailFullAccess,                 AWSFinding.IAM_INLINE_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMInlinePoliciesKMSFullAccess,                        AWSFinding.IAM_INLINE_POLICY_KMS_FULL_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMInlinePoliciesAdminAccess,                          AWSFinding.IAM_INLINE_POLICY_ADMIN_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMCustomerManagedPoliciesAdminAccess,                 AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_ADMIN_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMCustomerManagedPoliciesCloudTrailFullAccess,        AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMCustomerManagedPoliciesKMSFullAccess,               AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_KMS_FULL_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMCustomerManagedPoliciesPermissiveRoleAssumption,    AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_PERMISSIVE_ROLE_ASSUMPTION, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override
@@ -75,74 +107,190 @@ public class IAMPolicyCheck implements CloudCheck {
             return Status.NOT_APPLICABLE;
         }
 
-        Set<String> dangerousActions = Set.of(
-            "iam:PassRole", "iam:CreatePolicyVersion", "iam:PutUserPolicy", "iam:PutGroupPolicy",
-            "iam:PutRolePolicy", "iam:AttachUserPolicy", "iam:DetachUserPolicy", "iam:AddUserToGroup",
-            "iam:CreateAccessKey", "iam:UpdateAccessKey", "iam:DeleteAccessKey", "iam:UpdateAssumeRolePolicy", "iam:*"
-        );
-
         List<Map<String, Object>> result = allPolicies.stream()
-            .map(policy -> {
-                String arn = policy.arn();
-                Status s;
-                String r;
-                JsonNode policyNode;
-                try {
-                    String defaultVersion = iam.getPolicy(
-                            GetPolicyRequest.builder().policyArn(arn).build()
-                    ).join().policy().defaultVersionId();
+                .map(policy -> {
+                    String arn = policy.arn();
+                    Status s;
+                    String r;
+                    JsonNode policyNode;
+                    try {
+                        String defaultVersion = iam.getPolicy(
+                                GetPolicyRequest.builder().policyArn(arn).build()
+                        ).join().policy().defaultVersionId();
 
-                    String rawPolicy = iam.getPolicyVersion(
-                            GetPolicyVersionRequest.builder().policyArn(arn).versionId(defaultVersion).build()
-                    ).join().policyVersion().document();
+                        String rawPolicy = iam.getPolicyVersion(
+                                GetPolicyVersionRequest.builder().policyArn(arn).versionId(defaultVersion).build()
+                        ).join().policyVersion().document();
 
-                    policyNode = MAPPER.readTree(URLDecoder.decode(rawPolicy, StandardCharsets.UTF_8));
+                        policyNode = MAPPER.readTree(URLDecoder.decode(rawPolicy, StandardCharsets.UTF_8));
+                        List<String> foundDangerous = getDangerousActionsInPolicy(policyNode);
 
-                    JsonNode stmtsNode = policyNode.get("Statement");
-                    ArrayNode statements = stmtsNode == null
-                            ? MAPPER.createArrayNode()
-                            : (stmtsNode.isArray() ? (ArrayNode) stmtsNode : MAPPER.createArrayNode().add(stmtsNode));
-
-                    List<String> actionsInPolicy = StreamSupport.stream(statements.spliterator(), false)
-                        .filter(stmt -> "Allow".equalsIgnoreCase(stmt.get("Effect").asText()))
-                        .flatMap(stmt -> {
-                            JsonNode act = stmt.get("Action");
-                            if (act == null) return Stream.of(Text.NULL_VALUE.getText());
-                            if (act.isArray()) return StreamSupport.stream(act.spliterator(), false).map(JsonNode::asText);
-                            return Stream.of(act.asText());
-                        })
-                        .toList();
-
-                    boolean hasDangerousActions = actionsInPolicy.stream().anyMatch(dangerousActions::contains);
-
-                    if (hasDangerousActions) {
-                        s = Status.FAIL;
-                        r = String.format("%s%s", Text.ALLOWED_DANGEROUS_ACTIONS.toString(),
-                                actionsInPolicy.stream().filter(dangerousActions::contains).distinct().collect(Collectors.joining(", ")));
-                    } else {
-                        s = Status.PASS;
-                        r = Text.NO_DANGEROUS_ACTIONS_FOUND.toString();
+                        if (!foundDangerous.isEmpty()) {
+                            s = Status.FAIL;
+                            r = String.format("%s%s", Text.ALLOWED_DANGEROUS_ACTIONS.toString(),
+                                    String.join(", ", foundDangerous));
+                        } else {
+                            s = Status.PASS;
+                            r = Text.NO_DANGEROUS_ACTIONS_FOUND.toString();
+                        }
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        r = Text.EXCEPTION.toString().concat(e.getMessage());
+                        policyNode = MAPPER.createObjectNode().put(Text.ERROR.toString(), r);
                     }
-                } catch (Exception e) {
-                    s = Status.FAIL_EXCEPTION;
-                    r = Text.EXCEPTION.toString().concat(e.getMessage());
-                    policyNode = MAPPER.createObjectNode().put(Text.ERROR.toString(), r);
-                }
 
-                ObjectNode resultNode = MAPPER.createObjectNode();
-                resultNode.put(Text.MESSAGE.toString(), r);
-                resultNode.put(Text.POLICY.toString(), policyNode);
+                    ObjectNode resultNode = MAPPER.createObjectNode();
+                    resultNode.put(Text.MESSAGE.toString(), r);
+                    resultNode.put(Text.POLICY.toString(), policyNode);
 
-                Map<String, Object> inner = new HashMap<>();
-                inner.put(Text.STATUS.toString(), s);
-                inner.put(Text.RESULT.toString(), resultNode);
-                return Map.<String, Object>of(arn, inner);
-            })
-            .toList();
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), resultNode);
+                    return Map.<String,Object>of(arn, inner);
+                })
+                .toList();
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.IAM_POLICY_ALLOWS_PRIVILEGE_ESCALATION, result, status);
         return status;
+    }
+
+    private Status checkIAMInlinePoliciesAllowsPrivilegeEscalation() {
+        AWSFinding finding = AWSFinding.IAM_INLINE_POLICY_ALLOWS_PRIVILEGE_ESCALATION;
+        if (allRoles.isEmpty() && allUsers.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_IAM_USERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        Stream<Map<String, Object>> roleStream = allRoles.stream().map(role ->
+                processIdentityInlinePoliciesForEscalation(
+                        role.roleName(),
+                        role.arn(),
+                        name -> iam.listRolePolicies(ListRolePoliciesRequest.builder().roleName(name).build()).join().policyNames(),
+                        (roleName, polName) -> iam.getRolePolicy(GetRolePolicyRequest.builder().roleName(roleName).policyName(polName).build()).join().policyDocument()
+                )
+        );
+
+        Stream<Map<String, Object>> userStream = allUsers.stream().map(user ->
+                processIdentityInlinePoliciesForEscalation(
+                        user.userName(),
+                        user.arn(),
+                        name -> iam.listUserPolicies(ListUserPoliciesRequest.builder().userName(name).build()).join().policyNames(),
+                        (userName, polName) -> iam.getUserPolicy(GetUserPolicyRequest.builder().userName(userName).policyName(polName).build()).join().policyDocument()
+                )
+        );
+
+        List<Map<String, Object>> result = Stream.concat(roleStream, userStream).toList();
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
+        return status;
+    }
+
+    private Map<String, Object> processIdentityInlinePoliciesForEscalation(
+            String identityName,
+            String identityArn,
+            java.util.function.Function<String, List<String>> policyLister,
+            java.util.function.BiFunction<String, String, String> policyFetcher) {
+
+        Status identityStatus = Status.PASS;
+        ArrayNode policiesArray = MAPPER.createArrayNode();
+
+        try {
+            List<String> policyNames = policyLister.apply(identityName);
+
+            if (policyNames.isEmpty()) {
+                policiesArray.add(MAPPER.createObjectNode().put(Text.MESSAGE.toString(), Text.No_INLINE_POLICIES.toString()));
+            } else {
+                for (String policyName : policyNames) {
+                    ObjectNode policyNode = MAPPER.createObjectNode();
+                    policyNode.put(Text.POLICY.toString(), policyName);
+
+                    try {
+                        String doc = policyFetcher.apply(identityName, policyName);
+                        String decodedDoc = java.net.URLDecoder.decode(doc, java.nio.charset.StandardCharsets.UTF_8);
+                        JsonNode policyJsonNode = MAPPER.readTree(decodedDoc);
+                        policyNode.set(Text.POLICYDOC.toString(), policyJsonNode);
+
+                        List<String> foundDangerous = getDangerousActionsInPolicy(policyJsonNode);
+
+                        if (!foundDangerous.isEmpty()) {
+                            identityStatus = Status.FAIL;
+                            policyNode.put(Text.STATUS.toString(), Status.FAIL.toString());
+                            policyNode.put(Text.MESSAGE.toString(), String.format("%s%s",
+                                    Text.ALLOWED_DANGEROUS_ACTIONS.toString(),
+                                    String.join(", ", foundDangerous)));
+                        } else {
+                            policyNode.put(Text.STATUS.toString(), Status.PASS.toString());
+                            policyNode.put(Text.MESSAGE.toString(), Text.NO_DANGEROUS_ACTIONS_FOUND.toString());
+                        }
+                    } catch (Exception e) {
+                        identityStatus = Status.FAIL_EXCEPTION;
+                        policyNode.put(Text.STATUS.toString(), Status.FAIL_EXCEPTION.toString());
+                        policyNode.put(Text.ERROR.toString(), e.getMessage());
+                    }
+                    policiesArray.add(policyNode);
+                }
+            }
+        } catch (Exception e) {
+            identityStatus = Status.FAIL_EXCEPTION;
+            policiesArray.add(MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage())));
+        }
+
+        Map<String, Object> inner = new HashMap<>();
+        inner.put(Text.STATUS.toString(), identityStatus);
+        inner.put(Text.RESULT.toString(), policiesArray);
+        return Map.of(identityArn, inner);
+    }
+
+    private List<String> getDangerousActionsInPolicy(JsonNode policyNode) {
+        JsonNode stmtsNode = policyNode.get("Statement");
+        ArrayNode statements = stmtsNode == null
+                ? MAPPER.createArrayNode()
+                : (stmtsNode.isArray() ? (ArrayNode) stmtsNode : MAPPER.createArrayNode().add(stmtsNode));
+
+        Set<String> allowedActions = StreamSupport.stream(statements.spliterator(), false)
+                .filter(stmt -> "Allow".equalsIgnoreCase(stmt.path("Effect").asText()))
+                .flatMap(stmt -> {
+                    JsonNode act = stmt.get("Action");
+                    if (act == null) return Stream.empty();
+                    if (act.isArray()) return StreamSupport.stream(act.spliterator(), false).map(JsonNode::asText);
+                    return Stream.of(act.asText());
+                })
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        List<String> violations = new ArrayList<>();
+
+        for (String action : allowedActions) {
+            if (DANGEROUS_ACTIONS.contains(action)) {
+                violations.add(action);
+            }
+            if (action.startsWith("iam:put") && action.contains("*")) {
+                violations.add(action);
+            }
+        }
+
+        boolean hasPassRole = allowedActions.contains("iam:passrole") || allowedActions.contains("iam:*") || allowedActions.contains("*");
+        boolean hasAssumeRole = allowedActions.contains("sts:assumerole") || allowedActions.contains("sts:*") || allowedActions.contains("*");
+
+        if (hasPassRole && (allowedActions.contains("ec2:runinstances") || allowedActions.contains("ec2:requestspotinstances"))) {
+            violations.add("iam:PassRole + ec2:RunInstances/RequestSpotInstances");
+        }
+        if (hasPassRole && allowedActions.contains("lambda:createfunction") && allowedActions.contains("lambda:invokefunction")) {
+            violations.add("iam:PassRole + lambda:CreateFunction + lambda:InvokeFunction");
+        }
+        if (hasPassRole && allowedActions.contains("ecs:registertaskdefinition")
+                && (allowedActions.contains("ecs:createservice") || allowedActions.contains("ecs:runtask") || allowedActions.contains("ecs:starttask"))) {
+            violations.add("iam:PassRole + ecs:RegisterTaskDefinition + Service/Run/StartTask");
+        }
+        if (allowedActions.contains("ssm:startsession") || allowedActions.contains("ssm:sendcommand")) {
+            if (allowedActions.contains("ssm:startsession")) violations.add("ssm:StartSession");
+            if (allowedActions.contains("ssm:sendcommand")) violations.add("ssm:SendCommand");
+        }
+        if (allowedActions.contains("ecs:executecommand") && allowedActions.contains("ecs:describetasks")) {
+            violations.add("ecs:ExecuteCommand + ecs:DescribeTasks");
+        }
+        return violations.stream().distinct().toList();
     }
 
     private Status checkOverlyPermissiveManagedPolicies() {
@@ -153,68 +301,68 @@ public class IAMPolicyCheck implements CloudCheck {
         }
 
         List<Map<String,Object>> result = allPolicies.stream()
-            .map(policy -> {
-                String arn = policy.arn();
-                Status s;
-                String msg;
-                JsonNode versionNode;
-                ObjectNode entitiesNode = MAPPER.createObjectNode();
-                try {
-                    String vid = iam.getPolicy(GetPolicyRequest.builder().policyArn(arn).build()).join().policy().defaultVersionId();
-                    String rawVersion = iam.getPolicyVersion(GetPolicyVersionRequest.builder().policyArn(arn).versionId(vid).build()).join().policyVersion().document();
+                .map(policy -> {
+                    String arn = policy.arn();
+                    Status s;
+                    String msg;
+                    JsonNode versionNode;
+                    ObjectNode entitiesNode = MAPPER.createObjectNode();
+                    try {
+                        String vid = iam.getPolicy(GetPolicyRequest.builder().policyArn(arn).build()).join().policy().defaultVersionId();
+                        String rawVersion = iam.getPolicyVersion(GetPolicyVersionRequest.builder().policyArn(arn).versionId(vid).build()).join().policyVersion().document();
 
-                    String jsonVersion = URLDecoder.decode(rawVersion, StandardCharsets.UTF_8);
-                    versionNode = MAPPER.readTree(jsonVersion);
+                        String jsonVersion = URLDecoder.decode(rawVersion, StandardCharsets.UTF_8);
+                        versionNode = MAPPER.readTree(jsonVersion);
 
-                    JsonNode stmtsNode = versionNode.get("Statement");
-                    ArrayNode statements = (stmtsNode == null) ? MAPPER.createArrayNode() : (stmtsNode.isArray() ? (ArrayNode) stmtsNode : MAPPER.createArrayNode().add(stmtsNode));
+                        JsonNode stmtsNode = versionNode.get("Statement");
+                        ArrayNode statements = (stmtsNode == null) ? MAPPER.createArrayNode() : (stmtsNode.isArray() ? (ArrayNode) stmtsNode : MAPPER.createArrayNode().add(stmtsNode));
 
-                    boolean wild = StreamSupport.stream(statements.spliterator(), false)
-                        .filter(stmt -> "Allow".equalsIgnoreCase(stmt.path("Effect").asText()))
-                        .flatMap(stmt -> {
-                            JsonNode r = stmt.get("Resource");
-                            if (r == null) return Stream.empty();
-                            if (r.isArray()) return StreamSupport.stream(r.spliterator(), false).map(JsonNode::asText);
-                            return Stream.of(r.asText());
-                        })
-                        .anyMatch("*"::equals);
+                        boolean wild = StreamSupport.stream(statements.spliterator(), false)
+                                .filter(stmt -> "Allow".equalsIgnoreCase(stmt.path("Effect").asText()))
+                                .flatMap(stmt -> {
+                                    JsonNode r = stmt.get("Resource");
+                                    if (r == null) return Stream.empty();
+                                    if (r.isArray()) return StreamSupport.stream(r.spliterator(), false).map(JsonNode::asText);
+                                    return Stream.of(r.asText());
+                                })
+                                .anyMatch("*"::equals);
 
-                    ListEntitiesForPolicyResponse entities = iam.listEntitiesForPolicy(ListEntitiesForPolicyRequest.builder().policyArn(arn).build()).join();
+                        ListEntitiesForPolicyResponse entities = iam.listEntitiesForPolicy(ListEntitiesForPolicyRequest.builder().policyArn(arn).build()).join();
 
-                    ArrayNode usersNode = MAPPER.valueToTree(entities.policyUsers().stream().map(PolicyUser::toString).toList());
-                    ArrayNode rolesNode = MAPPER.valueToTree(entities.policyRoles().stream().map(PolicyRole::toString).toList());
-                    ArrayNode groupsNode = MAPPER.valueToTree(entities.policyGroups().stream().map(PolicyGroup::toString).toList());
+                        ArrayNode usersNode = MAPPER.valueToTree(entities.policyUsers().stream().map(PolicyUser::toString).toList());
+                        ArrayNode rolesNode = MAPPER.valueToTree(entities.policyRoles().stream().map(PolicyRole::toString).toList());
+                        ArrayNode groupsNode = MAPPER.valueToTree(entities.policyGroups().stream().map(PolicyGroup::toString).toList());
 
-                    entitiesNode.set(Text.POLICYUSERS.toString(), usersNode);
-                    entitiesNode.set(Text.POLICYROLES.toString(), rolesNode);
-                    entitiesNode.set(Text.POLICYGROUPS.toString(), groupsNode);
+                        entitiesNode.set(Text.POLICYUSERS.toString(), usersNode);
+                        entitiesNode.set(Text.POLICYROLES.toString(), rolesNode);
+                        entitiesNode.set(Text.POLICYGROUPS.toString(), groupsNode);
 
-                    boolean attached = !usersNode.isEmpty() || !rolesNode.isEmpty() || !groupsNode.isEmpty();
+                        boolean attached = !usersNode.isEmpty() || !rolesNode.isEmpty() || !groupsNode.isEmpty();
 
-                    if (wild && attached) {
-                        s = Status.FAIL;
-                        msg = Text.POLICY_OVERSCOPED_AND_ATTACHED.toString();
-                    } else {
-                        s = Status.PASS;
-                        msg = wild ? Text.POLICY_OVERSCOPED_BUT_UNATTACHED.toString() : Text.POLICY_NOT_OVERSCOPED.toString();
+                        if (wild && attached) {
+                            s = Status.FAIL;
+                            msg = Text.POLICY_OVERSCOPED_AND_ATTACHED.toString();
+                        } else {
+                            s = Status.PASS;
+                            msg = wild ? Text.POLICY_OVERSCOPED_BUT_UNATTACHED.toString() : Text.POLICY_NOT_OVERSCOPED.toString();
+                        }
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        msg = Text.EXCEPTION.toString().concat(e.getMessage());
+                        versionNode = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString());
                     }
-                } catch (Exception e) {
-                    s = Status.FAIL_EXCEPTION;
-                    msg = Text.EXCEPTION.toString().concat(e.getMessage());
-                    versionNode = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString());
-                }
 
-                ObjectNode policyNode = MAPPER.createObjectNode();
-                policyNode.put(Text.MESSAGE.toString(), msg);
-                policyNode.put(Text.POLICY.toString(), versionNode);
-                policyNode.put(Text.ENTITIES.toString(), entitiesNode);
+                    ObjectNode policyNode = MAPPER.createObjectNode();
+                    policyNode.put(Text.MESSAGE.toString(), msg);
+                    policyNode.put(Text.POLICY.toString(), versionNode);
+                    policyNode.put(Text.ENTITIES.toString(), entitiesNode);
 
-                Map<String, Object> inner = new HashMap<>();
-                inner.put(Text.STATUS.toString(), s);
-                inner.put(Text.RESULT.toString(), policyNode);
-                return Map.<String,Object>of(arn, inner);
-            })
-            .toList();
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), policyNode);
+                    return Map.<String,Object>of(arn, inner);
+                })
+                .toList();
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES, result, status);
@@ -232,17 +380,17 @@ public class IAMPolicyCheck implements CloudCheck {
         }
 
         Stream<Map<String, Object>> roleStream = allRoles.stream().map(role ->
-            processIdentityInlinePolicies(role.roleName(), role.arn(), targetAction,
-                name -> iam.listRolePolicies(ListRolePoliciesRequest.builder().roleName(name).build()).join().policyNames(),
-                (roleName, polName) -> iam.getRolePolicy(GetRolePolicyRequest.builder().roleName(roleName).policyName(polName).build()).join().policyDocument()
-            )
+                processIdentityInlinePolicies(role.roleName(), role.arn(), targetAction,
+                        name -> iam.listRolePolicies(ListRolePoliciesRequest.builder().roleName(name).build()).join().policyNames(),
+                        (roleName, polName) -> iam.getRolePolicy(GetRolePolicyRequest.builder().roleName(roleName).policyName(polName).build()).join().policyDocument()
+                )
         );
 
         Stream<Map<String, Object>> userStream = allUsers.stream().map(user ->
-            processIdentityInlinePolicies(user.userName(), user.arn(), targetAction,
-                name -> iam.listUserPolicies(ListUserPoliciesRequest.builder().userName(name).build()).join().policyNames(),
-                (userName, polName) -> iam.getUserPolicy(GetUserPolicyRequest.builder().userName(userName).policyName(polName).build()).join().policyDocument()
-            )
+                processIdentityInlinePolicies(user.userName(), user.arn(), targetAction,
+                        name -> iam.listUserPolicies(ListUserPoliciesRequest.builder().userName(name).build()).join().policyNames(),
+                        (userName, polName) -> iam.getUserPolicy(GetUserPolicyRequest.builder().userName(userName).policyName(polName).build()).join().policyDocument()
+                )
         );
 
         List<Map<String, Object>> result = Stream.concat(roleStream, userStream).toList();
@@ -340,8 +488,8 @@ public class IAMPolicyCheck implements CloudCheck {
 
     private Status checkManagedPolicyPrivileges(AWSFinding finding, String targetAction) {
         List<Policy> customPolicies = allPolicies.stream()
-            .filter(p -> p.arn() != null && !p.arn().startsWith("arn:aws:iam::aws:policy"))
-            .toList();
+                .filter(p -> p.arn() != null && !p.arn().startsWith("arn:aws:iam::aws:policy"))
+                .toList();
 
         if (customPolicies.isEmpty()) {
             writer.addToBuffer(finding, Text.NO_IAM_CUSTOMER_MANAGED_POLICIES_FOUND.toString(), Status.NOT_APPLICABLE);
