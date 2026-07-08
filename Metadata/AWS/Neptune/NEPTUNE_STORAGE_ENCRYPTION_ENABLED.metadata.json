@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NEPTUNE_STORAGE_ENCRYPTION_ENABLED",
+  "CheckTitle": "Neptune Cluster storage without encryption at rest",
+  "Severity": "Medium",
+  "Description": "Neptune DB Clusters found without storage encryption at rest enabled.",
+  "Risk": "Unencrypted data at rest are at risk of exposure through unauthorized access or accidental leaks. Such events affect the confidentiality of stored data, which may include sensitive information.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/neptune-controls.html#neptune-1",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider enabling encryption at rest for all Neptune DB Clusters, preferably using CMKs (Customer Managed Keys) via AWS KMS (Key Management Service) for direct control over lifecycle, key policies, and auditing. For existing unencrypted clusters, create a snapshot of that cluster and restore it into a brand-new encrypted cluster, as there is no option for encrypting an unencrypted cluster after setup.",
+      "Urls": "https://docs.aws.amazon.com/neptune/latest/userguide/encrypt.html, https://docs.aws.amazon.com/bedrock/latest/userguide/import-model-using-cmk.html"
+    }
+  },
+  "Notes": ""
+}

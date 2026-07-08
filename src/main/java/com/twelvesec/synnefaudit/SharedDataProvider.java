@@ -30,6 +30,10 @@ import software.amazon.awssdk.services.cloudwatch.model.MetricAlarm;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient;
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogGroupsResponse;
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup;
+import software.amazon.awssdk.services.dax.DaxAsyncClient;
+import software.amazon.awssdk.services.dax.model.Cluster;
+import software.amazon.awssdk.services.dax.model.DescribeClustersRequest;
+import software.amazon.awssdk.services.dax.model.DescribeClustersResponse;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.ListTablesRequest;
 import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
@@ -58,6 +62,10 @@ import software.amazon.awssdk.services.kms.model.KeyListEntry;
 import software.amazon.awssdk.services.kms.model.ListKeysRequest;
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
 import software.amazon.awssdk.services.lambda.model.FunctionConfiguration;
+import software.amazon.awssdk.services.neptune.NeptuneAsyncClient;
+import software.amazon.awssdk.services.neptune.model.DBCluster;
+import software.amazon.awssdk.services.neptune.model.DescribeDbClustersRequest;
+import software.amazon.awssdk.services.neptune.model.DescribeDbClustersResponse;
 import software.amazon.awssdk.services.rds.RdsAsyncClient;
 import software.amazon.awssdk.services.rds.model.*;
 import software.amazon.awssdk.services.resourceexplorer2.ResourceExplorer2AsyncClient;
@@ -107,6 +115,8 @@ public class SharedDataProvider {
     private final CloudTrailAsyncClient cloudTrail;
     private final CloudWatchAsyncClient cloudWatch;
     private final CloudWatchLogsAsyncClient cloudwatchlogs;
+    private final DaxAsyncClient dax;
+    private final NeptuneAsyncClient neptune;
     private final DynamoDbAsyncClient dynamodb;
     private final Ec2AsyncClient ec2;
     private final EcrAsyncClient ecr;
@@ -129,10 +139,10 @@ public class SharedDataProvider {
 
     public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AthenaAsyncClient athena,
             CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
-            CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, DynamoDbAsyncClient dynamodb, 
+            CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, DaxAsyncClient dax, DynamoDbAsyncClient dynamodb,
             Ec2AsyncClient ec2, EcrAsyncClient ecr, EfsAsyncClient efs, ElasticLoadBalancingV2AsyncClient elb,
             SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
-            KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, RdsAsyncClient rds, 
+            KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, NeptuneAsyncClient neptune, RdsAsyncClient rds,
             Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
             SsmAsyncClient ssm, StsAsyncClient sts, SupportAsyncClient support) {
         this.accessAnalyzer = accessAnalyzer;
@@ -143,6 +153,7 @@ public class SharedDataProvider {
         this.cloudTrail = cloudTrail;
         this.cloudWatch = cloudWatch;
         this.cloudwatchlogs = cloudwatchlogs;
+        this.dax = dax;
         this.dynamodb = dynamodb;
         this.ec2 = ec2;
         this.ecr = ecr;
@@ -154,6 +165,7 @@ public class SharedDataProvider {
         this.kafka = kafka;
         this.kms = kms;
         this.lambda = lambda;
+        this.neptune = neptune;
         this.rds = rds;
         this.route53 = route53;
         this.resourceexplorer2 = resourceexplorer2;
@@ -266,6 +278,22 @@ public class SharedDataProvider {
         Supplier<CompletableFuture<List<String>>> loader = () ->
             dynamodb.listTables(ListTablesRequest.builder().build())
                 .thenApply(ListTablesResponse::tableNames);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Cluster>> getAllDaxClusters() {
+        String key = "dax:clusters";
+        Supplier<CompletableFuture<List<Cluster>>> loader = () ->
+                dax.describeClusters(DescribeClustersRequest.builder().build())
+                        .thenApply(DescribeClustersResponse::clusters);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<DBCluster>> getAllNeptuneClusters() {
+        String key = "neptune:clusters";
+        Supplier<CompletableFuture<List<DBCluster>>> loader = () ->
+                neptune.describeDBClusters(DescribeDbClustersRequest.builder().build())
+                        .thenApply(DescribeDbClustersResponse::dbClusters);
         return getCachedData(key, loader);
     }
 

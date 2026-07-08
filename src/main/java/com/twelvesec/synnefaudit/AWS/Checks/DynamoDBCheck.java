@@ -6,6 +6,7 @@ import com.twelvesec.synnefaudit.CloudCheck;
 import com.twelvesec.synnefaudit.DataWriter;
 import com.twelvesec.synnefaudit.SharedDataProvider;
 import com.twelvesec.synnefaudit.messages.Text;
+import software.amazon.awssdk.services.dax.model.Cluster;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 
 public class DynamoDBCheck implements CloudCheck {
     private List<String> allTableNames;
+    private List<Cluster> allDaxClusters;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final DynamoDbAsyncClient dynamodb;
@@ -33,10 +35,15 @@ public class DynamoDBCheck implements CloudCheck {
         return sharedDataProvider.getAllTableNames()
             .thenCompose(tableNames -> {
                 this.allTableNames = tableNames;
+                return sharedDataProvider.getAllDaxClusters();
+            })
+            .thenCompose(daxClusters -> {
+                this.allDaxClusters = daxClusters;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkDynamoDBTableWithPointInTimeRecoveryDisabled,  AWSFinding.DYNAMODB_POINT_IN_TIME_RECOVERY_DISABLED, this::reportError),
                     wrapCheck(this::checkDynamoDBTableWithDefaultEncryptionEnabled,     AWSFinding.DYNAMODB_TABLE_DEFAULT_ENCRYPTION_ENABLED, this::reportError),
-                    wrapCheck(this::checkDynamoDBEncryptionWithCMK,                     AWSFinding.DYNAMODB_ENCRYPTION_WITH_CMK, this::reportError)
+                    wrapCheck(this::checkDynamoDBEncryptionWithCMK,                     AWSFinding.DYNAMODB_ENCRYPTION_WITH_CMK, this::reportError),
+                    wrapCheck(this::checkDaxEncryptionAtRest,                           AWSFinding.DAX_ENCRYPTION_AT_REST_ENABLED, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -182,6 +189,42 @@ public class DynamoDBCheck implements CloudCheck {
         
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.DYNAMODB_ENCRYPTION_WITH_CMK, result, status);
+        return status;
+    }
+
+    private Status checkDaxEncryptionAtRest() {
+        AWSFinding finding = AWSFinding.DAX_ENCRYPTION_AT_REST_ENABLED;
+        if (allDaxClusters == null || allDaxClusters.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_DAX_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allDaxClusters.stream()
+                .map(cluster -> {
+                    String clusterName = cluster.clusterName();
+                    Status s;
+                    ObjectNode resultNode = MAPPER.createObjectNode();
+                    resultNode.put("clusterName", clusterName);
+
+                    boolean isEncrypted = cluster.sseDescription() != null
+                            && "ENABLED".equalsIgnoreCase(String.valueOf(cluster.sseDescription().status()));
+
+                    if (cluster.sseDescription() != null) {
+                        resultNode.put("sseStatus", MAPPER.valueToTree(cluster.toBuilder()));
+                    } else {
+                        resultNode.putNull("sseStatus");
+                    }
+                    s = isEncrypted ? Status.PASS : Status.FAIL;
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), resultNode);
+                    return Map.<String, Object>of(cluster.clusterArn(), inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
         return status;
     }
 }

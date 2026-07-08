@@ -1,5 +1,6 @@
 package com.twelvesec.synnefaudit.AWS;
 
+import com.twelvesec.synnefaudit.AWS.Checks.NeptuneDBCheck;
 import com.twelvesec.synnefaudit.messages.Text;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -22,6 +23,7 @@ import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient;
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient;
+import software.amazon.awssdk.services.dax.DaxAsyncClient;
 import software.amazon.awssdk.services.drs.DrsAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
@@ -36,6 +38,7 @@ import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
 import software.amazon.awssdk.services.macie2.Macie2AsyncClient;
+import software.amazon.awssdk.services.neptune.NeptuneAsyncClient;
 import software.amazon.awssdk.services.networkfirewall.NetworkFirewallAsyncClient;
 import software.amazon.awssdk.services.organizations.OrganizationsAsyncClient;
 import software.amazon.awssdk.services.rds.RdsAsyncClient;
@@ -78,6 +81,7 @@ public class AWSDependencyFactory {
         Map.entry(IamAsyncClient.class,                      builderFor(IamAsyncClient::builder)),
         Map.entry(CloudFrontAsyncClient.class,               builderFor(CloudFrontAsyncClient::builder)),
         Map.entry(Wafv2AsyncClient.class,                    builderFor(Wafv2AsyncClient::builder)),
+        Map.entry(DaxAsyncClient.class,                      builderFor(DaxAsyncClient::builder)),
         Map.entry(DynamoDbAsyncClient.class,                 builderFor(DynamoDbAsyncClient::builder)),
         Map.entry(Ec2AsyncClient.class,                      builderFor(Ec2AsyncClient::builder)),
         Map.entry(SsmAsyncClient.class,                      builderFor(SsmAsyncClient::builder)),
@@ -102,6 +106,7 @@ public class AWSDependencyFactory {
         Map.entry(GuardDutyAsyncClient.class,                builderFor(GuardDutyAsyncClient::builder)),
         Map.entry(AccessAnalyzerAsyncClient.class,           builderFor(AccessAnalyzerAsyncClient::builder)),
         Map.entry(KafkaAsyncClient.class,                    builderFor(KafkaAsyncClient::builder)),
+        Map.entry(NeptuneAsyncClient.class,                  builderFor(NeptuneAsyncClient::builder)),
         Map.entry(RdsAsyncClient.class,                      builderFor(RdsAsyncClient::builder)),
         Map.entry(SnsAsyncClient.class,                      builderFor(SnsAsyncClient::builder)),
         Map.entry(NetworkFirewallAsyncClient.class,          builderFor(NetworkFirewallAsyncClient::builder)),

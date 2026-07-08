@@ -40,6 +40,8 @@ public enum Text {
     USERS_IN_ADMINISTRATORACCESS_GROUPS("Users found in groups with AdministratorAccess attached."),
     NO_USERS_WITH_CONSOLE_PASSWORD_FOUND("No users found with Console Password enabled."),
 
+    NO_NEPTUNE_CLUSTERS_FOUND("No Neptune Clusters found."),
+
     NO_ACCOUNT_STATUS_FROM_INSPECTOR2("No account status returned from Inspector2."),
     INPSECTOR2_NO_FINDINGS("No findings found from Inspector2."),
     NO_STATUS_FOUND("No status found."),
@@ -158,6 +160,7 @@ public enum Text {
     FLOW_LOGGING_DISABLED_FOR_VPC("Flow logging disabled for VPC."),
 
     NO_DYNAMODB_TABLES_FOUND("No DynamodDB tables were found."),
+    NO_DAX_CLUSTERS_FOUND("No DAX clusterns found."),
 
     NO_LIFECYCLE_POLICY_FOUND("No Lifecycle Policy found : "),
 

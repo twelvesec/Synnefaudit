@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DAX_ENCRYPTION_AT_REST_ENABLED",
+  "CheckTitle": "DynamoDB DAX Clusters without encryption at rest",
+  "Severity": "Medium",
+  "Description": "DynamoDB Accelerator (DAX) Clusters appear to not have SSE (Server-Side Encryption) at rest enabled.",
+  "Risk": "Without encryption at rest, cached data blocks containing sensitive information are vulnerable to data exfiltration and unauthorized access, impacting confidentiality and integrity of session states, API responses etc..",
+  "RelatedUrls": "https://docs.aws.amazon.com/controltower/latest/controlreference/dax-rules.html#ct-dax-pr-1-description, https://docs.aws.amazon.com/prescriptive-guidance/latest/encryption-best-practices/dynamodb.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure SSE-KMS (Server-Side Encryption, Key Management System) preferably using CMK (Customer-managed keys) is enabled for all clusters.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAXEncryptionAtRest.html"
+    }
+  },
+  "Notes": ""
+}

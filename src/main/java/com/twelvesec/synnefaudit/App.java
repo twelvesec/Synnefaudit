@@ -40,6 +40,7 @@ import software.amazon.awssdk.services.cloudtrail.CloudTrailAsyncClient;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient;
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient;
+import software.amazon.awssdk.services.dax.DaxAsyncClient;
 import software.amazon.awssdk.services.drs.DrsAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
@@ -54,6 +55,7 @@ import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
 import software.amazon.awssdk.services.macie2.Macie2AsyncClient;
+import software.amazon.awssdk.services.neptune.NeptuneAsyncClient;
 import software.amazon.awssdk.services.networkfirewall.NetworkFirewallAsyncClient;
 import software.amazon.awssdk.services.organizations.OrganizationsAsyncClient;
 import software.amazon.awssdk.services.rds.RdsAsyncClient;
@@ -85,6 +87,7 @@ public class App {
     private static IamAsyncClient iam;
     private static CloudFrontAsyncClient cf;
     private static Wafv2AsyncClient waf;
+    private static DaxAsyncClient dax;
     private static DynamoDbAsyncClient dynamodb;
     private static Ec2AsyncClient ec2;
     private static SsmAsyncClient ssm;
@@ -109,6 +112,7 @@ public class App {
     private static GuardDutyAsyncClient guardduty;
     private static AccessAnalyzerAsyncClient accessAnalyzer;
     private static KafkaAsyncClient kafka;
+    private static NeptuneAsyncClient neptune;
     private static RdsAsyncClient rds;
     private static S3AsyncClient s3;
     private static S3ControlAsyncClient s3control;
@@ -164,8 +168,8 @@ public class App {
 
         try {
             sharedDataProvider = new SharedDataProvider(
-                    accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, dynamodb, ec2, ecr, efs,
-                    elb, secretsmanager, guardduty, iam, kafka, kms, lambda, rds, route53, resourceexplorer2, s3, sns, ssm, sts, support);
+                    accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, dax, dynamodb, ec2, ecr, efs,
+                    elb, secretsmanager, guardduty, iam, kafka, kms, lambda, neptune, rds, route53, resourceexplorer2, s3, sns, ssm, sts, support);
 
             List<CloudCheck> checks = getAWSChecks();
             printer.printSectionHeader(ReportPrinter.CHECKS_SUMMARY);
@@ -386,6 +390,7 @@ public class App {
                 new KMSCheck(writer, sharedDataProvider, kms, cloudWatch),
                 new LambdaCheck(writer, sharedDataProvider, lambda),
                 new MFACheck(writer, sharedDataProvider, iam, sts),
+                new NeptuneDBCheck(writer, sharedDataProvider),
                 new NetworkACLsCheck(writer, sharedDataProvider),
                 new RDSInstancesCheck(writer, sharedDataProvider, rds),
                 new Route53Check(writer, sharedDataProvider, route53),
@@ -409,6 +414,7 @@ public class App {
         iam                 = awsDependencyFactory.getClient(IamAsyncClient.class);
         cf                  = awsDependencyFactory.getClient(CloudFrontAsyncClient.class);
         waf                 = awsDependencyFactory.getClient(Wafv2AsyncClient.class);
+        dax                 = awsDependencyFactory.getClient(DaxAsyncClient.class);
         dynamodb            = awsDependencyFactory.getClient(DynamoDbAsyncClient.class);
         ec2                 = awsDependencyFactory.getClient(Ec2AsyncClient.class);
         ssm                 = awsDependencyFactory.getClient(SsmAsyncClient.class);
@@ -433,6 +439,7 @@ public class App {
         guardduty           = awsDependencyFactory.getClient(GuardDutyAsyncClient.class);
         accessAnalyzer      = awsDependencyFactory.getClient(AccessAnalyzerAsyncClient.class);
         kafka               = awsDependencyFactory.getClient(KafkaAsyncClient.class);
+        neptune             = awsDependencyFactory.getClient(NeptuneAsyncClient.class);
         rds                 = awsDependencyFactory.getClient(RdsAsyncClient.class);
         sns                 = awsDependencyFactory.getClient(SnsAsyncClient.class);
         networkFirewall     = awsDependencyFactory.getClient(NetworkFirewallAsyncClient.class);
