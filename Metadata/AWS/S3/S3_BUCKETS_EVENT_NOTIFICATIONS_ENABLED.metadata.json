@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_EVENT_NOTIFICATIONS_ENABLED",
+  "CheckTitle": "Ensure S3 Buckets Have Event Notifications Enabled",
+  "Severity": "Low",
+  "Description": "S3 buckets found without Event Notifications configured to trigger actions (such as SNS topics, SQS queues, or Lambda functions) when objects are created, removed, or modified.",
+  "Risk": "Lacking event notifications hinders real-time visibility and threat detection workflows, delaying responses to unauthorized file uploads, deletions, or data modifications.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Configure S3 bucket event notifications to publish object activity to Amazon SNS, SQS, or AWS Lambda to enable real-time security monitoring, automated processing, and audit logging.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications.html"
+    }
+  },
+  "Notes": ""
+}

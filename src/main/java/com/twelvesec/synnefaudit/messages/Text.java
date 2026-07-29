@@ -145,6 +145,9 @@ public enum Text {
     NO_OBJECT_LOCK_CONFIGURATION_FOUND("No Object Lock configuration found : "),
     ACLS_DISABLED("ACLs disabled (Bucket owner enforced) : "),
     NO_PUBLIC_ACCESS_BLOCK_CONFIGURATION_FOUND("No public access block configuration found : "),
+    SECURELY_CONFIGURED_BUCKET_NAMES("Bucket names are configured securely."),
+    NO_LIFECYCLE_CONFIGURATION_FOUND("No lifecycle configuration found: "),
+    NO_REPLICATION_CONFIGURATION_FOUND("No replication configuration found: "),
 
     NO_ACCOUNT_ID_FOUND("Account Id could not be retrieved."),
 

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_POLICY_RESTRICT_EXTERNAL_ACCOUNTS",
+  "CheckTitle": "S3 Bucket Policy Grants Access to External Accounts",
+  "Severity": "High",
+  "Description": "S3 bucket policies do not limit access to the owning AWS account or explicitly authorized cross-account principals.",
+  "Risk": "Unrestricted cross-account permissions may allow unauthorized external AWS accounts to view, download, or tamper with sensitive bucket contents, bypassing internal access boundaries and risking regulatory non-compliance.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html#BucketPolicies",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Audit S3 bucket policies to ensure external account access is disabled unless specifically required for cross-account architecture. Where cross-account access is required, enforce conditions such as aws:PrincipalOrgID or explicit account lists.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies.html, https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-cross-accounts.html"
+    }
+  },
+  "Notes": ""
+}

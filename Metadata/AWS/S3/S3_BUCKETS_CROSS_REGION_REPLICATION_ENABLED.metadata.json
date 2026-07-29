@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_CROSS_REGION_REPLICATION_ENABLED",
+  "CheckTitle": "Ensure S3 Buckets Have Cross-Region Replication Enabled",
+  "Severity": "Low",
+  "Description": "S3 buckets have been observed without having Cross-Region Replication configured to automatically replicate objects to a destination bucket in a separate AWS region.",
+  "Risk": "Without Cross-Region Replication, data loss or extended downtime can occur if an entire AWS region experiences an outage, impacting data availability, business continuity, and disaster recovery.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable Cross-Region Replication for business-critical S3 buckets to ensure geographic redundancy, business continuity, and compliance with data backup and disaster recovery policies.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-walkthrough-2.html"
+    }
+  },
+  "Notes": ""
+}

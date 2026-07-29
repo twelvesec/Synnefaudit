@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_POLICY_ALLOWS_WRITE_ACCESS",
+  "CheckTitle": "Ensure S3 Bucket Policy Does Not Allow Public or Anonymous Write Access",
+  "Severity": "High",
+  "Description": "S3 bucket policies grant public or unauthenticated write permissions.",
+  "Risk": "Allowing unauthenticated write access enables malicious actors to overwrite critical files, upload malware or illegal content, alter existing objects, or flood the bucket to cause massive storage charges.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Remove public write access from bucket policies. Restrict write access explicitly to specific IAM roles, user accounts, or trusted VPC endpoints, and enforce S3 Block Public Access.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/security_iam_service-with-iam.html#s3-anonymous-permissions, https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-bucket-policies.html#example-bucket-policies-anonymous-user"
+    }
+  },
+  "Notes": ""
+}

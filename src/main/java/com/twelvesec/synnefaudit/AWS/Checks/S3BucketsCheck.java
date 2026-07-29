@@ -1,6 +1,7 @@
 package com.twelvesec.synnefaudit.AWS.Checks;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.synnefaudit.AWS.AWSDependencyFactory;
 import com.twelvesec.synnefaudit.AWS.AWSFinding;
@@ -18,6 +19,8 @@ import software.amazon.awssdk.services.s3control.model.S3ControlException;
 import software.amazon.awssdk.services.sts.StsAsyncClient;
 import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class S3BucketsCheck implements CloudCheck {
@@ -65,7 +69,13 @@ public class S3BucketsCheck implements CloudCheck {
                     wrapCheck(this::checkS3AccountLevelPublicAccessBlock,       AWSFinding.S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCK, this::reportError),
                     wrapCheck(this::S3BucketsListableByPublic,                  AWSFinding.S3_BUCKETS_LISTABLE_BY_PUBLIC, this::reportError),
                     wrapCheck(this::S3BucketsOpenToPublic,                      AWSFinding.S3_BUCKETS_OPEN_TO_PUBLIC, this::reportError),
-                    wrapCheck(this::S3BucketsWritableByPublic,                  AWSFinding.S3_BUCKETS_WRITABLE_BY_PUBLIC, this::reportError)
+                    wrapCheck(this::S3BucketsWritableByPublic,                  AWSFinding.S3_BUCKETS_WRITABLE_BY_PUBLIC, this::reportError),
+                    wrapCheck(this::checkS3BucketsCrossRegionReplication,       AWSFinding.S3_BUCKETS_CROSS_REGION_REPLICATION_ENABLED, this::reportError),
+                    wrapCheck(this::checkS3BucketsEventNotificationsEnabled,    AWSFinding.S3_BUCKETS_EVENT_NOTIFICATIONS_ENABLED, this::reportError),
+                    wrapCheck(this::checkS3BucketsLifecycleConfigurationEnabled,AWSFinding.S3_BUCKETS_LIFECYCLE_CONFIGURATION_ENABLED, this::reportError),
+                    wrapCheck(this::checkS3BucketsPolicyAllowsWriteAccess,      AWSFinding.S3_BUCKETS_POLICY_ALLOWS_WRITE_ACCESS, this::reportError),
+                    wrapCheck(this::checkS3BucketsShadowResourceHijacking,      AWSFinding.S3_BUCKETS_VULNERABLE_TO_SHADOW_RESOURCE_HIJACKING, this::reportError),
+                    wrapCheck(this::checkS3BucketsPolicyRestrictExternalAccounts,   AWSFinding.S3_BUCKETS_POLICY_RESTRICT_EXTERNAL_ACCOUNTS, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -835,6 +845,308 @@ public class S3BucketsCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.S3_BUCKETS_WRITABLE_BY_PUBLIC, result, status);
+        return status;
+    }
+
+    private Status checkS3BucketsCrossRegionReplication() {
+        AWSFinding finding = AWSFinding.S3_BUCKETS_CROSS_REGION_REPLICATION_ENABLED;
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_S3_BUCKETS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+                .map(bucketName -> {
+                    Status s;
+                    ObjectNode r = MAPPER.createObjectNode();
+
+                    try (S3AsyncClient regionalS3 = getCorrectRegionClient(bucketName)) {
+                        GetBucketReplicationResponse response = regionalS3.getBucketReplication(
+                                GetBucketReplicationRequest.builder().bucket(bucketName).build()
+                        ).join();
+
+                        boolean hasRules = response.replicationConfiguration() != null
+                                && !response.replicationConfiguration().rules().isEmpty();
+
+                        s = hasRules ? Status.PASS : Status.FAIL;
+                        r.set("replicationConfiguration", MAPPER.valueToTree(response.replicationConfiguration().toBuilder()));
+                    } catch (Exception e) {
+                        Throwable cause = (e.getCause() != null) ? e.getCause() : e;
+                        if (cause instanceof S3Exception s3Ex) {
+                            String errorCode = s3Ex.awsErrorDetails() != null ? s3Ex.awsErrorDetails().errorCode() : "";
+
+                            if ("ReplicationConfigurationNotFoundError".equals(errorCode)
+                                    || "NoSuchReplicationConfiguration".equals(errorCode)) {
+                                s = Status.FAIL;
+                                r.put(Text.ERROR.toString(), Text.NO_REPLICATION_CONFIGURATION_FOUND.toString().concat(s3Ex.getMessage()));
+                            } else {
+                                s = Status.FAIL_EXCEPTION;
+                                r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(s3Ex.getMessage()));
+                            }
+                        } else {
+                            s = Status.FAIL_EXCEPTION;
+                            r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                        }
+                    }
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(bucketName, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
+        return status;
+    }
+
+    private Status checkS3BucketsEventNotificationsEnabled() {
+        AWSFinding finding = AWSFinding.S3_BUCKETS_EVENT_NOTIFICATIONS_ENABLED;
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_S3_BUCKETS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+                .map(bucketName -> {
+                    Status s;
+                    ObjectNode r = MAPPER.createObjectNode();
+                    try {
+                        S3AsyncClient regionalS3 = getCorrectRegionClient(bucketName);
+                        GetBucketNotificationConfigurationResponse response = regionalS3.getBucketNotificationConfiguration(
+                                GetBucketNotificationConfigurationRequest.builder().bucket(bucketName).build()
+                        ).join();
+
+                        boolean hasNotifications = (response.topicConfigurations() != null && !response.topicConfigurations().isEmpty())
+                                || (response.queueConfigurations() != null && !response.queueConfigurations().isEmpty())
+                                || (response.lambdaFunctionConfigurations() != null && !response.lambdaFunctionConfigurations().isEmpty());
+
+                        s = hasNotifications ? Status.PASS : Status.FAIL;
+                        r.set("notificationConfiguration", MAPPER.valueToTree(response.toBuilder()));
+                        regionalS3.close();
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(bucketName, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
+        return status;
+    }
+
+    private Status checkS3BucketsLifecycleConfigurationEnabled() {
+        AWSFinding finding = AWSFinding.S3_BUCKETS_LIFECYCLE_CONFIGURATION_ENABLED;
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_S3_BUCKETS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+                .map(bucketName -> {
+                    Status s;
+                    ObjectNode r = MAPPER.createObjectNode();
+
+                    try (S3AsyncClient regionalS3 = getCorrectRegionClient(bucketName)) {
+                        GetBucketLifecycleConfigurationResponse response = regionalS3.getBucketLifecycleConfiguration(
+                                GetBucketLifecycleConfigurationRequest.builder().bucket(bucketName).build()
+                        ).join();
+
+                        boolean hasRules = response.rules() != null && !response.rules().isEmpty();
+                        s = hasRules ? Status.PASS : Status.FAIL;
+                        r.set("lifecycleConfiguration", MAPPER.valueToTree(response.toBuilder()));
+                    } catch (Exception e) {
+                        Throwable cause = (e.getCause() != null) ? e.getCause() : e;
+
+                        if (cause instanceof S3Exception s3Ex) {
+                            String errorCode = s3Ex.awsErrorDetails() != null ? s3Ex.awsErrorDetails().errorCode() : "";
+                            if ("NoSuchLifecycleConfiguration".equals(errorCode)) {
+                                s = Status.FAIL;
+                                r.put(Text.ERROR.toString(), Text.NO_LIFECYCLE_CONFIGURATION_FOUND.toString().concat(s3Ex.getMessage()));
+                            } else {
+                                s = Status.FAIL_EXCEPTION;
+                                r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(s3Ex.getMessage()));
+                            }
+                        } else {
+                            s = Status.FAIL_EXCEPTION;
+                            r.put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                        }
+                    }
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(bucketName, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
+        return status;
+    }
+
+    private Status checkS3BucketsPolicyAllowsWriteAccess() {
+        AWSFinding finding = AWSFinding.S3_BUCKETS_POLICY_ALLOWS_WRITE_ACCESS;
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_S3_BUCKETS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+                .map(bucketName -> {
+                    Status s;
+                    JsonNode r;
+                    try {
+                        S3AsyncClient regionalS3 = getCorrectRegionClient(bucketName);
+                        GetBucketPolicyResponse response = regionalS3.getBucketPolicy(
+                                GetBucketPolicyRequest.builder().bucket(bucketName).build()
+                        ).join();
+
+                        r = MAPPER.readTree(URLDecoder.decode(response.policy(), StandardCharsets.UTF_8));
+                        regionalS3.close();
+
+                        JsonNode stmtsNode = r.get("Statement");
+                        ArrayNode statements = stmtsNode == null ? MAPPER.createArrayNode()
+                                : (stmtsNode.isArray() ? (ArrayNode) stmtsNode : MAPPER.createArrayNode().add(stmtsNode));
+
+                        boolean allowsWrite = StreamSupport.stream(statements.spliterator(), false)
+                                .filter(stmt -> "Allow".equalsIgnoreCase(stmt.path("Effect").asText()))
+                                .filter(stmt -> affectsBucket(stmt.path("Resource"), bucketName))
+                                .anyMatch(stmt -> hasWriteAction(stmt.path("Action")));
+
+                        s = allowsWrite ? Status.FAIL : Status.PASS;
+                    } catch (S3Exception e) {
+                        s = Status.PASS;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                Text.NO_BUCKET_POLICY_FOUND.toString().concat(e.getMessage()));
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(bucketName, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
+        return status;
+    }
+
+    private Status checkS3BucketsShadowResourceHijacking() {
+        AWSFinding finding = AWSFinding.S3_BUCKETS_VULNERABLE_TO_SHADOW_RESOURCE_HIJACKING;
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_S3_BUCKETS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+                .map(bucketName -> {
+                    Status s;
+                    ObjectNode r = MAPPER.createObjectNode();
+
+                    String nameLower = bucketName.toLowerCase();
+                    boolean isPredictablePattern = nameLower.startsWith("cf-templates-")
+                            || nameLower.startsWith("aws-glue-assets-")
+                            || nameLower.startsWith("sagemaker-")
+                            || nameLower.startsWith("aws-sagemaker-")
+                            || nameLower.startsWith("codestar-")
+                            || nameLower.startsWith("aws-codestar-")
+                            || nameLower.startsWith("emr-")
+                            || nameLower.startsWith("aws-emr-")
+                            || nameLower.contains("hnb659fds");
+
+                    if (isPredictablePattern) {
+                        s = Status.FAIL;
+                        r.put(Text.MESSAGE.toString(), "Bucket uses predictable service naming.");
+                    } else {
+                        s = Status.PASS;
+                        r.put(Text.MESSAGE.toString(), Text.SECURELY_CONFIGURED_BUCKET_NAMES.toString());
+                    }
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(bucketName, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
+        return status;
+    }
+
+    private Status checkS3BucketsPolicyRestrictExternalAccounts() {
+        AWSFinding finding = AWSFinding.S3_BUCKETS_POLICY_RESTRICT_EXTERNAL_ACCOUNTS;
+        if (allS3BucketNames.isEmpty()) {
+            writer.addToBuffer(finding, Text.NO_S3_BUCKETS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        String currentAccountId = sts.getCallerIdentity(GetCallerIdentityRequest.builder().build()).join().account();
+
+        List<Map<String, Object>> result = allS3BucketNames.stream()
+                .map(bucketName -> {
+                    Status s;
+                    JsonNode r;
+                    try {
+                        S3AsyncClient regionalS3 = getCorrectRegionClient(bucketName);
+                        GetBucketPolicyResponse response = regionalS3.getBucketPolicy(
+                                GetBucketPolicyRequest.builder().bucket(bucketName).build()
+                        ).join();
+
+                        r = MAPPER.readTree(URLDecoder.decode(response.policy(), StandardCharsets.UTF_8));
+                        regionalS3.close();
+
+                        JsonNode stmtsNode = r.get("Statement");
+                        ArrayNode statements = stmtsNode == null ? MAPPER.createArrayNode()
+                                : (stmtsNode.isArray() ? (ArrayNode) stmtsNode : MAPPER.createArrayNode().add(stmtsNode));
+
+                        boolean allowsExternalAccounts = StreamSupport.stream(statements.spliterator(), false)
+                                .filter(stmt -> "Allow".equalsIgnoreCase(stmt.path("Effect").asText()))
+                                .filter(stmt -> affectsBucket(stmt.path("Resource"), bucketName))
+                                .flatMap(stmt -> {
+                                    JsonNode principalNode = stmt.get("Principal");
+
+                                    if (checkPrincipalForPublicAccess(principalNode)) {
+                                        return Stream.empty();
+                                    }
+
+                                    JsonNode aws = principalNode.isObject() ? principalNode.path("AWS") : principalNode;
+                                    if (aws.isArray()) return StreamSupport.stream(aws.spliterator(), false).map(JsonNode::asText);
+                                    return aws.isTextual() ? Stream.of(aws.asText()) : Stream.empty();
+                                })
+                                .anyMatch(principalArn -> {
+                                    String[] segments = principalArn.split(":");
+                                    if (segments.length > 4) {
+                                        String targetAccount = segments[4];
+                                        return !targetAccount.equals(currentAccountId);
+                                    }
+                                    return false;
+                                });
+                        s = allowsExternalAccounts ? Status.FAIL : Status.PASS;
+                    } catch (S3Exception e) {
+                        s = Status.PASS;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                Text.NO_BUCKET_POLICY_FOUND.toString().concat(e.getMessage()));
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(bucketName, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(finding, result, status);
         return status;
     }
 

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "S3_BUCKETS_LIFECYCLE_CONFIGURATION_ENABLED",
+  "CheckTitle": "Ensure S3 Buckets Have Lifecycle Configuration Enabled",
+  "Severity": "Low",
+  "Description": "Amazon S3 buckets are evaluated to verify that lifecycle policies are configured to manage object retention, transition data to lower-cost storage tiers, or delete noncurrent object versions.",
+  "Risk": "Without lifecycle management, obsolete data, expired noncurrent versions, and incomplete multipart uploads accumulate indefinitely, resulting in inflated cloud storage costs and potential non-compliance with data retention policies.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Configure S3 lifecycle policies to automatically transition older objects to cost-effective storage classes (e.g., Standard-IA or Glacier) and automatically clean up expired versions and abort incomplete multipart uploads.",
+      "Urls": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/how-to-set-lifecycle-configuration-intro.html"
+    }
+  },
+  "Notes": ""
+}
