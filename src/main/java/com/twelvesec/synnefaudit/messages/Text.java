@@ -93,6 +93,9 @@ public enum Text {
 
     NO_ATHENA_WORKGROUPS_FOUND("No Athena Workgroups found."),
 
+    NO_BACKUP_VAULTS_FOUND("No Backup Vaults found."),
+    NO_BACKUP_PLANS_FOUND("No Backup Plans found."),
+
     NO_EFS_FILE_SYSTEM_FOUND("No EFS File Systems found."),
 
     GLUE_DATA_CATALOG_NOT_USED("Glue Data Catalog is not being used."),

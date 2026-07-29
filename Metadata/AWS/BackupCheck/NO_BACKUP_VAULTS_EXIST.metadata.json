@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NO_BACKUP_VAULTS_EXIST",
+  "CheckTitle": "No Backup Vaults exist",
+  "Severity": "Low",
+  "Description": "No Backup Vaults were found. Vaults are used to save and organize backups, and are required for all backup plans and backup jobs.",
+  "Risk": "Without backup vaults, no plans and recovery points can be set up in AWS Backup.",
+  "RelatedUrls": "https://docs.aws.amazon.com/aws-backup/latest/devguide/vaults.html, https://docs.aws.amazon.com/aws-backup/latest/devguide/whatisbackup.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Create backup vaults in all affected regions before configuring backup plans. When using AWS Backup through the AWS CLI, AWS SDK, or CloudFormation, a custom vault is required.",
+      "Urls": "https://docs.aws.amazon.com/aws-backup/latest/devguide/create-a-vault.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "NO_BACKUP_PLAN_EXISTS",
+  "CheckTitle": "No Backup Plans exists",
+  "Severity": "Low",
+  "Description": "No backup plans were observed defined for any AWS resources. AWS Backup is used to store periodic backups for critical services.",
+  "Risk": "Without backup plans, there is no automatic storage of resources in points of time for recovery purposes. This could result in data loss in the event of accidental deletion, corruption, outages, or attacks, impacting the availability of services.",
+  "RelatedUrls": "https://docs.aws.amazon.com/aws-backup/latest/devguide/whatisbackup.html, https://docs.aws.amazon.com/aws-backup/latest/devguide/about-backup-plans.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider setting up automatic backups for critical resources, scheduled and configured accordingly for each service. Incremental backups can be utilized, when possible, instead of full copies to minimize storage costs. Configure lifecycle policies, tags, cross-region backups and centralized monitoring according to organizational needs.",
+      "Urls": "https://docs.aws.amazon.com/aws-backup/latest/devguide/creating-a-backup-plan.html"
+    }
+  },
+  "Notes": ""
+}

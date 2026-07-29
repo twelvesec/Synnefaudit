@@ -10,10 +10,6 @@ import software.amazon.awssdk.services.account.AccountAsyncClient;
 import software.amazon.awssdk.services.account.model.GetAlternateContactRequest;
 import software.amazon.awssdk.services.account.model.GetAlternateContactResponse;
 import software.amazon.awssdk.services.account.model.ResourceNotFoundException;
-import software.amazon.awssdk.services.backup.BackupAsyncClient;
-import software.amazon.awssdk.services.backup.model.ListReportPlansRequest;
-import software.amazon.awssdk.services.backup.model.ListReportPlansResponse;
-import software.amazon.awssdk.services.backup.model.ReportPlan;
 import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient;
 import software.amazon.awssdk.services.codebuild.model.*;
 import software.amazon.awssdk.services.iam.model.OrganizationNotFoundException;
@@ -39,19 +35,16 @@ public class GeneralCheck implements CloudCheck {
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final AccountAsyncClient accountClient;
-    private final BackupAsyncClient backup;
     private final CodeBuildAsyncClient codeBuild;
     private final OrganizationsAsyncClient orgs;
     private final StsAsyncClient sts;
 
     public GeneralCheck(DataWriter writer, SharedDataProvider sharedDataProvider, 
-                        AccountAsyncClient accountClient, 
-                        BackupAsyncClient backup, CodeBuildAsyncClient codeBuild, 
+                        AccountAsyncClient accountClient, CodeBuildAsyncClient codeBuild,
                         OrganizationsAsyncClient orgs, StsAsyncClient sts) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.accountClient = accountClient;
-        this.backup = backup;
         this.codeBuild = codeBuild;
         this.orgs = orgs;
         this.sts = sts;
@@ -64,7 +57,6 @@ public class GeneralCheck implements CloudCheck {
                 this.allIndexes = indexes;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkNoAlternateContactsFound,              AWSFinding.NO_ALTERNATE_CONTACTS_FOUND, this::reportError),
-                    wrapCheck(this::checkNoBackupReportPlanExists,              AWSFinding.NO_BACKUP_REPORT_PLAN_EXISTS, this::reportError),
                     wrapCheck(this::checkResourceExplorerIndexes,               AWSFinding.RESOURCE_EXPLORER_NO_INDEXES_FOUND, this::reportError),
                     wrapCheck(this::checkCodeBuildProjectsNotInvokedLast90Days, AWSFinding.CODEBUILD_PROJECTS_NOT_INVOKED_90_DAYS, this::reportError),
                     wrapCheck(this::checkAccountInOrganizations,                AWSFinding.ACCOUNT_IS_NOT_PART_OF_ORGANIZATIONS, this::reportError)
@@ -108,18 +100,6 @@ public class GeneralCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.NO_ALTERNATE_CONTACTS_FOUND, result, status);
-        return status;
-    }
-
-    private Status checkNoBackupReportPlanExists() {
-        ListReportPlansResponse listResponse = backup.listReportPlans(ListReportPlansRequest.builder().build()).join();
-        List<String> result = listResponse.reportPlans().stream()
-            .map(ReportPlan::reportPlanName)
-            .toList();
-
-        Status status = !result.isEmpty() ? Status.PASS : Status.FAIL;
-        result = result.isEmpty()? List.of(Text.NO_REPORT_PLANS_FOUND.toString()) : result;
-        writer.addToBuffer(AWSFinding.NO_BACKUP_REPORT_PLAN_EXISTS, result, status);
         return status;
     }
 

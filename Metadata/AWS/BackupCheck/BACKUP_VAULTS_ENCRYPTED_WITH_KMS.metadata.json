@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "BACKUP_VAULTS_ENCRYPTED_WITH_KMS",
+  "CheckTitle": "Unencrypted Backup Vaults",
+  "Severity": "Medium",
+  "Description": "Backup Vaults have been found without defined encryption keys.",
+  "Risk": "Unencrypted vaults may result in exposure or manipulation of stored backup data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/aws-backup/latest/devguide/vaults.html, https://aws.amazon.com/about-aws/whats-new/2025/11/aws-backup-kms-customer-managed-keys/",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable encryption for all backup vaults, preferably using Customer Managed Keys (CMK) KMS, for direct control over lifecycle and key policies.",
+      "Urls": "https://docs.aws.amazon.com/aws-backup/latest/devguide/encryption.html, https://docs.aws.amazon.com/kms/latest/cryptographic-details/basic-concepts.html, https://docs.aws.amazon.com/bedrock/latest/userguide/import-model-using-cmk.html"
+    }
+  },
+  "Notes": ""
+}
