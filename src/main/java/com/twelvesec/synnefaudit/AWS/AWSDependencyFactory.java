@@ -35,6 +35,7 @@ import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
 import software.amazon.awssdk.services.inspector2.Inspector2AsyncClient;
 import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
+import software.amazon.awssdk.services.kafkaconnect.KafkaConnectAsyncClient;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
 import software.amazon.awssdk.services.macie2.Macie2AsyncClient;
@@ -106,6 +107,7 @@ public class AWSDependencyFactory {
         Map.entry(GuardDutyAsyncClient.class,                builderFor(GuardDutyAsyncClient::builder)),
         Map.entry(AccessAnalyzerAsyncClient.class,           builderFor(AccessAnalyzerAsyncClient::builder)),
         Map.entry(KafkaAsyncClient.class,                    builderFor(KafkaAsyncClient::builder)),
+        Map.entry(KafkaConnectAsyncClient.class,             builderFor(KafkaConnectAsyncClient::builder)),
         Map.entry(NeptuneAsyncClient.class,                  builderFor(NeptuneAsyncClient::builder)),
         Map.entry(RdsAsyncClient.class,                      builderFor(RdsAsyncClient::builder)),
         Map.entry(SnsAsyncClient.class,                      builderFor(SnsAsyncClient::builder)),

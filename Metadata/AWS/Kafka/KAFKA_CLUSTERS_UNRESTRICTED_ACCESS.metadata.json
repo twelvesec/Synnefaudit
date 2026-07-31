@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KAFKA_CLUSTERS_UNRESTRICTED_ACCESS",
+  "CheckTitle": "Kafka Clusters allow Unauthenticated Access",
+  "Severity": "Critical",
+  "Description": "Kafka Clusters permit unauthenticated client access.",
+  "Risk": "Unauthenticated access allows unrestricted connections to sensitive topics may result in data exfiltration, impacting the confidentiality of data. Unrestricted publishing and alteration privileges can additionally affect the integrity of data in storage.",
+  "RelatedUrls": "https://docs.aws.amazon.com/msk/latest/developerguide/what-is-msk.html, https://docs.aws.amazon.com/msk/latest/developerguide/msk-replicator-supported-configs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Disable unauthenticated access to Kafka, and restrict access according to the principle of least privilege using IAM and private networks.",
+      "Urls": "https://aws.amazon.com/blogs/big-data/securely-connect-kafka-clients-running-outside-aws-to-amazon-msk-with-iam-roles-anywhere/, https://aws.amazon.com/blogs/big-data/securing-apache-kafka-is-easy-and-familiar-with-iam-access-control-for-amazon-msk/, https://docs.aws.amazon.com/msk/latest/developerguide/security-iam.html, https://docs.aws.amazon.com/msk/latest/developerguide/kafka_apis_iam.html"
+    }
+  },
+  "Notes": ""
+}

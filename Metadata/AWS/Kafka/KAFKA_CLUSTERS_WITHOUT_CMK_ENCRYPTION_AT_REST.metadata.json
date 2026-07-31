@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KAFKA_CLUSTERS_WITHOUT_CMK_ENCRYPTION_AT_REST",
+  "CheckTitle": "Kafka Clusters without CMK KMS",
+  "Severity": "Medium",
+  "Description": "Kafka Clusters have not been encrypted at rest using Customer Managed Key (CMK) Key Management Service (KMS). They may be encrypted using the AWS managed key for the account (alias/aws/kafka), or have no encryption at rest.",
+  "Risk": "Without encryption at rest, data are at risk of potential data exposure. However, using AWS instead of customer managed keys limits the ability to directly handle key access, rotation, and security.",
+  "RelatedUrls": "https://docs.aws.amazon.com/msk/latest/developerguide/msk-working-with-encryption.html, https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Make use of CMK KMS for Kafka cluster encryption. Configure key policies according to the principle of least privilege, and enable regular key rotation. Periodically review key policies and audit access to resources.",
+      "Urls": "https://docs.aws.amazon.com/msk/latest/developerguide/msk-working-with-encryption-cluster-create.html"
+    }
+  },
+  "Notes": ""
+}

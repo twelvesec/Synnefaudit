@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KAFKA_CLUSTERS_EXPOSED_TO_PUBLIC",
+  "CheckTitle": "Publicly Accessible Kafka Clusters",
+  "Severity": "High",
+  "Description": "Publicly exposed broker endpoints have bene identified.",
+  "Risk": "Public brokers may result in unauthorized read access to topics, or even data integrity issue due to creation or alteration privileges. Such actions may also end up incurring great charges through mass actions.",
+  "RelatedUrls": "https://docs.aws.amazon.com/msk/latest/developerguide/what-is-msk.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Avoid providing public access to Kafka brokers, and instead restrict access using a VPC and private VPN networking with strict rules and strong authentication.",
+      "Urls": "https://docs.aws.amazon.com/msk/latest/developerguide/public-access.html, https://docs.aws.amazon.com/msk/latest/developerguide/client-access.html, https://docs.aws.amazon.com/iot/latest/developerguide/kafka-vpc-destination.html"
+    }
+  },
+  "Notes": ""
+}

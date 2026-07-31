@@ -52,6 +52,7 @@ import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
 import software.amazon.awssdk.services.inspector2.Inspector2AsyncClient;
 import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
+import software.amazon.awssdk.services.kafkaconnect.KafkaConnectAsyncClient;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
 import software.amazon.awssdk.services.lambda.LambdaAsyncClient;
 import software.amazon.awssdk.services.macie2.Macie2AsyncClient;
@@ -112,6 +113,7 @@ public class App {
     private static GuardDutyAsyncClient guardduty;
     private static AccessAnalyzerAsyncClient accessAnalyzer;
     private static KafkaAsyncClient kafka;
+    private static KafkaConnectAsyncClient kafkaconnect;
     private static NeptuneAsyncClient neptune;
     private static RdsAsyncClient rds;
     private static S3AsyncClient s3;
@@ -387,7 +389,7 @@ public class App {
                 new IAMPolicyCheck(writer, sharedDataProvider, iam),
                 new IAMUserSecurityCheck(writer, sharedDataProvider, iam),
                 new Inspector2Check(writer, inspector2, sts),
-                new KafkaCheck(writer, sharedDataProvider, kafka),
+                new KafkaCheck(writer, sharedDataProvider, kafka, kafkaconnect),
                 new KMSCheck(writer, sharedDataProvider, kms, cloudWatch),
                 new LambdaCheck(writer, sharedDataProvider, lambda),
                 new MFACheck(writer, sharedDataProvider, iam, sts),
@@ -440,6 +442,7 @@ public class App {
         guardduty           = awsDependencyFactory.getClient(GuardDutyAsyncClient.class);
         accessAnalyzer      = awsDependencyFactory.getClient(AccessAnalyzerAsyncClient.class);
         kafka               = awsDependencyFactory.getClient(KafkaAsyncClient.class);
+        kafkaconnect        = awsDependencyFactory.getClient(KafkaConnectAsyncClient.class);
         neptune             = awsDependencyFactory.getClient(NeptuneAsyncClient.class);
         rds                 = awsDependencyFactory.getClient(RdsAsyncClient.class);
         sns                 = awsDependencyFactory.getClient(SnsAsyncClient.class);

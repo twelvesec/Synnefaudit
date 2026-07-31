@@ -8,6 +8,12 @@ import com.twelvesec.synnefaudit.SharedDataProvider;
 import com.twelvesec.synnefaudit.messages.Text;
 import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
 import software.amazon.awssdk.services.kafka.model.*;
+import software.amazon.awssdk.services.kafkaconnect.KafkaConnectAsyncClient;
+import software.amazon.awssdk.services.kafkaconnect.model.DescribeConnectorRequest;
+import software.amazon.awssdk.services.kafkaconnect.model.DescribeConnectorResponse;
+import software.amazon.awssdk.services.kafkaconnect.model.KafkaClusterEncryptionInTransitDescription;
+import software.amazon.awssdk.services.kafkaconnect.model.ListConnectorsRequest;
+import software.amazon.awssdk.services.kafkaconnect.model.ConnectorSummary;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -18,11 +24,14 @@ public class KafkaCheck implements CloudCheck {
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final KafkaAsyncClient kafka;
+    private final KafkaConnectAsyncClient kafkaconnect;
 
-    public KafkaCheck(DataWriter writer, SharedDataProvider sharedDataProvider, KafkaAsyncClient kafka) {
+    public KafkaCheck(DataWriter writer, SharedDataProvider sharedDataProvider,
+                      KafkaAsyncClient kafka, KafkaConnectAsyncClient kafkaconnect) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.kafka = kafka;
+        this.kafkaconnect = kafkaconnect;
     }
 
     @Override
@@ -33,7 +42,12 @@ public class KafkaCheck implements CloudCheck {
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::KafkaBrokersWithEnhancedMonitoringDisabled,     AWSFinding.KAFKA_BROKERS_WITHOUT_ENHANCED_MONITORING, this::reportError),
                     wrapCheck(this::KafkaClustersWithMTLSAuthenticationDisabled,    AWSFinding.KAFKA_CLUSTERS_WITHOUT_MTLS, this::reportError),
-                    wrapCheck(this::KafkaClustersUsingOutdatedVersion,              AWSFinding.KAFKA_CLUSTERS_USING_OUTDATED_VERSION, this::reportError)
+                    wrapCheck(this::KafkaClustersUsingOutdatedVersion,              AWSFinding.KAFKA_CLUSTERS_USING_OUTDATED_VERSION, this::reportError),
+                    wrapCheck(this::KafkaClustersEncryptionAtRestWithCMKDisabled,   AWSFinding.KAFKA_CLUSTERS_WITHOUT_CMK_ENCRYPTION_AT_REST, this::reportError),
+                    wrapCheck(this::KafkaClustersEncryptionInTransitDisabled,       AWSFinding.KAFKA_CLUSTERS_WITHOUT_IN_TRANSIT_ENCRYPTION, this::reportError),
+                    wrapCheck(this::KafkaClustersUnrestrictedAccessEnabled,         AWSFinding.KAFKA_CLUSTERS_UNRESTRICTED_ACCESS, this::reportError),
+                    wrapCheck(this::KafkaClustersExposedToPublic,                   AWSFinding.KAFKA_CLUSTERS_EXPOSED_TO_PUBLIC, this::reportError),
+                    wrapCheck(this::MskConnectConnectorsWithoutEncryptionInTransit, AWSFinding.MSK_CONNECT_WITHOUT_ENCRYPTION_IN_TRANSIT, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -57,7 +71,6 @@ public class KafkaCheck implements CloudCheck {
                 Map<String, Object> inner = new HashMap<>();
                 inner.put(Text.STATUS.toString(), disabled ? Status.FAIL : Status.PASS);
                 inner.put(Text.RESULT.toString(), cluster.enhancedMonitoringAsString());
-
                 return Map.<String, Object>of(cluster.clusterArn(), inner);
             })
             .toList();
@@ -136,6 +149,154 @@ public class KafkaCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_USING_OUTDATED_VERSION, result, status);
+        return status;
+    }
+
+    private Status KafkaClustersEncryptionAtRestWithCMKDisabled() {
+        if (allClusters.isEmpty()) {
+            writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_WITHOUT_CMK_ENCRYPTION_AT_REST,
+                    Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allClusters.stream()
+                .map(cluster -> {
+                    String kmsKeyId = Optional.ofNullable(cluster.encryptionInfo())
+                            .map(EncryptionInfo::encryptionAtRest)
+                            .map(EncryptionAtRest::dataVolumeKMSKeyId)
+                            .orElse("");
+                    boolean isCmk = !kmsKeyId.isBlank() && !kmsKeyId.contains("alias/aws/kafka");
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), isCmk ? Status.PASS : Status.FAIL);
+                    inner.put(Text.RESULT.toString(), MAPPER.valueToTree(cluster.toBuilder()));
+                    return Map.<String, Object>of(cluster.clusterArn(), inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_WITHOUT_CMK_ENCRYPTION_AT_REST, result, status);
+        return status;
+    }
+
+    private Status KafkaClustersEncryptionInTransitDisabled() {
+        if (allClusters.isEmpty()) {
+            writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_WITHOUT_IN_TRANSIT_ENCRYPTION,
+                    Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allClusters.stream()
+                .map(cluster -> {
+                    EncryptionInTransit transit = Optional.ofNullable(cluster.encryptionInfo())
+                            .map(EncryptionInfo::encryptionInTransit)
+                            .orElse(null);
+                    boolean inClusterEncrypted = transit != null && Boolean.TRUE.equals(transit.inCluster());
+                    boolean clientBrokerTls = transit != null && ClientBroker.TLS.equals(transit.clientBroker());
+                    boolean isFullyEncrypted = inClusterEncrypted && clientBrokerTls;
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), isFullyEncrypted ? Status.PASS : Status.FAIL);
+                    inner.put(Text.RESULT.toString(), MAPPER.valueToTree(cluster.toBuilder()));
+                    return Map.<String, Object>of(cluster.clusterArn(), inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_WITHOUT_IN_TRANSIT_ENCRYPTION, result, status);
+        return status;
+    }
+
+    private Status KafkaClustersUnrestrictedAccessEnabled() {
+        if (allClusters.isEmpty()) {
+            writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_UNRESTRICTED_ACCESS,
+                    Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allClusters.stream()
+                .map(cluster -> {
+                    boolean unauthenticatedEnabled = Optional.ofNullable(cluster.clientAuthentication())
+                            .map(ClientAuthentication::unauthenticated)
+                            .map(Unauthenticated::enabled)
+                            .orElse(false);
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), unauthenticatedEnabled ? Status.FAIL : Status.PASS);
+                    inner.put(Text.RESULT.toString(), MAPPER.valueToTree(cluster.toBuilder()));
+                    return Map.<String, Object>of(cluster.clusterArn(), inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_UNRESTRICTED_ACCESS, result, status);
+        return status;
+    }
+
+    private Status KafkaClustersExposedToPublic() {
+        if (allClusters.isEmpty()) {
+            writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_EXPOSED_TO_PUBLIC,
+                    Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allClusters.stream()
+                .map(cluster -> {
+                    String publicAccessType = Optional.ofNullable(cluster.brokerNodeGroupInfo())
+                            .map(BrokerNodeGroupInfo::connectivityInfo)
+                            .map(ConnectivityInfo::publicAccess)
+                            .map(PublicAccess::type)
+                            .orElse("DISABLED");
+                    boolean isPublic = "SERVICE_PROVIDED_EIPS".equalsIgnoreCase(publicAccessType);
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), isPublic ? Status.FAIL : Status.PASS);
+                    inner.put(Text.RESULT.toString(), MAPPER.valueToTree(cluster.toBuilder()));
+                    return Map.<String, Object>of(cluster.clusterArn(), inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_EXPOSED_TO_PUBLIC, result, status);
+        return status;
+    }
+
+    private Status MskConnectConnectorsWithoutEncryptionInTransit() {
+        List<ConnectorSummary> connectors = kafkaconnect.listConnectors(
+                ListConnectorsRequest.builder().build()
+        ).join().connectors();
+
+        if (connectors.isEmpty()) {
+            writer.addToBuffer(AWSFinding.MSK_CONNECT_WITHOUT_ENCRYPTION_IN_TRANSIT,
+                    Text.NO_CONNECTORS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = connectors.stream()
+                .map(connector -> {
+                    Status s;
+                    ObjectNode r;
+                    try {
+                        DescribeConnectorResponse response = kafkaconnect.describeConnector(
+                                DescribeConnectorRequest.builder().connectorArn(connector.connectorArn()).build()
+                        ).join();
+                        KafkaClusterEncryptionInTransitDescription transit = response.kafkaClusterEncryptionInTransit();
+                        boolean tlsEnabled = transit != null && "TLS".equalsIgnoreCase(transit.encryptionTypeAsString());
+                        s = tlsEnabled ? Status.PASS : Status.FAIL;
+                        r = MAPPER.valueToTree(transit != null ? transit.toBuilder() : connector.toBuilder());
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(connector.connectorArn(), inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.MSK_CONNECT_WITHOUT_ENCRYPTION_IN_TRANSIT, result, status);
         return status;
     }
 }

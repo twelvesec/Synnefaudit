@@ -131,6 +131,7 @@ public enum Text {
     NO_SUPPORT_ROLE_FOUND("No Support role found."),
 
     NO_CLUSTERS_FOUND("No Kafka Clusters found."),
+    NO_CONNECTORS_FOUND("No Connectors found."),
 
     NO_LAMBDA_FUNCTIONS_FOUND("No Lambda Functions found."),
 

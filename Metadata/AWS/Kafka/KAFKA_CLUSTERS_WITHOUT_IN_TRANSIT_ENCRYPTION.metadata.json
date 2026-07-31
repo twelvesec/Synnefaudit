@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "KAFKA_CLUSTERS_WITHOUT_IN_TRANSIT_ENCRYPTION",
+  "CheckTitle": "Kafka Clusters without encryption in transit.",
+  "Severity": "High",
+  "Description": "Kafka Clusters found without enabled encryption in transit.",
+  "Risk": "Without encryption, data in transit are at risk of exposure and tampering through intercepting traffic.",
+  "RelatedUrls": "https://docs.aws.amazon.com/msk/latest/developerguide/msk-encryption.html#msk-encryption-in-transit",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enforce encryption for data in transit, along with encryption at rest. Encrypt data moving between brokers, and set general mode in transit to TLS.",
+      "Urls": "https://docs.aws.amazon.com/msk/latest/developerguide/msk-working-with-encryption.html, https://docs.aws.amazon.com/msk/latest/developerguide/msk-working-with-encryption-cluster-create.html"
+    }
+  },
+  "Notes": ""
+}

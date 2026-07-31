@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "MSK_CONNECT_WITHOUT_ENCRYPTION_IN_TRANSIT",
+  "CheckTitle": "MSK Connect Cluster without Encryption in transit",
+  "Severity": "Medium",
+  "Description": "Amazon Managed Streaming for Apache Kafka (MSK) Connect clusters were found without encryption in transit enabled.",
+  "Risk": "Without encryption, data in transit are susceptible to unauthorized exposure through interception, or manipulation, impacting the confidentiality and integrity of data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/MSKC/latest/mskc/API_KafkaClusterEncryptionInTransit.html,https://docs.aws.amazon.com/msk/latest/developerguide/msk-connect.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable TLS for data in transit for all connector communications.",
+      "Urls": "https://docs.aws.amazon.com/msk/latest/developerguide/msk-connect-getting-started.html"
+    }
+  },
+  "Notes": ""
+}
