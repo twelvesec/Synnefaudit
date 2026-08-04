@@ -15,6 +15,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.accessanalyzer.AccessAnalyzerAsyncClient;
 import software.amazon.awssdk.services.account.AccountAsyncClient;
 import software.amazon.awssdk.services.acm.AcmAsyncClient;
+import software.amazon.awssdk.services.applicationautoscaling.ApplicationAutoScalingAsyncClient;
 import software.amazon.awssdk.services.athena.AthenaAsyncClient;
 import software.amazon.awssdk.services.backup.BackupAsyncClient;
 import software.amazon.awssdk.services.cloudformation.CloudFormationAsyncClient;
@@ -119,7 +120,8 @@ public class AWSDependencyFactory {
         Map.entry(GlueAsyncClient.class,                     builderFor(GlueAsyncClient::builder)),
         Map.entry(LambdaAsyncClient.class,                   builderFor(LambdaAsyncClient::builder)),
         Map.entry(OrganizationsAsyncClient.class,            builderFor(OrganizationsAsyncClient::builder)),
-        Map.entry(AcmAsyncClient.class,                      builderFor(AcmAsyncClient::builder))
+        Map.entry(AcmAsyncClient.class,                      builderFor(AcmAsyncClient::builder)),
+        Map.entry(ApplicationAutoScalingAsyncClient.class,   builderFor(ApplicationAutoScalingAsyncClient::builder))
     );
 
     public AWSDependencyFactory(Region region) {

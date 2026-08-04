@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DYNAMODB_TABLE_CROSS_ACCOUNT_ACCESS",
+  "CheckTitle": "DynamoDB tables with cross account access",
+  "Severity": "Low",
+  "Description": "DynamoDB tables permit cross-account access in their policy.",
+  "Risk": "Cross account access to tables may result in unauthorized data exfiltration, or affect data integrity and inquire additional costs.",
+  "RelatedUrls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/rbac-bpa-rbp.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Limit access to tables according to the principle of least privilege, and avoid cross-account access.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/access-control-resource-based.html"
+    }
+  },
+  "Notes": ""
+}

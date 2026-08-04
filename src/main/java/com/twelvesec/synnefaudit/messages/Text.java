@@ -168,6 +168,8 @@ public enum Text {
 
     NO_DYNAMODB_TABLES_FOUND("No DynamodDB tables were found."),
     NO_DAX_CLUSTERS_FOUND("No DAX clusterns found."),
+    NO_RESOURCE_POLICY_ATTACHED("No Resource Policy Attached"),
+    NO_PROTECTED_RESOURCES_FOUND("No protected resources found."),
 
     NO_LIFECYCLE_POLICY_FOUND("No Lifecycle Policy found : "),
 

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DYNAMODB_TABLE_IN_BACKUP_PLAN",
+  "CheckTitle": "DynamoDB tables without backup plans",
+  "Severity": "Low",
+  "Description": "DynamoDB tables do not have AWS Backup backup plans.",
+  "Risk": "Without backup plans, tables are at risk of data integrity and availability issues, due to accidental deletion, corruption or malicious activity.",
+  "RelatedUrls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/backuprestore_HowItWorksAWS.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider creating backup plans for tables serving critical data, with defined retention periods, cross-region copies for high availability, and restricted access according to the principle of least privilege.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CreateBackupAWS.html, https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Backup-and-Restore.html, https://aws.amazon.com/blogs/database/set-up-scheduled-backups-for-amazon-dynamodb-using-aws-backup/"
+    }
+  },
+  "Notes": ""
+}

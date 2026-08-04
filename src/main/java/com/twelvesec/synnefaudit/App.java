@@ -32,6 +32,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.accessanalyzer.AccessAnalyzerAsyncClient;
 import software.amazon.awssdk.services.account.AccountAsyncClient;
 import software.amazon.awssdk.services.acm.AcmAsyncClient;
+import software.amazon.awssdk.services.applicationautoscaling.ApplicationAutoScalingAsyncClient;
 import software.amazon.awssdk.services.athena.AthenaAsyncClient;
 import software.amazon.awssdk.services.backup.BackupAsyncClient;
 import software.amazon.awssdk.services.cloudformation.CloudFormationAsyncClient;
@@ -128,6 +129,7 @@ public class App {
     private static LambdaAsyncClient lambda;
     private static OrganizationsAsyncClient orgs;
     private static AcmAsyncClient acm;
+    private static ApplicationAutoScalingAsyncClient appAutoScaling;
 
     private static DataWriter writer;
     private static ReportPrinter printer;
@@ -373,7 +375,7 @@ public class App {
                 new CloudFrontCheck(writer, sharedDataProvider, cf, waf),
                 new CloudTrailCheck(writer, sharedDataProvider, cloudTrail, cloudWatchLogs),
                 new CloudWatchCheck(writer, sharedDataProvider, sts, cloudWatchLogs),
-                new DynamoDBCheck(writer, sharedDataProvider, dynamodb),
+                new DynamoDBCheck(writer, sharedDataProvider, dynamodb, backup, sts, appAutoScaling),
                 new EBSCheck(writer, sharedDataProvider, ec2),
                 new EC2Check(writer, sharedDataProvider, ec2, ssm),
                 new EC2SecurityGroupCheck(writer, sharedDataProvider, ec2),
@@ -455,5 +457,6 @@ public class App {
         lambda              = awsDependencyFactory.getClient(LambdaAsyncClient.class);
         orgs                = awsDependencyFactory.getClient(OrganizationsAsyncClient.class);
         acm                 = awsDependencyFactory.getClient(AcmAsyncClient.class);
+        appAutoScaling      = awsDependencyFactory.getClient(ApplicationAutoScalingAsyncClient.class);
     }
 }

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DYNAMODB_TABLE_DELETION_PROTECTION_ENABLED",
+  "CheckTitle": "DynamoDB tables without deletion protection",
+  "Severity": "Low",
+  "Description": "DynamoDB tables do not have deletion protection enabled.",
+  "Risk": "Without deletion protection, tables are at risk of unintended deletion due to unauthorized access or misconfigurations, leading to data loss and availability issues.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/dynamodb-controls.html#dynamodb-6",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable deletion protection for all DynamoDB tables hosting sensitive data, critical to the service's standing. Restrict access to updating such settings, along with access to the tables, according to the principle of least privilege.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.Basics.html#WorkingWithTables.Basics.DeletionProtection, https://aws.amazon.com/blogs/database/how-to-use-deletion-protection-to-enhance-your-amazon-dynamodb-table-protection-strategy/"
+    }
+  },
+  "Notes": ""
+}

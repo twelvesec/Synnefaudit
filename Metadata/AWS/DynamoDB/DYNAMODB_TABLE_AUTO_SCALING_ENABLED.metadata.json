@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DYNAMODB_TABLE_AUTO_SCALING_ENABLED",
+  "CheckTitle": "DynamoDB tables without autoscaling",
+  "Severity": "Low",
+  "Description": "DynamoDB tables found without automatic capacity scaling enabled.",
+  "Risk": "Without capacity autoscaling, there may be be latency and availability issues. Without on demand scaling, increased read and write demands could lead to request throttling.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/dynamodb-controls.html#dynamodb-1",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider enabling auto scaling capacity for all existing tables. Prefer on-demand capacity for highly demanding workloads, or provisioned for rationed read and writes with auto-scaling. Monitor resource consumption, and create plans that handle potential increased traffic that could impact availability.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/on-demand-capacity-mode.html, https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/provisioned-capacity-mode.html, https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/AutoScaling.Console.html#AutoScaling.Console.ExistingTable, https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/AutoScaling.Console.html#AutoScaling.Console.NewTable"
+    }
+  },
+  "Notes": ""
+}

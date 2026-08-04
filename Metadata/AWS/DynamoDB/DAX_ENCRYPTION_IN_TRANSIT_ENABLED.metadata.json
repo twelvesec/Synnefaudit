@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DAX_ENCRYPTION_IN_TRANSIT_ENABLED",
+  "CheckTitle": "DynamoDB DAX Clusters without encryption in transit",
+  "Severity": "Medium",
+  "Description": "DynamoDB Accelerator (DAX) Clusters do not have endpoint encryption enabled for data in transit.",
+  "Risk": "Without cluster endpoint encryption, database traffic may be intercepted leading to exposed data or tampering.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/dynamodb-controls.html#dynamodb-7",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enforce TLS for all new DAX endpoints and clients. Consider migrating existing clusters to new TLS-enabled clusters, for enforced encryption in transit.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAXEncryptionInTransit.html, https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.create-cluster.console.html"
+    }
+  },
+  "Notes": ""
+}

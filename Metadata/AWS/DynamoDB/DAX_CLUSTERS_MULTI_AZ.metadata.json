@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "DAX_CLUSTERS_MULTI_AZ",
+  "CheckTitle": "DynamoDB DAX Clusters without Multi-AZ",
+  "Severity": "Low",
+  "Description": "DynamoDB Accelerator (DAX) Clusters found with nodes in a single Availability Zone (single-AZ).",
+  "Risk": "Single-AZ DAX nodes may result in availability and latency issues, due to a potential outage or primary node failure.",
+  "RelatedUrls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.concepts.cluster.html#DAX.concepts.regions-and-azs",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "For production environments, consider using DAX with at least 3 (three) nodes, each placed in a different Availability Zone.",
+      "Urls": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.create-cluster.console.html, https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.cluster-management.html#DAX.cluster-management.custom-settings"
+    }
+  },
+  "Notes": ""
+}

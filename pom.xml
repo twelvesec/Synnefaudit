@@ -224,6 +224,10 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>neptune</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>applicationautoscaling</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>commons-cli</groupId>
