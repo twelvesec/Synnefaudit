@@ -47,6 +47,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
 import software.amazon.awssdk.services.ecr.EcrAsyncClient;
 import software.amazon.awssdk.services.efs.EfsAsyncClient;
+import software.amazon.awssdk.services.elasticache.ElastiCacheAsyncClient;
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2AsyncClient;
 import software.amazon.awssdk.services.glue.GlueAsyncClient;
 import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
@@ -96,6 +97,7 @@ public class App {
     private static SsmIncidentsAsyncClient ssm_inc;
     private static EcrAsyncClient ecr;
     private static ElasticLoadBalancingV2AsyncClient elb;
+    private static ElastiCacheAsyncClient elasticache;
     private static DrsAsyncClient drs;
     private static SecretsManagerAsyncClient secretsmanager;
     private static Inspector2AsyncClient inspector2;
@@ -172,7 +174,7 @@ public class App {
 
         try {
             sharedDataProvider = new SharedDataProvider(
-                    accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, dax, dynamodb, ec2, ecr, efs,
+                    accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, dax, dynamodb, ec2, ecr, efs, elasticache,
                     elb, secretsmanager, guardduty, iam, kafka, kms, lambda, neptune, rds, route53, resourceexplorer2, s3, sns, ssm, sts, support);
 
             List<CloudCheck> checks = getAWSChecks();
@@ -381,6 +383,7 @@ public class App {
                 new EC2SecurityGroupCheck(writer, sharedDataProvider, ec2),
                 new ECRCheck(writer, sharedDataProvider, ecr),
                 new EFSCheck(writer, sharedDataProvider, efs),
+                new ElastiCacheCheck(writer, sharedDataProvider, elasticache),
                 new ELBCheck(writer, sharedDataProvider, elb, waf),
                 new EnabledServicesCheck(writer, sharedDataProvider, secretsmanager, drs,
                         macie2, securityHub, waf),
@@ -426,6 +429,7 @@ public class App {
         ssm_inc             = awsDependencyFactory.getClient(SsmIncidentsAsyncClient.class);
         ecr                 = awsDependencyFactory.getClient(EcrAsyncClient.class);
         elb                 = awsDependencyFactory.getClient(ElasticLoadBalancingV2AsyncClient.class);
+        elasticache         = awsDependencyFactory.getClient(ElastiCacheAsyncClient.class);
         drs                 = awsDependencyFactory.getClient(DrsAsyncClient.class);
         secretsmanager      = awsDependencyFactory.getClient(SecretsManagerAsyncClient.class);
         inspector2          = awsDependencyFactory.getClient(Inspector2AsyncClient.class);

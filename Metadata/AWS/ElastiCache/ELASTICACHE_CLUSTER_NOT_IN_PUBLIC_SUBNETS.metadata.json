@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELASTICACHE_CLUSTER_NOT_IN_PUBLIC_SUBNETS",
+  "CheckTitle": "ElastiCache Cluster in Public Subnet",
+  "Severity": "Medium",
+  "Description": "ElastiCache Clusters have been found using public subnet groups, instead of private.",
+  "Risk": "Caches in public subnets could result in unauthorized read access and secrets exposure, or tampering.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.Components.html#WhatIs.Components.Security, https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/SubnetGroups.html,https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/VPCs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure elasticache clusters are configured to use private subnets, with strictly configured route tables, network gateways, and security settings.",
+      "Urls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/VPCs.EC.html, https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/SubnetGroups.Creating.html"
+    }
+  },
+  "Notes": ""
+}

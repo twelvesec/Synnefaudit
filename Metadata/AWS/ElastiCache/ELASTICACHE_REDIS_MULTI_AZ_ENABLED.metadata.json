@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELASTICACHE_REDIS_MULTI_AZ_ENABLED",
+  "CheckTitle": "ElastiCache Replication Groups without Multi-AZ",
+  "Severity": "Medium",
+  "Description": "ElastiCache Replication Groups do not have Multiple Availability Zones (Multi-AZ) enabled.",
+  "Risk": "Without Multi-AZ (failover) to enhance fault tolerance an outage or failure that affects a node of a whole Availability Zone will reduce availability, and potentially result in writes loss.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/RegionsAndAZs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider enabling Multi-AZ with automatic failover on replication groups, making use of replicas in different Availability Zones.",
+      "Urls": "https://repost.aws/knowledge-center/multi-az-replication-redis, https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/AutoFailover.html"
+    }
+  },
+  "Notes": ""
+}

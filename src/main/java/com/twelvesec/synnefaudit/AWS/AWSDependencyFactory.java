@@ -30,6 +30,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
 import software.amazon.awssdk.services.ecr.EcrAsyncClient;
 import software.amazon.awssdk.services.efs.EfsAsyncClient;
+import software.amazon.awssdk.services.elasticache.ElastiCacheAsyncClient;
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2AsyncClient;
 import software.amazon.awssdk.services.glue.GlueAsyncClient;
 import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
@@ -90,6 +91,7 @@ public class AWSDependencyFactory {
         Map.entry(SsmIncidentsAsyncClient.class,             builderFor(SsmIncidentsAsyncClient::builder)),
         Map.entry(EcrAsyncClient.class,                      builderFor(EcrAsyncClient::builder)),
         Map.entry(ElasticLoadBalancingV2AsyncClient.class,   builderFor(ElasticLoadBalancingV2AsyncClient::builder)),
+        Map.entry(ElastiCacheAsyncClient.class,              builderFor(ElastiCacheAsyncClient::builder)),
         Map.entry(DrsAsyncClient.class,                      builderFor(DrsAsyncClient::builder)),
         Map.entry(SecretsManagerAsyncClient.class,           builderFor(SecretsManagerAsyncClient::builder)),
         Map.entry(Inspector2AsyncClient.class,               builderFor(Inspector2AsyncClient::builder)),

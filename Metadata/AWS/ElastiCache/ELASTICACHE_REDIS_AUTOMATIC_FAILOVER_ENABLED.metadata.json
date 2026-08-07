@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELASTICACHE_REDIS_AUTOMATIC_FAILOVER_ENABLED",
+  "CheckTitle": "ElastiCache replication groups without auto-failover",
+  "Severity": "Medium",
+  "Description": "ElastiCache Replication Group found without automatic failover enabled. When this is enabled, in case the primary node fails, the role will automatically failover to a read replica.",
+  "Risk": "Without automatic failover, there may be availability issues in the event of an outage. Manual recovery would be required, and may result in lost writes.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elasticache-controls.html#elasticache-3",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Automatic Failover should be enabled for replication groups with a minimum of 1 (one) replica per shard, to minimize downtime.",
+      "Urls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Clusters.Modify.html,https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Shards.html"
+    }
+  },
+  "Notes": ""
+}

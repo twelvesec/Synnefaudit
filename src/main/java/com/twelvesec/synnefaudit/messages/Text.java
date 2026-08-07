@@ -130,7 +130,7 @@ public enum Text {
     NO_SECURITY_AUDIT_ROLE_FOUND("No Security Audit role found."),
     NO_SUPPORT_ROLE_FOUND("No Support role found."),
 
-    NO_CLUSTERS_FOUND("No Kafka Clusters found."),
+    NO_KAFKA_CLUSTERS_FOUND("No Kafka Clusters found."),
     NO_CONNECTORS_FOUND("No Connectors found."),
 
     NO_LAMBDA_FUNCTIONS_FOUND("No Lambda Functions found."),
@@ -183,6 +183,10 @@ public enum Text {
 
     EFS_FILE_SYSTEM_WITH_BACKUP_DISABLED("EFS File System with backup disabled : "),
     EFS_NO_POLICY_FOUND("No policy found : "),
+
+    NO_CLUSTERS_FOUND("No Clusters found."),
+    NO_REPLICATION_GROUPS_FOUND("No Replication Groups found."),
+    NO_SERVERLESS_CACHES_FOUND("No serverless caches found."),
 
     NO_ALTERNATE_CONTACTS_FOUND("No alternate contacts found : "),
 

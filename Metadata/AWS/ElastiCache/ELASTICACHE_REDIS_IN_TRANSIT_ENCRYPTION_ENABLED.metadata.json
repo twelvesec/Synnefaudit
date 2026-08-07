@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELASTICACHE_REDIS_IN_TRANSIT_ENCRYPTION_ENABLED",
+  "CheckTitle": "ElastiCache Redis cache cluster without encryption in transit",
+  "Severity": "Medium",
+  "Description": "ElastiCache replication groups do not have encryption in transit (TLS) enabled.",
+  "Risk": "Without encryption in transit, data are exposed when moved between nodes or cache and the application, and are at risk of unauthorized access or modification.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elasticache-controls.html#elasticache-5, https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/in-transit-encryption.html, https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/encryption.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider enabling encryption in transit for ElastiCache, to prevent the exposure of sensitive data in plaintext. Note that for existing clusters, this transition requires first setting up the transit encryption to 'preferred' as to migrate clients to encrypted connections, before modifying the configuration once again to 'required'.",
+      "Urls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/in-transit-encryption-enable.html, https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/enable-python-best-practices.html"
+    }
+  },
+  "Notes": ""
+}

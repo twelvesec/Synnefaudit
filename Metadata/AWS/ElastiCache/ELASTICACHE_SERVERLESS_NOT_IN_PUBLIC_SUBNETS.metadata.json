@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELASTICACHE_SERVERLESS_NOT_IN_PUBLIC_SUBNETS",
+  "CheckTitle": "ElastiCache Serverless with Public Subnets",
+  "Severity": "Medium",
+  "Description": "ElastiCache Serverless cashes use public subnets.",
+  "Risk": "Caches in public subnets could result in unauthorized read access and secrets exposure, or tampering.",
+  "RelatedUrls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/SubnetGroups.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Ensure ElastiCache serverless caches are configured to use private subnets.",
+      "Urls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/serverless-network-type.html"
+    }
+  },
+  "Notes": ""
+}

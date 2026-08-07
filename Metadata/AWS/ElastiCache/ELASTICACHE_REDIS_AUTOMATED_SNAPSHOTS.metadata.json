@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELASTICACHE_REDIS_AUTOMATED_SNAPSHOTS",
+  "CheckTitle": "ElastiCache Clusters without automated backup",
+  "Severity": "High",
+  "Description": "ElastiCache Clusters found without automated snapshots, or without a retention of at least 7 days.",
+  "Risk": "Automated backups are necessary for ease of operations, and a short retention period cannot guaranty the ability to ensure a safe recovery point, in case of corruption, accidental deletes, or other failures.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elasticache-controls.html#elasticache-1",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable automated backups for elasticache, with a long enough retention period, preferably greater than 7 days.",
+      "Urls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/backups-automatic.html"
+    }
+  },
+  "Notes": ""
+}

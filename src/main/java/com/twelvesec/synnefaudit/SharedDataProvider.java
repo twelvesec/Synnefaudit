@@ -46,6 +46,8 @@ import software.amazon.awssdk.services.efs.EfsAsyncClient;
 import software.amazon.awssdk.services.efs.model.DescribeFileSystemsRequest;
 import software.amazon.awssdk.services.efs.model.DescribeFileSystemsResponse;
 import software.amazon.awssdk.services.efs.model.FileSystemDescription;
+import software.amazon.awssdk.services.elasticache.ElastiCacheAsyncClient;
+import software.amazon.awssdk.services.elasticache.model.*;
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2AsyncClient;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancersResponse;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancer;
@@ -53,6 +55,7 @@ import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
 import software.amazon.awssdk.services.guardduty.model.ListDetectorsResponse;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
 import software.amazon.awssdk.services.iam.model.*;
+import software.amazon.awssdk.services.iam.model.User;
 import software.amazon.awssdk.services.kafka.KafkaAsyncClient;
 import software.amazon.awssdk.services.kafka.model.ClusterInfo;
 import software.amazon.awssdk.services.kafka.model.ListClustersRequest;
@@ -121,6 +124,7 @@ public class SharedDataProvider {
     private final Ec2AsyncClient ec2;
     private final EcrAsyncClient ecr;
     private final EfsAsyncClient efs;
+    private final ElastiCacheAsyncClient elasticache;
     private final ElasticLoadBalancingV2AsyncClient elb;
     private final SecretsManagerAsyncClient secretsmanager;
     private final GuardDutyAsyncClient guardduty;
@@ -138,13 +142,13 @@ public class SharedDataProvider {
     private final SupportAsyncClient support;
 
     public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AthenaAsyncClient athena,
-            CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
-            CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, DaxAsyncClient dax, DynamoDbAsyncClient dynamodb,
-            Ec2AsyncClient ec2, EcrAsyncClient ecr, EfsAsyncClient efs, ElasticLoadBalancingV2AsyncClient elb,
-            SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
-            KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, NeptuneAsyncClient neptune, RdsAsyncClient rds,
-            Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
-            SsmAsyncClient ssm, StsAsyncClient sts, SupportAsyncClient support) {
+              CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
+              CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, DaxAsyncClient dax, DynamoDbAsyncClient dynamodb,
+              Ec2AsyncClient ec2, EcrAsyncClient ecr, EfsAsyncClient efs, ElastiCacheAsyncClient elasticache, ElasticLoadBalancingV2AsyncClient elb,
+              SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
+              KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, NeptuneAsyncClient neptune, RdsAsyncClient rds,
+              Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
+              SsmAsyncClient ssm, StsAsyncClient sts, SupportAsyncClient support) {
         this.accessAnalyzer = accessAnalyzer;
         this.acm = acm;
         this.athena = athena;
@@ -158,6 +162,7 @@ public class SharedDataProvider {
         this.ec2 = ec2;
         this.ecr = ecr;
         this.efs = efs;
+        this.elasticache = elasticache;
         this.elb = elb;
         this.secretsmanager = secretsmanager;
         this.guardduty = guardduty;
@@ -421,6 +426,30 @@ public class SharedDataProvider {
         Supplier<CompletableFuture<List<FileSystemDescription>>> loader = () ->
             efs.describeFileSystems(DescribeFileSystemsRequest.builder().build())
                 .thenApply(DescribeFileSystemsResponse::fileSystems);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<ReplicationGroup>> getAllReplicationGroups() {
+        String key = "elasticache:replicationgroups";
+        Supplier<CompletableFuture<List<ReplicationGroup>>> loader = () ->
+                elasticache.describeReplicationGroups(DescribeReplicationGroupsRequest.builder().build())
+                        .thenApply(DescribeReplicationGroupsResponse::replicationGroups);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<CacheCluster>> getAllCacheClusters() {
+        String key = "elasticache:cacheclusters";
+        Supplier<CompletableFuture<List<CacheCluster>>> loader = () ->
+                elasticache.describeCacheClusters(DescribeCacheClustersRequest.builder().build())
+                        .thenApply(DescribeCacheClustersResponse::cacheClusters);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<ServerlessCache>> getAllServerlessCaches() {
+        String key = "elasticache:serverlesscaches";
+        Supplier<CompletableFuture<List<ServerlessCache>>> loader = () ->
+                elasticache.describeServerlessCaches(DescribeServerlessCachesRequest.builder().build())
+                        .thenApply(DescribeServerlessCachesResponse::serverlessCaches);
         return getCachedData(key, loader);
     }
 

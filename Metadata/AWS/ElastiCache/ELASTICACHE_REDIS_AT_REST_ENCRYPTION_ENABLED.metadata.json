@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELASTICACHE_REDIS_AT_REST_ENCRYPTION_ENABLED",
+  "CheckTitle": "ElastiCache Redis cache cluster without encryption at rest",
+  "Severity": "Medium",
+  "Description": "Replication Groups are found without encryption at rest enabled for cache data and backup.",
+  "Risk": "Without encryption at rest there is decreased security of cache data and backup snapshots, which may affect their confidentiality and integrity. Authorization misconfigurations or malicious activity could result in an actor accessing such data, which may include secrets or Personally Identifiable Information (PII).",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elasticache-controls.html#elasticache-4, https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/at-rest-encryption.html, https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/encryption.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable encryption at rest for replication groups, preferably using Customer Managed Keys (CMK) KMS (Key Management Service) for greater control over keys' lifecycle. Note that enabling encryption for existing redis replication groups is not available, and requires creating a backup, deleting the existing replication group, and restoring it.",
+      "Urls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/at-rest-encryption.html#at-rest-encryption-enable, https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html"
+    }
+  },
+  "Notes": ""
+}

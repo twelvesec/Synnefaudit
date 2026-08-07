@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELASTICACHE_REDIS_AUTH_ENABLED_LEGACY",
+  "CheckTitle": "ElastiCache Replication Group has auth with Legacy Engine",
+  "Severity": "Medium",
+  "Description": "ElastiCache Replication Group runs an engine version earlier than v6.0 without authorization tokens.",
+  "Risk": "Replication groups prior to v6.0 do not allow for Role-Based Access Control (RBAC), and not using auth tokens allows clients to run unauthenticated commands, which affects data security; confidentiality and integrity.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elasticache-controls.html#elasticache-6",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "For engine versions prior to v6.0, make use of strong authentication tokens, and encrypted communications. For later engine versions prefer using RBAC with restricted access according to the principle of least privilege amd on a need-to-have basis.",
+      "Urls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/auth.html#auth-modifyng-token"
+    }
+  },
+  "Notes": ""
+}

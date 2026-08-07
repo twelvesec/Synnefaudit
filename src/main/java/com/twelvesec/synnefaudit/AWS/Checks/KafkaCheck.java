@@ -61,7 +61,7 @@ public class KafkaCheck implements CloudCheck {
     private Status KafkaBrokersWithEnhancedMonitoringDisabled() { 
         if (allClusters.isEmpty()) {
             writer.addToBuffer(AWSFinding.KAFKA_BROKERS_WITHOUT_ENHANCED_MONITORING, 
-                            Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+                            Text.NO_KAFKA_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
 
@@ -83,7 +83,7 @@ public class KafkaCheck implements CloudCheck {
     private Status KafkaClustersWithMTLSAuthenticationDisabled() { 
         if (allClusters.isEmpty()) {
             writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_WITHOUT_MTLS, 
-                            Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+                            Text.NO_KAFKA_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
 
@@ -122,7 +122,7 @@ public class KafkaCheck implements CloudCheck {
     private Status KafkaClustersUsingOutdatedVersion() { 
         if (allClusters.isEmpty()) {
             writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_USING_OUTDATED_VERSION, 
-                            Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+                            Text.NO_KAFKA_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
         
@@ -155,7 +155,7 @@ public class KafkaCheck implements CloudCheck {
     private Status KafkaClustersEncryptionAtRestWithCMKDisabled() {
         if (allClusters.isEmpty()) {
             writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_WITHOUT_CMK_ENCRYPTION_AT_REST,
-                    Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+                    Text.NO_KAFKA_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
 
@@ -182,7 +182,7 @@ public class KafkaCheck implements CloudCheck {
     private Status KafkaClustersEncryptionInTransitDisabled() {
         if (allClusters.isEmpty()) {
             writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_WITHOUT_IN_TRANSIT_ENCRYPTION,
-                    Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+                    Text.NO_KAFKA_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
 
@@ -210,7 +210,7 @@ public class KafkaCheck implements CloudCheck {
     private Status KafkaClustersUnrestrictedAccessEnabled() {
         if (allClusters.isEmpty()) {
             writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_UNRESTRICTED_ACCESS,
-                    Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+                    Text.NO_KAFKA_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
 
@@ -236,7 +236,7 @@ public class KafkaCheck implements CloudCheck {
     private Status KafkaClustersExposedToPublic() {
         if (allClusters.isEmpty()) {
             writer.addToBuffer(AWSFinding.KAFKA_CLUSTERS_EXPOSED_TO_PUBLIC,
-                    Text.NO_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
+                    Text.NO_KAFKA_CLUSTERS_FOUND.toString(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
 

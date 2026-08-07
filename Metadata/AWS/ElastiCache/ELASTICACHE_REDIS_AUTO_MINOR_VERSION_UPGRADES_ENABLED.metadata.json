@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELASTICACHE_REDIS_AUTO_MINOR_VERSION_UPGRADES_ENABLED",
+  "CheckTitle": "ElastiCache Cluster without auto-upgrade for minor versions",
+  "Severity": "Medium",
+  "Description": "ElastiCache does not automatically upgrade cache clusters for minor versions.",
+  "Risk": "Such minor updates usually include security patches and bug fixes, without introducing great changes, that may affect the availability of services.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/elasticache-controls.html#elasticache-2",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider enabling automatic upgrades for minor versions in ElastiCache.",
+      "Urls": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/VersionManagement.html"
+    }
+  },
+  "Notes": ""
+}
