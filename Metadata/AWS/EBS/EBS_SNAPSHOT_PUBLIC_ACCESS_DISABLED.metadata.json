@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EBS_SNAPSHOT_PUBLIC_ACCESS_DISABLED",
+  "CheckTitle": "EBS snapshots with Public Access enabled",
+  "Severity": "Medium",
+  "Description": "Public access for EBS Snapshots is not blocked at the account level to prevent accidental public sharing.",
+  "Risk": "Without the block public access feature enabled globally, users with appropriate IAM permissions can accidentally or maliciously share an EBS snapshot publicly, increasing the risk of a data breach.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-182, https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-public-access-snapshots.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable 'Block Public Access for EBS Snapshots' (set to 'block-all-sharing') in your EC2 settings for the region. This acts as a global safeguard to ensure no snapshot can be made public, regardless of individual snapshot permissions, but does not affect snapshots that have already been publicly shared.",
+      "Urls": "https://docs.aws.amazon.com/ebs/latest/userguide/block-public-access-snapshots-enable.html"
+    }
+  },
+  "Notes": ""
+}

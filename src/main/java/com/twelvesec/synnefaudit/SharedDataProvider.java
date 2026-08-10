@@ -39,6 +39,9 @@ import software.amazon.awssdk.services.dynamodb.model.ListTablesRequest;
 import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
 import software.amazon.awssdk.services.ec2.model.*;
+import software.amazon.awssdk.services.ec2.model.DescribeSnapshotsRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeSnapshotsResponse;
+import software.amazon.awssdk.services.ec2.model.Snapshot;
 import software.amazon.awssdk.services.ec2.model.Subnet;
 import software.amazon.awssdk.services.ecr.EcrAsyncClient;
 import software.amazon.awssdk.services.ecr.model.Repository;
@@ -307,6 +310,16 @@ public class SharedDataProvider {
         Supplier<CompletableFuture<List<Volume>>> loader = () ->
             ec2.describeVolumes(DescribeVolumesRequest.builder().build())
                 .thenApply(DescribeVolumesResponse::volumes);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Snapshot>> getAllSnapshots() {
+        String key = "ec2:snapshots";
+        Supplier<CompletableFuture<List<Snapshot>>> loader = () ->
+                PaginatorHelper.collectPaginatedItems(
+                        ec2.describeSnapshotsPaginator(DescribeSnapshotsRequest.builder().ownerIds("self").build()),
+                        DescribeSnapshotsResponse::snapshots
+                );
         return getCachedData(key, loader);
     }
 

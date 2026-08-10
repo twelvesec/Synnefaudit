@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EBS_SNAPSHOTS_NOT_PUBLIC",
+  "CheckTitle": "EBS Snapshots found set as Public",
+  "Severity": "Critical",
+  "Description": "EBS Snapshots found configured to be publicly accessible to all AWS accounts.",
+  "Risk": "Public EBS snapshots expose the entire file system of the original volume to anyone on the internet, leading to massive data leaks, intellectual property theft, or credential exposure.",
+  "RelatedUrls": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-modifying-snapshot-permissions.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Modify the permissions of the offending EBS snapshot to remove the 'Public' (all) access permission. If the snapshot needs to be shared, explicitly grant access only to trusted AWS Account IDs.",
+      "Urls": "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeSnapshots.html"
+    }
+  },
+  "Notes": ""
+}

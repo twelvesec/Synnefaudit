@@ -18,6 +18,7 @@ import java.util.function.Supplier;
 
 public class EBSCheck implements CloudCheck {
     private List<Volume> allVolumes;
+    private List<Snapshot> allSnapshots;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final Ec2AsyncClient ec2;
@@ -33,9 +34,16 @@ public class EBSCheck implements CloudCheck {
         return sharedDataProvider.getAllVolumes()
             .thenCompose(volumes -> {
                 this.allVolumes = volumes;
+                return sharedDataProvider.getAllSnapshots();
+            })
+            .thenCompose(snapshots -> {
+                this.allSnapshots = snapshots;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkNoSnapshotsForEBSVolumes,              AWSFinding.NO_SNAPSHOTS_FOR_EBS_VOLUMES, this::reportError),
-                    wrapCheck(this::checkEBSDefaultEncryptionIsNotActivated,    AWSFinding.EBS_DEFAULT_ENCRYPTION_NOT_ACTIVATED, this::reportError)
+                    wrapCheck(this::checkEBSDefaultEncryptionIsNotActivated,    AWSFinding.EBS_DEFAULT_ENCRYPTION_NOT_ACTIVATED, this::reportError),
+                    wrapCheck(this::checkEBSSnapshotsEncrypted,                 AWSFinding.EBS_SNAPSHOTS_ENCRYPTED, this::reportError),
+                    wrapCheck(this::checkNoPublicEBSSnapshots,                  AWSFinding.EBS_SNAPSHOTS_NOT_PUBLIC, this::reportError),
+                    wrapCheck(this::checkEBSSnapshotPublicAccessDisabled,       AWSFinding.EBS_SNAPSHOT_PUBLIC_ACCESS_DISABLED, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -99,5 +107,90 @@ public class EBSCheck implements CloudCheck {
         
         writer.addToBuffer(AWSFinding.EBS_DEFAULT_ENCRYPTION_NOT_ACTIVATED, result, status);
         return status;
+    }
+
+    private Status checkEBSSnapshotsEncrypted() {
+        if (allSnapshots.isEmpty()) {
+            writer.addToBuffer(AWSFinding.EBS_SNAPSHOTS_ENCRYPTED,
+                    Text.EBS_NO_SNAPSHOTS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allSnapshots.stream()
+                .map(snapshot -> {
+                    String snapshotId = snapshot.snapshotId();
+                    boolean isEncrypted = Boolean.TRUE.equals(snapshot.encrypted());
+                    Status s = isEncrypted ? Status.PASS : Status.FAIL;
+                    ObjectNode r = MAPPER.valueToTree(snapshot);
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(snapshotId, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.EBS_SNAPSHOTS_ENCRYPTED, result, status);
+        return status;
+    }
+
+    private Status checkNoPublicEBSSnapshots() {
+        if (allSnapshots.isEmpty()) {
+            writer.addToBuffer(AWSFinding.EBS_SNAPSHOTS_NOT_PUBLIC,
+                    Text.EBS_NO_SNAPSHOTS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allSnapshots.stream()
+                .map(snapshot -> {
+                    String snapshotId = snapshot.snapshotId();
+                    Status s;
+                    ObjectNode r;
+                    try {
+                        DescribeSnapshotAttributeResponse response = ec2.describeSnapshotAttribute(
+                                DescribeSnapshotAttributeRequest.builder()
+                                        .snapshotId(snapshotId)
+                                        .attribute(SnapshotAttributeName.CREATE_VOLUME_PERMISSION)
+                                        .build()
+                        ).join();
+                        boolean isPublic = response.createVolumePermissions().stream()
+                                .anyMatch(permission -> "all".equalsIgnoreCase(permission.groupAsString()));
+
+                        s = !isPublic ? Status.PASS : Status.FAIL;
+                        r = MAPPER.valueToTree(snapshot);
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(snapshotId, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.EBS_SNAPSHOTS_NOT_PUBLIC, result, status);
+        return status;
+    }
+
+    private Status checkEBSSnapshotPublicAccessDisabled() {
+        try {
+            GetSnapshotBlockPublicAccessStateResponse response = ec2.getSnapshotBlockPublicAccessState(
+                    GetSnapshotBlockPublicAccessStateRequest.builder().build()
+            ).join();
+            boolean isBlockAllSharing = "block-all-sharing".equalsIgnoreCase(response.stateAsString());
+            Status status = isBlockAllSharing ? Status.PASS : Status.FAIL;
+            ObjectNode result = MAPPER.valueToTree(response.toBuilder());
+
+            writer.addToBuffer(AWSFinding.EBS_SNAPSHOT_PUBLIC_ACCESS_DISABLED, result, status);
+            return status;
+        } catch (Exception e) {
+            Status status = Status.FAIL_EXCEPTION;
+            ObjectNode result = MAPPER.createObjectNode().put(Text.ERROR.toString(), Text.EXCEPTION.toString().concat(e.getMessage()));
+            writer.addToBuffer(AWSFinding.EBS_SNAPSHOT_PUBLIC_ACCESS_DISABLED, result, status);
+            return status;
+        }
     }
 }
