@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "GUARDDUTY_RDS_PROTECTION_ENABLED",
+  "CheckTitle": "GuardDuty RDS Protection disabled",
+  "Severity": "Medium",
+  "Description": "GuardDuty detectors do not have RDS Protection enabled to analyze login activity and identify potential security threats on database instances.",
+  "Risk": "Without RDS Protection, anomalous database logins and unauthorized access attempts can go unnoticed. Attackers using stolen or brute-forced credentials may access sensitive data, alter database schemas, or pivot through the database, compromising confidentiality, integrity, and availability.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-9, https://docs.aws.amazon.com/guardduty/latest/ug/rds-protection.html, https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/guard-duty-rds-protection.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider enabling GuardDuty RDS Protection for all detectors across accounts and regions to continuously monitor RDS login events and detect anomalous database access patterns.",
+      "Urls": "https://docs.aws.amazon.com/guardduty/latest/ug/configure-rds-pro-multi-account.html, https://docs.aws.amazon.com/guardduty/latest/ug/configure-rds-pro-standalone.html"
+    }
+  },
+  "Notes": ""
+}

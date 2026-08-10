@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "GUARDDUTY_EKS_RUNTIME_MONITORING_ENABLED",
+  "CheckTitle": "GuardDuty EKS Runtime Monitoring disabled",
+  "Severity": "Medium",
+  "Description": "GuardDuty detectors do not have EKS Runtime Monitoring enabled. This feature provides runtime threat detection for EKS nodes and containers.",
+  "Risk": "Without EKS Runtime Monitoring, potentially compromised EKS clusters could remain unnoticed, along with attempts to perform privilege escalation within the environment.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-7, https://docs.aws.amazon.com/guardduty/latest/ug/eks-runtime-monitoring-guardduty.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider enabling EKS Runtime Monitoring on GuardDuty detectors, across all accounts and regions, enforcing the principle of least privilege on monitoring results.",
+      "Urls": "https://docs.aws.amazon.com/guardduty/latest/ug/runtime-monitoring-configuration.html"
+    }
+  },
+  "Notes": ""
+}

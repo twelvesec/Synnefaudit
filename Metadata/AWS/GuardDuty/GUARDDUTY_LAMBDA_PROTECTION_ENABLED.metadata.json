@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "GUARDDUTY_LAMBDA_PROTECTION_ENABLED",
+  "CheckTitle": "GuardDuty Lambda Protection disabled",
+  "Severity": "Medium",
+  "Description": "GuardDuty detectors do not have Lambda Protection enabled to identify potential security threats on AWS Lambda function invocation.",
+  "Risk": "Without this setting Lambda network activity logs are not analyzed and potential security issues that affect the confidentiality, integrity and availability of data may go unnoticed.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-6, https://docs.aws.amazon.com/guardduty/latest/ug/lambda-protection.html, https://docs.aws.amazon.com/guardduty/latest/ug/lambda-protection-finding-types.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider enabling GuardDuty Lambda Protection for all detectors across accounts and regions, along with applying the principle of least privilege on Lambda functions and roles, or accessing scanning results.",
+      "Urls": "https://docs.aws.amazon.com/guardduty/latest/ug/configure-lambda-protection-multi-acc-env.html, https://docs.aws.amazon.com/guardduty/latest/ug/configure-lambda-protection-standalone-acc.html"
+    }
+  },
+  "Notes": ""
+}

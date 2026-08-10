@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "GUARDDUTY_EKS_AUDIT_LOGS_ENABLED",
+  "CheckTitle": "GuardDuty EKS Audit Log Monitoring disabled",
+  "Severity": "Medium",
+  "Description": "GuardDuty detectors do not have EKS Audit Log Monitoring (EKS Protection) enabled, which capture sequential actions within the EKS cluster and perform continues threat detection.",
+  "Risk": "Without EKS Protection security issues related to Kubernetes could remain undetected, affecting the confidentiality, integrity and availability of data, lead to privilege escalation, or unauthorized deployments.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-5, https://docs.aws.amazon.com/eks/latest/userguide/integration-guardduty.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "EKS Protection should be enabled on detectors across regions, using central management and limited access to scan results in accordance with the principle of least privilege.",
+      "Urls": "https://docs.aws.amazon.com/guardduty/latest/ug/kubernetes-protection.html, https://docs.aws.amazon.com/guardduty/latest/ug/eks-protection-enable-standalone-account.html"
+    }
+  },
+  "Notes": ""
+}

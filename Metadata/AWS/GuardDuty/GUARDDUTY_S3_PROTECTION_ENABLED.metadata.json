@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "GUARDDUTY_S3_PROTECTION_ENABLED",
+  "CheckTitle": "GuardDuty S3 Protection disabled",
+  "Severity": "Medium",
+  "Description": "GuardDuty detectors do not have S3 Protection enabled to analyze object-level API activity and identify potential security risks for data stored in S3 buckets.",
+  "Risk": "Without S3 Protection, object-level S3 API activity (such as GetObject, PutObject, and DeleteObject) is not monitored, which allows unauthorized data exfiltration, mass object deletions, or policy tampering to go unnoticed.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/guardduty-controls.html#guardduty-10, https://docs.aws.amazon.com/guardduty/latest/ug/s3-protection.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider enabling GuardDuty S3 Protection for all detectors across accounts and regions to monitor CloudTrail S3 data events and identify potential security threats on data stored in Amazon S3 buckets.",
+      "Urls": "https://docs.aws.amazon.com/guardduty/latest/ug/s3-multiaccount.html, https://docs.aws.amazon.com/guardduty/latest/ug/data-source-configure.html"
+    }
+  },
+  "Notes": ""
+}

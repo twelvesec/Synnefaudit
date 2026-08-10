@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "GUARDDUTY_NO_HIGH_SEVERITY_FINDINGS",
+  "CheckTitle": "GuardDuty Detector with High severity findings",
+  "Severity": "High",
+  "Description": "GuardDuty Detector found having High and/or Critical severity findings.",
+  "Risk": "Open High and Critical severity findings could lead to the compromise of sensitive data and services, unauthorized access and data tampering.",
+  "RelatedUrls": "https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings-severity.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Prioritize findings based on severity and address them according to recommendations. Set up alerts and continuously assess and handle findings based pre-defined timelines defined per severity, and according to business practices.",
+      "Urls": "https://docs.aws.amazon.com/prescriptive-guidance/latest/vulnerability-management/assess-and-prioritize-security-findings.html, https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings.html"
+    }
+  },
+  "Notes": ""
+}
