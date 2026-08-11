@@ -34,6 +34,7 @@ import software.amazon.awssdk.services.account.AccountAsyncClient;
 import software.amazon.awssdk.services.acm.AcmAsyncClient;
 import software.amazon.awssdk.services.applicationautoscaling.ApplicationAutoScalingAsyncClient;
 import software.amazon.awssdk.services.athena.AthenaAsyncClient;
+import software.amazon.awssdk.services.autoscaling.AutoScalingAsyncClient;
 import software.amazon.awssdk.services.backup.BackupAsyncClient;
 import software.amazon.awssdk.services.cloudformation.CloudFormationAsyncClient;
 import software.amazon.awssdk.services.cloudfront.CloudFrontAsyncClient;
@@ -132,6 +133,7 @@ public class App {
     private static OrganizationsAsyncClient orgs;
     private static AcmAsyncClient acm;
     private static ApplicationAutoScalingAsyncClient appAutoScaling;
+    private static AutoScalingAsyncClient autoscaling;
 
     private static DataWriter writer;
     private static ReportPrinter printer;
@@ -174,7 +176,7 @@ public class App {
 
         try {
             sharedDataProvider = new SharedDataProvider(
-                    accessAnalyzer, acm, athena, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, dax, dynamodb, ec2, ecr, efs, elasticache,
+                    accessAnalyzer, acm, autoscaling, athena, backup, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, dax, dynamodb, ec2, ecr, efs, elasticache,
                     elb, secretsmanager, guardduty, iam, kafka, kms, lambda, neptune, rds, route53, resourceexplorer2, s3, sns, ssm, sts, support);
 
             List<CloudCheck> checks = getAWSChecks();
@@ -462,5 +464,6 @@ public class App {
         orgs                = awsDependencyFactory.getClient(OrganizationsAsyncClient.class);
         acm                 = awsDependencyFactory.getClient(AcmAsyncClient.class);
         appAutoScaling      = awsDependencyFactory.getClient(ApplicationAutoScalingAsyncClient.class);
+        autoscaling         = awsDependencyFactory.getClient(AutoScalingAsyncClient.class);
     }
 }

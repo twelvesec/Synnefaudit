@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EBS_VOLUMES_PROTECTED_BY_BACKUP_PLAN",
+  "CheckTitle": "EBS volume is not protected by an AWS Backup plan",
+  "Severity": "Medium",
+  "Description": "EBS volumes have not been are assigned to an active AWS Backup plan to safeguard data against accidental deletion, ransomware, or system failure.",
+  "Risk": "EBS volumes without a backup plan lack automated disaster recovery coverage. Data loss, corruption, or ransomware attacks may lead to irreversible data destruction and extended operational downtime.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-28, https://docs.aws.amazon.com/aws-backup/latest/devguide/whatisbackup.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Assign EBS volumes to an AWS Backup plan either directly by resource ARN or dynamically using resource tags.",
+      "Urls": "https://docs.aws.amazon.com/aws-backup/latest/devguide/creating-a-backup-plan.html, https://docs.aws.amazon.com/aws-backup/latest/devguide/understanding-backup-plan-summaries.html"
+    }
+  },
+  "Notes": ""
+}

@@ -7,6 +7,7 @@ public enum Text {
 
     EBS_NO_VOLUMES_FOUND("No EBS volumes found."),
     EBS_NO_SNAPSHOTS_FOUND("No EBS snapshots found."),
+    EBS_BO_AUTOSCALING_LAUNCH_CONFIG("No Auto Scaling Launch Configurations found."),
 
     NO_EC2_INSTANCES_FOUND("No EC2 instances found."),
     NO_SECURITY_GROUPS_FOUND("No Security Groups found"),

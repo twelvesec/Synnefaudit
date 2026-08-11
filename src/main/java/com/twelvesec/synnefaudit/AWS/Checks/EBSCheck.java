@@ -6,19 +6,21 @@ import com.twelvesec.synnefaudit.CloudCheck;
 import com.twelvesec.synnefaudit.DataWriter;
 import com.twelvesec.synnefaudit.SharedDataProvider;
 import com.twelvesec.synnefaudit.messages.Text;
+import software.amazon.awssdk.services.autoscaling.model.LaunchConfiguration;
+import software.amazon.awssdk.services.backup.model.ProtectedResource;
 import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
 import software.amazon.awssdk.services.ec2.model.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class EBSCheck implements CloudCheck {
     private List<Volume> allVolumes;
     private List<Snapshot> allSnapshots;
+    private List<LaunchConfiguration> allLaunchConfigurations;
+    private List<ProtectedResource> allProtectedResources;
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final Ec2AsyncClient ec2;
@@ -38,12 +40,22 @@ public class EBSCheck implements CloudCheck {
             })
             .thenCompose(snapshots -> {
                 this.allSnapshots = snapshots;
+                return sharedDataProvider.getAllLaunchConfigurations();
+            })
+            .thenCompose(lauchconfig -> {
+                this.allLaunchConfigurations = lauchconfig;
+                return sharedDataProvider.getAllProtectedResources();
+            })
+            .thenCompose(protectedResources -> {
+                this.allProtectedResources = protectedResources;
                 List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkNoSnapshotsForEBSVolumes,              AWSFinding.NO_SNAPSHOTS_FOR_EBS_VOLUMES, this::reportError),
                     wrapCheck(this::checkEBSDefaultEncryptionIsNotActivated,    AWSFinding.EBS_DEFAULT_ENCRYPTION_NOT_ACTIVATED, this::reportError),
                     wrapCheck(this::checkEBSSnapshotsEncrypted,                 AWSFinding.EBS_SNAPSHOTS_ENCRYPTED, this::reportError),
                     wrapCheck(this::checkNoPublicEBSSnapshots,                  AWSFinding.EBS_SNAPSHOTS_NOT_PUBLIC, this::reportError),
-                    wrapCheck(this::checkEBSSnapshotPublicAccessDisabled,       AWSFinding.EBS_SNAPSHOT_PUBLIC_ACCESS_DISABLED, this::reportError)
+                    wrapCheck(this::checkEBSSnapshotPublicAccessDisabled,       AWSFinding.EBS_SNAPSHOT_PUBLIC_ACCESS_DISABLED, this::reportError),
+                    wrapCheck(this::checkEBSVolumesEncrypted,                   AWSFinding.EBS_VOLUMES_ENCRYPTED, this::reportError),
+                    wrapCheck(this::checkEBSVolumesProtectedByBackupPlan,       AWSFinding.EBS_VOLUMES_PROTECTED_BY_BACKUP_PLAN, this::reportError)
                 );
                 return runChecksInList(checksList, writer);
             });
@@ -192,5 +204,63 @@ public class EBSCheck implements CloudCheck {
             writer.addToBuffer(AWSFinding.EBS_SNAPSHOT_PUBLIC_ACCESS_DISABLED, result, status);
             return status;
         }
+    }
+
+    private Status checkEBSVolumesEncrypted() {
+        if (allVolumes.isEmpty()) {
+            writer.addToBuffer(AWSFinding.EBS_VOLUMES_ENCRYPTED,
+                    Text.EBS_NO_VOLUMES_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allVolumes.stream()
+                .map(volume -> {
+                    String volumeId = volume.volumeId();
+                    boolean isEncrypted = Boolean.TRUE.equals(volume.encrypted());
+                    Status s = isEncrypted ? Status.PASS : Status.FAIL;
+                    ObjectNode r = MAPPER.valueToTree(volume);
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(volumeId, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.EBS_VOLUMES_ENCRYPTED, result, status);
+        return status;
+    }
+
+    private Status checkEBSVolumesProtectedByBackupPlan() {
+        if (allVolumes.isEmpty()) {
+            writer.addToBuffer(AWSFinding.EBS_VOLUMES_PROTECTED_BY_BACKUP_PLAN,
+                    Text.EBS_NO_VOLUMES_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        Set<String> protectedResourceArns = allProtectedResources.stream()
+                .map(ProtectedResource::resourceArn)
+                .collect(Collectors.toSet());
+
+        List<Map<String, Object>> result = allVolumes.stream()
+                .map(volume -> {
+                    String volumeId = volume.volumeId();
+                    String volumeArnSuffix = ":volume/" + volumeId;
+                    boolean isProtected = protectedResourceArns.stream()
+                            .anyMatch(arn -> arn.endsWith(volumeArnSuffix));
+                    Status s = isProtected ? Status.PASS : Status.FAIL;
+                    ObjectNode r = MAPPER.valueToTree(volume);
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(volumeId, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.EBS_VOLUMES_PROTECTED_BY_BACKUP_PLAN, result, status);
+        return status;
     }
 }

@@ -5,7 +5,7 @@
   "Severity": "Medium",
   "Description": "EBS snapshots found without secure encryption at rest enabled.",
   "Risk": "Unencrypted EBS snapshots expose sensitive data, system configurations, and applications to unauthorized access if the snapshot is accidentally shared, copied, or exposed.",
-  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-3, https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-7",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-7",
   "Remediation": {
     "Code": {
       "CLI": "",

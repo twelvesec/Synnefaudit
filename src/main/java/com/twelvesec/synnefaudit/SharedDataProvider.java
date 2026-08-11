@@ -12,6 +12,14 @@ import software.amazon.awssdk.services.athena.AthenaAsyncClient;
 import software.amazon.awssdk.services.athena.model.ListWorkGroupsRequest;
 import software.amazon.awssdk.services.athena.model.ListWorkGroupsResponse;
 import software.amazon.awssdk.services.athena.model.WorkGroupSummary;
+import software.amazon.awssdk.services.autoscaling.AutoScalingAsyncClient;
+import software.amazon.awssdk.services.autoscaling.model.DescribeLaunchConfigurationsRequest;
+import software.amazon.awssdk.services.autoscaling.model.DescribeLaunchConfigurationsResponse;
+import software.amazon.awssdk.services.autoscaling.model.LaunchConfiguration;
+import software.amazon.awssdk.services.backup.BackupAsyncClient;
+import software.amazon.awssdk.services.backup.model.ListProtectedResourcesRequest;
+import software.amazon.awssdk.services.backup.model.ListProtectedResourcesResponse;
+import software.amazon.awssdk.services.backup.model.ProtectedResource;
 import software.amazon.awssdk.services.cloudformation.CloudFormationAsyncClient;
 import software.amazon.awssdk.services.cloudformation.model.ListStacksRequest;
 import software.amazon.awssdk.services.cloudformation.model.ListStacksResponse;
@@ -115,7 +123,9 @@ public class SharedDataProvider {
 
     private final AccessAnalyzerAsyncClient accessAnalyzer;
     private final AcmAsyncClient acm;
+    private final AutoScalingAsyncClient autoscaling;
     private final AthenaAsyncClient athena;
+    private final BackupAsyncClient backup;
     private final CloudFormationAsyncClient cloudformation;
     private final CloudFrontAsyncClient cf;
     private final CloudTrailAsyncClient cloudTrail;
@@ -144,17 +154,19 @@ public class SharedDataProvider {
     private final StsAsyncClient sts;
     private final SupportAsyncClient support;
 
-    public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AthenaAsyncClient athena,
-              CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
-              CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, DaxAsyncClient dax, DynamoDbAsyncClient dynamodb,
-              Ec2AsyncClient ec2, EcrAsyncClient ecr, EfsAsyncClient efs, ElastiCacheAsyncClient elasticache, ElasticLoadBalancingV2AsyncClient elb,
-              SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
-              KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, NeptuneAsyncClient neptune, RdsAsyncClient rds,
-              Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
-              SsmAsyncClient ssm, StsAsyncClient sts, SupportAsyncClient support) {
+    public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AutoScalingAsyncClient autoscaling, AthenaAsyncClient athena, BackupAsyncClient backup,
+                              CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
+                              CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, DaxAsyncClient dax, DynamoDbAsyncClient dynamodb,
+                              Ec2AsyncClient ec2, EcrAsyncClient ecr, EfsAsyncClient efs, ElastiCacheAsyncClient elasticache, ElasticLoadBalancingV2AsyncClient elb,
+                              SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
+                              KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, NeptuneAsyncClient neptune, RdsAsyncClient rds,
+                              Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
+                              SsmAsyncClient ssm, StsAsyncClient sts, SupportAsyncClient support) {
         this.accessAnalyzer = accessAnalyzer;
         this.acm = acm;
+        this.autoscaling = autoscaling;
         this.athena = athena;
+        this.backup = backup;
         this.cloudformation = cloudformation;
         this.cf = cf;
         this.cloudTrail = cloudTrail;
@@ -319,6 +331,26 @@ public class SharedDataProvider {
                 PaginatorHelper.collectPaginatedItems(
                         ec2.describeSnapshotsPaginator(DescribeSnapshotsRequest.builder().ownerIds("self").build()),
                         DescribeSnapshotsResponse::snapshots
+                );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<LaunchConfiguration>> getAllLaunchConfigurations() {
+        String key = "autoscaling:launch_configurations";
+        Supplier<CompletableFuture<List<LaunchConfiguration>>> loader = () ->
+                PaginatorHelper.collectPaginatedItems(
+                        autoscaling.describeLaunchConfigurationsPaginator(DescribeLaunchConfigurationsRequest.builder().build()),
+                        DescribeLaunchConfigurationsResponse::launchConfigurations
+                );
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<ProtectedResource>> getAllProtectedResources() {
+        String key = "backup:protected_resources";
+        Supplier<CompletableFuture<List<ProtectedResource>>> loader = () ->
+                PaginatorHelper.collectPaginatedItems(
+                        backup.listProtectedResourcesPaginator(ListProtectedResourcesRequest.builder().build()),
+                        ListProtectedResourcesResponse::results
                 );
         return getCachedData(key, loader);
     }

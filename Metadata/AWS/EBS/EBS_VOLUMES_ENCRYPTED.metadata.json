@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EBS_VOLUMES_ENCRYPTED",
+  "CheckTitle": "Unencrypted EBS volumes found",
+  "Severity": "High",
+  "Description": "EBS volumes found without KMS encryption enabled.",
+  "Risk": "Unencrypted EBS volumes store data in plaintext. In the event of unauthorized snapshot creation, physical device compromise, or improper account access, sensitive data could be exfiltrated or tampered, affecting the confidentiality and integrity of services.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-3, https://docs.aws.amazon.com/securityhub/latest/userguide/ec2-controls.html#ec2-7",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable default EBS encryption for all volumes and snapshots on the account. For existing unencrypted volumes, create a snapshot, copy the snapshot with encryption enabled, and restore a new volume from the encrypted snapshot.",
+      "Urls": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-encryption.html#encryption-parameters, https://docs.aws.amazon.com/ebs/latest/userguide/encryption-by-default.html"
+    }
+  },
+  "Notes": ""
+}

@@ -232,6 +232,10 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>elasticache</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>autoscaling</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>commons-cli</groupId>
