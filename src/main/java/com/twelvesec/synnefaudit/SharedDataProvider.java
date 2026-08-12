@@ -38,6 +38,8 @@ import software.amazon.awssdk.services.cloudwatch.model.MetricAlarm;
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsAsyncClient;
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogGroupsResponse;
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup;
+import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient;
+import software.amazon.awssdk.services.codebuild.model.*;
 import software.amazon.awssdk.services.dax.DaxAsyncClient;
 import software.amazon.awssdk.services.dax.model.Cluster;
 import software.amazon.awssdk.services.dax.model.DescribeClustersRequest;
@@ -49,6 +51,7 @@ import software.amazon.awssdk.services.ec2.Ec2AsyncClient;
 import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.ec2.model.DescribeSnapshotsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeSnapshotsResponse;
+import software.amazon.awssdk.services.ec2.model.NetworkInterface;
 import software.amazon.awssdk.services.ec2.model.Snapshot;
 import software.amazon.awssdk.services.ec2.model.Subnet;
 import software.amazon.awssdk.services.ecr.EcrAsyncClient;
@@ -131,6 +134,7 @@ public class SharedDataProvider {
     private final CloudTrailAsyncClient cloudTrail;
     private final CloudWatchAsyncClient cloudWatch;
     private final CloudWatchLogsAsyncClient cloudwatchlogs;
+    private final CodeBuildAsyncClient codeBuild;
     private final DaxAsyncClient dax;
     private final NeptuneAsyncClient neptune;
     private final DynamoDbAsyncClient dynamodb;
@@ -156,7 +160,7 @@ public class SharedDataProvider {
 
     public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AutoScalingAsyncClient autoscaling, AthenaAsyncClient athena, BackupAsyncClient backup,
                               CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
-                              CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, DaxAsyncClient dax, DynamoDbAsyncClient dynamodb,
+                              CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, CodeBuildAsyncClient codeBuild, DaxAsyncClient dax, DynamoDbAsyncClient dynamodb,
                               Ec2AsyncClient ec2, EcrAsyncClient ecr, EfsAsyncClient efs, ElastiCacheAsyncClient elasticache, ElasticLoadBalancingV2AsyncClient elb,
                               SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
                               KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, NeptuneAsyncClient neptune, RdsAsyncClient rds,
@@ -172,6 +176,7 @@ public class SharedDataProvider {
         this.cloudTrail = cloudTrail;
         this.cloudWatch = cloudWatch;
         this.cloudwatchlogs = cloudwatchlogs;
+        this.codeBuild = codeBuild;
         this.dax = dax;
         this.dynamodb = dynamodb;
         this.ec2 = ec2;
@@ -199,18 +204,18 @@ public class SharedDataProvider {
     private <T> CompletableFuture<T> getCachedData(String cacheKey, Supplier<CompletableFuture<T>> loader) {
         while (true) {
             CompletableFuture<?> existing = cache.get(cacheKey);
-            
+
             if (existing != null && !existing.isCompletedExceptionally()) {
                 return (CompletableFuture<T>) existing;
             }
-            
+
             CompletableFuture<T> newFuture = loader.get();
             CompletableFuture<T> futureWithCleanup = newFuture.whenComplete((result, ex) -> {
                 if (ex != null) {
                     cache.remove(cacheKey, newFuture);
                 }
             });
-            
+
             if (existing == null) {
                 if (cache.putIfAbsent(cacheKey, futureWithCleanup) == null) {
                     return futureWithCleanup;
@@ -290,6 +295,30 @@ public class SharedDataProvider {
         Supplier<CompletableFuture<List<LogGroup>>> loader = () ->
             cloudwatchlogs.describeLogGroups()
                 .thenApply(DescribeLogGroupsResponse::logGroups);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Project>> getAllCodeBuildProjects() {
+        String key = "codebuild:projects";
+        Supplier<CompletableFuture<List<Project>>> loader = () ->
+                codeBuild.listProjects(ListProjectsRequest.builder().build())
+                        .thenApply(ListProjectsResponse::projects)
+                        .thenCompose(names -> (names == null || names.isEmpty())
+                                ? CompletableFuture.completedFuture(List.of())
+                                : codeBuild.batchGetProjects(BatchGetProjectsRequest.builder().names(names).build())
+                                .thenApply(BatchGetProjectsResponse::projects));
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<ReportGroup>> getAllReportGroups() {
+        String key = "codebuild:report_groups";
+        Supplier<CompletableFuture<List<ReportGroup>>> loader = () ->
+                codeBuild.listReportGroups(ListReportGroupsRequest.builder().build())
+                        .thenApply(ListReportGroupsResponse::reportGroups)
+                        .thenCompose(arns -> (arns == null || arns.isEmpty())
+                                ? CompletableFuture.completedFuture(List.of())
+                                : codeBuild.batchGetReportGroups(BatchGetReportGroupsRequest.builder().reportGroupArns(arns).build())
+                                .thenApply(BatchGetReportGroupsResponse::reportGroups));
         return getCachedData(key, loader);
     }
 
