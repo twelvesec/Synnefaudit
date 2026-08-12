@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CODEBUILD_PROJECT_LOGGING_ENABLED",
+  "CheckTitle": "CodeBuild project without logging enabled",
+  "Severity": "Medium",
+  "Description": "CodeBuild projects do not have CloudWatch Logs or S3 logs enabled for auditing and troubleshooting.",
+  "Risk": "Without central logging enabled, build output, errors, and malicious activity cannot be monitored, audited, or investigated in the event of an incident.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/codebuild-controls.html#codebuild-4",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable CloudWatch Logs or S3 Logs in the project's build logs configuration settings.",
+      "Urls": "https://docs.aws.amazon.com/codebuild/latest/userguide/change-project.html#change-project-console-logs"
+    }
+  },
+  "Notes": ""
+}

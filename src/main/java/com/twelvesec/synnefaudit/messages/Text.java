@@ -90,6 +90,7 @@ public enum Text {
 
     NO_CODEBUILD_PROJECTS_FOUND("No CodeBuild projects found."),
     NO_BUILDS_FOUND("No Builds found."),
+    NO_CODEBUILD_REPORT_GROUPS_FOUND("No CodeBuild report groups found."),
 
     NO_ACM_CERTIFICATES_FOUND("No ACM Certificates found."),
 

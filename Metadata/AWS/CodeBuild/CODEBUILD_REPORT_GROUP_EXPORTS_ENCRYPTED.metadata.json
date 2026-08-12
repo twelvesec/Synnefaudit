@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CODEBUILD_REPORT_GROUP_EXPORTS_ENCRYPTED",
+  "CheckTitle": "CodeBuild report unencrypted group export to S3",
+  "Severity": "Medium",
+  "Description": "CodeBuild report group exports destined for S3 buckets are not encrypted at rest.",
+  "Risk": "Unencrypted report exports contain test execution logs, coverage metrics, and vulnerability scan output that could be compromised if S3 bucket permissions fail.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/codebuild-controls.html#codebuild-7",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Configure report group export settings to enable S3 encryption at rest or specify an AWS KMS key for export encryption.",
+      "Urls": "https://docs.aws.amazon.com/codebuild/latest/userguide/report-group-export-settings.html, https://docs.aws.amazon.com/codebuild/latest/userguide/report-group-create.html"
+    }
+  },
+  "Notes": ""
+}

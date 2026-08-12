@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CODEBUILD_PROJECTS_NOT_PUBLIC",
+  "CheckTitle": "CodeBuild project with public visibility",
+  "Severity": "High",
+  "Description": "CodeBuild projects found publicly accessible on the internet.",
+  "Risk": "Publicly visible CodeBuild projects may allow unauthorized internet users to view build logs, source code configurations, environment details, and build artifacts, affecting the confidentiality and integrity of project data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/codebuild/latest/userguide/public-builds.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Consider updating CodeBuild projects' visibility to disable public access, for existing and new projects.",
+      "Urls": "https://docs.aws.amazon.com/codebuild/latest/APIReference/API_UpdateProjectVisibility.html, https://docs.aws.amazon.com/codebuild/latest/userguide/change-project.html#change-project-console.public-builds"
+    }
+  },
+  "Notes": ""
+}

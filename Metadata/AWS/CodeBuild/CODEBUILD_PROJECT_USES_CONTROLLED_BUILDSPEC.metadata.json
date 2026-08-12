@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CODEBUILD_PROJECT_USES_CONTROLLED_BUILDSPEC",
+  "CheckTitle": "CodeBuild project uses inline buildspec",
+  "Severity": "Low",
+  "Description": "CodeBuild projects utilize buildspec instead of repository version control.",
+  "Risk": "Inline buildspecs bypass code review processes, pull request controls, and version tracking, making it easier for unreviewed changes or malicious commands to be introduced.",
+  "RelatedUrls": "https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Migrate inline buildspec definitions into a 'buildspec.yml' file hosted directly inside the project's source code repository. Prefer centrally managed buildespec, with strict access control and restricted modification privileges, in accordance with the principle of least privilege.",
+      "Urls": "https://docs.aws.amazon.com/codebuild/latest/userguide/change-project.html#change-project-console-buildspec"
+    }
+  },
+  "Notes": ""
+}

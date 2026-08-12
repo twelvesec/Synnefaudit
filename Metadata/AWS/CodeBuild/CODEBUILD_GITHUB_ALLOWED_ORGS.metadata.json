@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "CODEBUILD_GITHUB_ALLOWED_ORGS",
+  "CheckTitle": "CodeBuild project connects to unapproved GitHub organizations",
+  "Severity": "Medium",
+  "Description": "CodeBuild projects using GitHub or GitHub Enterprise as source connect to repositories not owned by sanctioned organization accounts.",
+  "Risk": "Connecting CodeBuild pipelines to untrusted or external GitHub accounts can result in unauthorized code execution or supply chain attacks.",
+  "RelatedUrls": "https://aws.amazon.com/about-aws/whats-new/2025/03/aws-codebuild-organization-enterprise-level-github-self-hosted-runners/",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Update CodeBuild source configurations to reference repository locations within allowed organization accounts.",
+      "Urls": "https://docs.aws.amazon.com/codebuild/latest/userguide/connections-github-app.html, https://docs.aws.amazon.com/codebuild/latest/userguide/auth-and-access-control-iam-identity-based-access-control.html#console-policies"
+    }
+  },
+  "Notes": ""
+}
