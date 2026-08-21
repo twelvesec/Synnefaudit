@@ -1,5 +1,6 @@
 package com.twelvesec.synnefaudit.AWS.Checks;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.synnefaudit.AWS.AWSFinding;
 import com.twelvesec.synnefaudit.CloudCheck;
@@ -22,12 +23,14 @@ public class CodeBuildCheck implements CloudCheck {
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final CodeBuildAsyncClient codeBuild;
+    private final JsonNode config;
 
     public CodeBuildCheck(DataWriter writer, SharedDataProvider sharedDataProvider,
-                          CodeBuildAsyncClient codeBuild) {
+                          CodeBuildAsyncClient codeBuild, JsonNode config) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.codeBuild = codeBuild;
+        this.config = config;
     }
 
     @Override
@@ -59,10 +62,6 @@ public class CodeBuildCheck implements CloudCheck {
     @Override
     public void reportError(CloudCheck.ErrorReport report) {
         writer.addToBuffer(report.finding(), report.message(), report.status());
-    }
-
-    private List<String> getAllowedGithubOrganizations() {
-        return new ArrayList<>(); // TODO
     }
 
     private Status checkCodeBuildProjectsNotInvokedLast90Days() {
@@ -156,7 +155,7 @@ public class CodeBuildCheck implements CloudCheck {
                     Text.NO_CODEBUILD_PROJECTS_FOUND.getText(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
-        List<String> sensitiveKeywords = List.of("AWS_SECRET_ACCESS_KEY", "PASSWORD", "SECRET", "TOKEN", "API_KEY", "ACCESS_KEY");
+        List<String> sensitiveKeywords = getStringList(config.path("sensitive_keywords"));
 
         List<Map<String, Object>> result = allProjects.stream()
                 .map(project -> {
@@ -287,7 +286,7 @@ public class CodeBuildCheck implements CloudCheck {
                     Text.NO_CODEBUILD_PROJECTS_FOUND.getText(), Status.NOT_APPLICABLE);
             return Status.NOT_APPLICABLE;
         }
-        List<String> allowedOrgs = getAllowedGithubOrganizations();
+        List<String> allowedOrgs = getStringList(config.path("allowed_github_organizations"));
 
         List<Map<String, Object>> result = allProjects.stream()
                 .map(project -> {

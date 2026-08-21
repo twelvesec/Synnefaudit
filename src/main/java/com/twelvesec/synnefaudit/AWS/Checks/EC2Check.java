@@ -64,55 +64,61 @@ public class EC2Check implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllEC2Instances()
-            .thenCompose(instances -> {
-                this.allEC2Instances = instances;
-                return sharedDataProvider.getAllVPCEndpoints();
-            })
-            .thenCompose(VPCEndpoints -> {
-                this.allVPCEndpoints = VPCEndpoints;
-                return sharedDataProvider.getAllLaunchTemplates();
-            })
-            .thenCompose(LaunchTemplates -> {
-                this.allLaunchTemplates = LaunchTemplates;
-                return sharedDataProvider.getAllTransitGateways();
-            })
-            .thenCompose(TransitGateways -> {
-                this.allTransitGateways = TransitGateways;
-                return sharedDataProvider.getAllAMIs();
-            })
-            .thenCompose(AMIs -> {
-                this.allAMIs = AMIs;
-                return sharedDataProvider.getAllElasticIPs();
-            })
-            .thenCompose(elasticIPs -> {
-                this.allElasticIPs = elasticIPs;
-                return sharedDataProvider.getAllNetworkInterfaces();
-            })
-            .thenCompose(networkInterfaces -> {
-                this.allNetworkInterfaces = networkInterfaces;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkEC2InstancesWithPublicIPs,                         AWSFinding.EC2_INSTANCES_WTH_PUBLIC_IPS, this::reportError),
-                    wrapCheck(this::checkEC2InstancesWithDetailedMonitoringDisabled,        AWSFinding.EC2_INSTANCES_WITH_DETAILED_MONITORING_DISABLED, this::reportError),
-                    wrapCheck(this::checkEC2InstancesNotManagedBySystemsManager,            AWSFinding.EC2_INSTANCES_NOT_MANAGED_BY_SYSTEM_MANAGER, this::reportError),
-                    wrapCheck(this::checkPublicInstancesWithIamProfilesAttached,            AWSFinding.PUBLIC_INSTANCES_WITH_IAM_PROFILES_ATTACHED, this::reportError),
-                    wrapCheck(this::checkEC2InstancesOlderThan180Days,                      AWSFinding.EC2_INSTANCES_OLDER_THAN_180_DAYS, this::reportError),
-                    wrapCheck(this::checkEC2IMDSv2Configuration,                            AWSFinding.EC2_IMDSV2_CONFIGURATION, this::reportError),
-                    wrapCheck(this::checkEC2ParavirtualVirtualization,                      AWSFinding.EC2_PARAVIRTUAL_VIRTUALIZATION_USED, this::reportError),
-                    wrapCheck(this::checkEC2InstancesWithMultipleENIs,                      AWSFinding.EC2_INSTANCES_WITH_MULTIPLE_ENIS, this::reportError),
-                    wrapCheck(this::checkLaunchTemplatesIMDSv2,                             AWSFinding.LAUNCH_TEMPLATES_IMDSV2_REQUIRED, this::reportError),
-                    wrapCheck(this::checkLaunchTemplatesPublicIPs,                          AWSFinding.LAUNCH_TEMPLATES_NETWORK_INTERFACES_PUBLIC_IPS, this::reportError),
-                    wrapCheck(this::checkTransitGatewaysAutoAccept,                         AWSFinding.TRANSIT_GATEWAYS_AUTO_ACCEPT_VPC_ATTACH, this::reportError),
-                    wrapCheck(this::checkSSMPatchCompliance,                                AWSFinding.EC2_SSM_PATCH_COMPLIANCE, this::reportError),
-                    wrapCheck(this::checkEC2VpcEndpoints,                                   AWSFinding.EC2_USE_VPC_ENDPOINTS, this::reportError),
-                    wrapCheck(this::checkAccountLevelIMDSv2,                                AWSFinding.ACCOUNT_LEVEL_IMDSV2, this::reportError),
-                    wrapCheck(this::checkEC2InstancesTags,                                  AWSFinding.EC2_INSTANCES_WITHOUT_TAGS, this::reportError),
-                    wrapCheck(this::checkPublicAMIs,                                        AWSFinding.EC2_WITH_PUBLIC_AMIS, this::reportError),
-                    wrapCheck(this::checkUnusedElasticIPsDeleted,                           AWSFinding.UNUSED_ELASTIC_IPS_EXIST, this::reportError),
-                    wrapCheck(this::checkUnusedNetworkInterfacesDeleted,                    AWSFinding.UNUSED_NETWORK_INTERFACES_EXIST, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<Instance>> instances = sharedDataProvider.getAllEC2Instances()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<VpcEndpoint>> vpcEndpoints = sharedDataProvider.getAllVPCEndpoints()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<LaunchTemplate>> launchTemplates = sharedDataProvider.getAllLaunchTemplates()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<TransitGateway>> transitGateways = sharedDataProvider.getAllTransitGateways()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Image>> amis = sharedDataProvider.getAllAMIs()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Address>> elasticIPs = sharedDataProvider.getAllElasticIPs()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<NetworkInterface>> networkInterfaces = sharedDataProvider.getAllNetworkInterfaces()
+                .exceptionally(ex -> null);
+
+        return CompletableFuture.allOf(
+                        instances,
+                        vpcEndpoints,
+                        launchTemplates,
+                        transitGateways,
+                        amis,
+                        elasticIPs,
+                        networkInterfaces
+                )
+                .thenCompose(v -> {
+                    this.allEC2Instances = instances.join();
+                    this.allVPCEndpoints = vpcEndpoints.join();
+                    this.allLaunchTemplates = launchTemplates.join();
+                    this.allTransitGateways = transitGateways.join();
+                    this.allAMIs = amis.join();
+                    this.allElasticIPs = elasticIPs.join();
+                    this.allNetworkInterfaces = networkInterfaces.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                            wrapCheck(this::checkEC2InstancesWithPublicIPs,                         AWSFinding.EC2_INSTANCES_WTH_PUBLIC_IPS, this::reportError),
+                            wrapCheck(this::checkEC2InstancesWithDetailedMonitoringDisabled,        AWSFinding.EC2_INSTANCES_WITH_DETAILED_MONITORING_DISABLED, this::reportError),
+                            wrapCheck(this::checkEC2InstancesNotManagedBySystemsManager,            AWSFinding.EC2_INSTANCES_NOT_MANAGED_BY_SYSTEM_MANAGER, this::reportError),
+                            wrapCheck(this::checkPublicInstancesWithIamProfilesAttached,            AWSFinding.PUBLIC_INSTANCES_WITH_IAM_PROFILES_ATTACHED, this::reportError),
+                            wrapCheck(this::checkEC2InstancesOlderThan180Days,                      AWSFinding.EC2_INSTANCES_OLDER_THAN_180_DAYS, this::reportError),
+                            wrapCheck(this::checkEC2IMDSv2Configuration,                            AWSFinding.EC2_IMDSV2_CONFIGURATION, this::reportError),
+                            wrapCheck(this::checkEC2ParavirtualVirtualization,                      AWSFinding.EC2_PARAVIRTUAL_VIRTUALIZATION_USED, this::reportError),
+                            wrapCheck(this::checkEC2InstancesWithMultipleENIs,                      AWSFinding.EC2_INSTANCES_WITH_MULTIPLE_ENIS, this::reportError),
+                            wrapCheck(this::checkLaunchTemplatesIMDSv2,                             AWSFinding.LAUNCH_TEMPLATES_IMDSV2_REQUIRED, this::reportError),
+                            wrapCheck(this::checkLaunchTemplatesPublicIPs,                          AWSFinding.LAUNCH_TEMPLATES_NETWORK_INTERFACES_PUBLIC_IPS, this::reportError),
+                            wrapCheck(this::checkTransitGatewaysAutoAccept,                         AWSFinding.TRANSIT_GATEWAYS_AUTO_ACCEPT_VPC_ATTACH, this::reportError),
+                            wrapCheck(this::checkSSMPatchCompliance,                                AWSFinding.EC2_SSM_PATCH_COMPLIANCE, this::reportError),
+                            wrapCheck(this::checkEC2VpcEndpoints,                                   AWSFinding.EC2_USE_VPC_ENDPOINTS, this::reportError),
+                            wrapCheck(this::checkAccountLevelIMDSv2,                                AWSFinding.ACCOUNT_LEVEL_IMDSV2, this::reportError),
+                            wrapCheck(this::checkEC2InstancesTags,                                  AWSFinding.EC2_INSTANCES_WITHOUT_TAGS, this::reportError),
+                            wrapCheck(this::checkPublicAMIs,                                        AWSFinding.EC2_WITH_PUBLIC_AMIS, this::reportError),
+                            wrapCheck(this::checkUnusedElasticIPsDeleted,                           AWSFinding.UNUSED_ELASTIC_IPS_EXIST, this::reportError),
+                            wrapCheck(this::checkUnusedNetworkInterfacesDeleted,                    AWSFinding.UNUSED_NETWORK_INTERFACES_EXIST, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

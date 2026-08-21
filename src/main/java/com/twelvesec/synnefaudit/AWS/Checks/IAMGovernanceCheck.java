@@ -46,23 +46,26 @@ public class IAMGovernanceCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllAnalyzers()
-            .thenCompose(analyzers -> {
-                this.allAnalyzers = analyzers;
-                return sharedDataProvider.getAllRoles();
-            })
-            .thenCompose(roles -> {
-                this.allRoles = roles;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkIAMRolesWithAdministratorAccessPolicyAttached, AWSFinding.IAM_ROLES_WITH_ADMINISTRATORACCESS_POLICY_ATTACHED, this::reportError),
-                    wrapCheck(this::checkIAMAccessAnalyzerDisabled,                     AWSFinding.IAM_ACCESS_ANALYZER_DISABLED, this::reportError),
-                    wrapCheck(this::checkIAMAccessAnalyzerWithFindings,                 AWSFinding.IAM_ACCESS_ANALYZER_WITH_FINDINGS, this::reportError),
-                    wrapCheck(this::checkCrossAccountRoleAssumption,                    AWSFinding.IAM_CROSS_ACCOUNT_READ_ONLY_ROLES, this::reportError),
-                    wrapCheck(this::checkSecurityAuditRole,                             AWSFinding.SECURITY_AUDIT_ROLE_NOT_FOUND, this::reportError),
-                    wrapCheck(this::checkSupportRole,                                   AWSFinding.SUPPORT_ROLE_NOT_FOUND, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<AnalyzerSummary>> analyzers = sharedDataProvider.getAllAnalyzers()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Role>> roles = sharedDataProvider.getAllRoles()
+                .exceptionally(ex -> null);
+
+        return CompletableFuture.allOf(analyzers, roles)
+                .thenCompose(v -> {
+                    this.allAnalyzers = analyzers.join();
+                    this.allRoles = roles.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                            wrapCheck(this::checkIAMRolesWithAdministratorAccessPolicyAttached, AWSFinding.IAM_ROLES_WITH_ADMINISTRATORACCESS_POLICY_ATTACHED, this::reportError),
+                            wrapCheck(this::checkIAMAccessAnalyzerDisabled,                     AWSFinding.IAM_ACCESS_ANALYZER_DISABLED, this::reportError),
+                            wrapCheck(this::checkIAMAccessAnalyzerWithFindings,                 AWSFinding.IAM_ACCESS_ANALYZER_WITH_FINDINGS, this::reportError),
+                            wrapCheck(this::checkCrossAccountRoleAssumption,                    AWSFinding.IAM_CROSS_ACCOUNT_READ_ONLY_ROLES, this::reportError),
+                            wrapCheck(this::checkSecurityAuditRole,                             AWSFinding.SECURITY_AUDIT_ROLE_NOT_FOUND, this::reportError),
+                            wrapCheck(this::checkSupportRole,                                   AWSFinding.SUPPORT_ROLE_NOT_FOUND, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

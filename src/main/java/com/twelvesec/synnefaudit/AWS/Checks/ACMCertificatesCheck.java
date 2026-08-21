@@ -1,5 +1,6 @@
 package com.twelvesec.synnefaudit.AWS.Checks;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.synnefaudit.AWS.AWSFinding;
 import com.twelvesec.synnefaudit.CloudCheck;
@@ -25,24 +26,29 @@ public class ACMCertificatesCheck implements CloudCheck {
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final AcmAsyncClient acm;
+    private final JsonNode config;
 
-    public ACMCertificatesCheck(DataWriter writer, SharedDataProvider sharedDataProvider, AcmAsyncClient acm) {
+    public ACMCertificatesCheck(DataWriter writer, SharedDataProvider sharedDataProvider, AcmAsyncClient acm, JsonNode config) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.acm = acm;
+        this.config = config;
     }
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllACMCertificates()
-            .thenCompose(acmCertificates -> {
-                this.allCertificateDetails = acmCertificates;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkExpiringAcmCertificates,                   AWSFinding.ACM_CERTIFICATES_EXPIRING_SOON, this::reportError),
-                    wrapCheck(this::checkAcmCertificateTransparencyLoggingEnabled,  AWSFinding.ACM_CERTIFICATE_TRANSPARENCY_LOGGING_DISABLED, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<CertificateSummary>> acmCertificates = sharedDataProvider.getAllACMCertificates()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(acmCertificates)
+                .thenCompose(v -> {
+                    this.allCertificateDetails = acmCertificates.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                        wrapCheck(this::checkExpiringAcmCertificates,                   AWSFinding.ACM_CERTIFICATES_EXPIRING_SOON, this::reportError),
+                        wrapCheck(this::checkAcmCertificateTransparencyLoggingEnabled,  AWSFinding.ACM_CERTIFICATE_TRANSPARENCY_LOGGING_DISABLED, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override
@@ -51,7 +57,7 @@ public class ACMCertificatesCheck implements CloudCheck {
     }
 
     private Status checkExpiringAcmCertificates() {
-        final int EXPIRATION_DAYS = 15;
+        final int EXPIRATION_DAYS = Integer.parseInt(config.path("cert_expiration_in_days").toString());
 
         if (allCertificateDetails.isEmpty()) {
             writer.addToBuffer(AWSFinding.ACM_CERTIFICATES_EXPIRING_SOON,

@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.twelvesec.synnefaudit.AWS.Checks.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -138,6 +139,9 @@ public class App {
     private static DataWriter writer;
     private static ReportPrinter printer;
     private static SharedDataProvider sharedDataProvider;
+    private static JsonNode config;
+
+    private static final String CONFIG_FILE_PATH = "config.yaml";
 
     private static ExecutorService executor;
 
@@ -149,6 +153,7 @@ public class App {
         PROVIDER = Provider.AWS;
 
         retrieveUserParameters(args);
+        config = AuditConfig.load(CONFIG_FILE_PATH);
 
         printer.printLogo();
 
@@ -371,45 +376,45 @@ public class App {
 
     private static List<CloudCheck> getAWSChecks() {
         return List.of(
-//                new AccessKeysCheck(writer, sharedDataProvider, iam, kms),
-//                new ACMCertificatesCheck(writer, sharedDataProvider, acm),
-//                new AthenaCheck(writer, sharedDataProvider, athena),
-//                new BackupCheck(writer, sharedDataProvider, backup),
-//                new CloudFormationCheck(writer, sharedDataProvider, cloudformation),
-//                new CloudFrontCheck(writer, sharedDataProvider, cf, waf),
-//                new CloudTrailCheck(writer, sharedDataProvider, cloudTrail, cloudWatchLogs),
-//                new CloudWatchCheck(writer, sharedDataProvider, sts, cloudWatchLogs),
-                new CodeBuildCheck(writer, sharedDataProvider, codeBuild)
-//                new DynamoDBCheck(writer, sharedDataProvider, dynamodb, backup, sts, appAutoScaling),
-//                new EBSCheck(writer, sharedDataProvider, ec2),
-//                new EC2Check(writer, sharedDataProvider, ec2, ssm),
-//                new EC2SecurityGroupCheck(writer, sharedDataProvider, ec2),
-//                new ECRCheck(writer, sharedDataProvider, ecr),
-//                new EFSCheck(writer, sharedDataProvider, efs),
-//                new ElastiCacheCheck(writer, sharedDataProvider, elasticache),
-//                new ELBCheck(writer, sharedDataProvider, elb, waf),
-//                new EnabledServicesCheck(writer, sharedDataProvider, secretsmanager, drs,
-//                        macie2, securityHub, waf),
-//                new GeneralCheck(writer, sharedDataProvider, accountClient, orgs, sts),
-//                new GlueCheck(writer, glue),
-//                new GuardDutyCheck(writer, sharedDataProvider, guardduty),
-//                new IAMGovernanceCheck(writer, sharedDataProvider, iam, accessAnalyzer, sts),
-//                new IAMPolicyCheck(writer, sharedDataProvider, iam),
-//                new IAMUserSecurityCheck(writer, sharedDataProvider, iam),
-//                new Inspector2Check(writer, inspector2, sts),
-//                new KafkaCheck(writer, sharedDataProvider, kafka, kafkaconnect),
-//                new KMSCheck(writer, sharedDataProvider, kms, cloudWatch),
-//                new LambdaCheck(writer, sharedDataProvider, lambda),
-//                new MFACheck(writer, sharedDataProvider, iam, sts),
-//                new NeptuneDBCheck(writer, sharedDataProvider),
-//                new NetworkACLsCheck(writer, sharedDataProvider),
-//                new RDSInstancesCheck(writer, sharedDataProvider, rds),
-//                new Route53Check(writer, sharedDataProvider, route53),
-//                new S3BucketsCheck(writer, awsDependencyFactory, sharedDataProvider, s3, s3control, sts),
-//                new SNSTopicsCheck(writer, sharedDataProvider, sns),
-//                new SSMCheck(writer, sharedDataProvider, ssm, ssm_inc),
-//                new SupportCheck(writer, support),
-//                new VPCsCheck(writer, sharedDataProvider, ec2, networkFirewall, iam)
+                new AccessKeysCheck(writer, sharedDataProvider, iam, kms),
+                new ACMCertificatesCheck(writer, sharedDataProvider, acm, config.path("aws").path("acmCertificates")),
+                new AthenaCheck(writer, sharedDataProvider, athena),
+                new BackupCheck(writer, sharedDataProvider, backup),
+                new CloudFormationCheck(writer, sharedDataProvider, cloudformation),
+                new CloudFrontCheck(writer, sharedDataProvider, cf, waf),
+                new CloudTrailCheck(writer, sharedDataProvider, cloudTrail, cloudWatchLogs,config.path("aws").path("cloudtrail")),
+                new CloudWatchCheck(writer, sharedDataProvider, sts, cloudWatchLogs),
+                new CodeBuildCheck(writer, sharedDataProvider, codeBuild, config.path("aws").path("codebuild")),
+                new DynamoDBCheck(writer, sharedDataProvider, dynamodb, backup, sts, appAutoScaling),
+                new EBSCheck(writer, sharedDataProvider, ec2),
+                new EC2Check(writer, sharedDataProvider, ec2, ssm),
+                new EC2SecurityGroupCheck(writer, sharedDataProvider, ec2, config.path("aws").path("ec2securitygroup")),
+                new ECRCheck(writer, sharedDataProvider, ecr),
+                new EFSCheck(writer, sharedDataProvider, efs),
+                new ElastiCacheCheck(writer, sharedDataProvider, elasticache),
+                new ELBCheck(writer, sharedDataProvider, elb, waf, config.path("aws").path("elb")),
+                new EnabledServicesCheck(writer, sharedDataProvider, secretsmanager, drs,
+                        macie2, securityHub, waf),
+                new GeneralCheck(writer, sharedDataProvider, accountClient, orgs, sts, config.path("aws").path("general")),
+                new GlueCheck(writer, glue),
+                new GuardDutyCheck(writer, sharedDataProvider, guardduty),
+                new IAMGovernanceCheck(writer, sharedDataProvider, iam, accessAnalyzer, sts),
+                new IAMPolicyCheck(writer, sharedDataProvider, iam, config.path("aws").path("iamPolicy")),
+                new IAMUserSecurityCheck(writer, sharedDataProvider, iam),
+                new Inspector2Check(writer, inspector2, sts),
+                new KafkaCheck(writer, sharedDataProvider, kafka, kafkaconnect),
+                new KMSCheck(writer, sharedDataProvider, kms, cloudWatch),
+                new LambdaCheck(writer, sharedDataProvider, lambda),
+                new MFACheck(writer, sharedDataProvider, iam, sts),
+                new NeptuneDBCheck(writer, sharedDataProvider),
+                new NetworkACLsCheck(writer, sharedDataProvider),
+                new RDSInstancesCheck(writer, sharedDataProvider, rds, config.path("aws").path("rds")),
+                new Route53Check(writer, sharedDataProvider, route53),
+                new S3BucketsCheck(writer, awsDependencyFactory, sharedDataProvider, s3, s3control, sts, config.path("aws").path("s3")),
+                new SNSTopicsCheck(writer, sharedDataProvider, sns),
+                new SSMCheck(writer, sharedDataProvider, ssm, ssm_inc),
+                new SupportCheck(writer, support),
+                new VPCsCheck(writer, sharedDataProvider, ec2, networkFirewall, iam)
         );
     }
 

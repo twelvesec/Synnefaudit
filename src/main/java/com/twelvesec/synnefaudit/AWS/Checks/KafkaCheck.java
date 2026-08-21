@@ -36,10 +36,13 @@ public class KafkaCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllKafkaClusters()
-            .thenCompose(clusters -> {
-                this.allClusters = clusters;
-                List<Supplier<CheckResult>> checksList = List.of(
+        CompletableFuture<List<ClusterInfo>> clusters = sharedDataProvider.getAllKafkaClusters()
+                .exceptionally(ex -> null);
+
+        return clusters.thenCompose(c -> {
+            this.allClusters = c;
+
+            List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::KafkaBrokersWithEnhancedMonitoringDisabled,     AWSFinding.KAFKA_BROKERS_WITHOUT_ENHANCED_MONITORING, this::reportError),
                     wrapCheck(this::KafkaClustersWithMTLSAuthenticationDisabled,    AWSFinding.KAFKA_CLUSTERS_WITHOUT_MTLS, this::reportError),
                     wrapCheck(this::KafkaClustersUsingOutdatedVersion,              AWSFinding.KAFKA_CLUSTERS_USING_OUTDATED_VERSION, this::reportError),
@@ -48,9 +51,9 @@ public class KafkaCheck implements CloudCheck {
                     wrapCheck(this::KafkaClustersUnrestrictedAccessEnabled,         AWSFinding.KAFKA_CLUSTERS_UNRESTRICTED_ACCESS, this::reportError),
                     wrapCheck(this::KafkaClustersExposedToPublic,                   AWSFinding.KAFKA_CLUSTERS_EXPOSED_TO_PUBLIC, this::reportError),
                     wrapCheck(this::MskConnectConnectorsWithoutEncryptionInTransit, AWSFinding.MSK_CONNECT_WITHOUT_ENCRYPTION_IN_TRANSIT, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

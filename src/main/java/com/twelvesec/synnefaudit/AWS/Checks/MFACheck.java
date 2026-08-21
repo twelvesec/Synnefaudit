@@ -35,24 +35,27 @@ public class MFACheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllUsers()
-            .thenCompose(users -> {
-                this.allUsers = users;
-                return sharedDataProvider.getAllGroups();
-            })
-            .thenCompose(groups -> {
-                this.allGroups = groups;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkRootAccountMFAEnabled,             AWSFinding.ROOT_ACCOUNT_WITHOUT_MFA, this::reportError),
-                    wrapCheck(this::checkRootAccountWithoutHardwareMFA,     AWSFinding.ROOT_ACCOUNT_WITHOUT_HARDWARE_MFA, this::reportError),
-                    wrapCheck(this::checkRootAccountWithVirtualMFA,         AWSFinding.ROOT_ACCOUNT_WITH_VIRTUAL_MFA, this::reportError),
-                    wrapCheck(this::checkUsersWithNoMFA,                    AWSFinding.USERS_WITH_NO_MFA, this::reportError),
-                    wrapCheck(this::checkUsersWithoutHardwareMFA,           AWSFinding.USERS_WITHOUT_HARDWARE_MFA, this::reportError),
-                    wrapCheck(this::checkAdminGroupUsersWithMFA,            AWSFinding.ADMIN_GROUP_USERS_WITHOUT_MFA, this::reportError),
-                    wrapCheck(this::checkConsoleUsersWithNoMFA,             AWSFinding.CONSOLE_USERS_WITHOUT_MFA, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<User>> users = sharedDataProvider.getAllUsers()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Group>> groups = sharedDataProvider.getAllGroups()
+                .exceptionally(ex -> null);
+
+        return CompletableFuture.allOf(users, groups)
+                .thenCompose(v -> {
+                    this.allUsers = users.join();
+                    this.allGroups = groups.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                            wrapCheck(this::checkRootAccountMFAEnabled,         AWSFinding.ROOT_ACCOUNT_WITHOUT_MFA, this::reportError),
+                            wrapCheck(this::checkRootAccountWithoutHardwareMFA, AWSFinding.ROOT_ACCOUNT_WITHOUT_HARDWARE_MFA, this::reportError),
+                            wrapCheck(this::checkRootAccountWithVirtualMFA,     AWSFinding.ROOT_ACCOUNT_WITH_VIRTUAL_MFA, this::reportError),
+                            wrapCheck(this::checkUsersWithNoMFA,                AWSFinding.USERS_WITH_NO_MFA, this::reportError),
+                            wrapCheck(this::checkUsersWithoutHardwareMFA,       AWSFinding.USERS_WITHOUT_HARDWARE_MFA, this::reportError),
+                            wrapCheck(this::checkAdminGroupUsersWithMFA,        AWSFinding.ADMIN_GROUP_USERS_WITHOUT_MFA, this::reportError),
+                            wrapCheck(this::checkConsoleUsersWithNoMFA,         AWSFinding.CONSOLE_USERS_WITHOUT_MFA, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

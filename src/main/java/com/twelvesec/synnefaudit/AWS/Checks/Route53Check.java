@@ -32,19 +32,22 @@ public class Route53Check implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllRoute53HostedZones()
-            .thenCompose(allHostedZones -> {
-                this.allHostedZones = allHostedZones;
-                return sharedDataProvider.getAllEC2Instances();
-            })
-            .thenCompose(allEC2Instances -> {
-                this.allEC2Instances = allEC2Instances;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkRoute53PublicHostedZonesWithQueryLoggingDisabled,  AWSFinding.ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED, this::reportError),
-                    wrapCheck(this::checkRoute53RecordsWithDanglingIPs,                     AWSFinding.ROUTE53_RECORDS_WITH_DANGLING_IPS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<HostedZone>> hostedZones = sharedDataProvider.getAllRoute53HostedZones()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Instance>> ec2Instances = sharedDataProvider.getAllEC2Instances()
+                .exceptionally(ex -> null);
+
+        return CompletableFuture.allOf(hostedZones, ec2Instances)
+                .thenCompose(v -> {
+                    this.allHostedZones = hostedZones.join();
+                    this.allEC2Instances = ec2Instances.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                            wrapCheck(this::checkRoute53PublicHostedZonesWithQueryLoggingDisabled, AWSFinding.ROUTE53_PUBLIC_HOSTED_ZONES_QUERY_LOGGING_DISABLED, this::reportError),
+                            wrapCheck(this::checkRoute53RecordsWithDanglingIPs,                    AWSFinding.ROUTE53_RECORDS_WITH_DANGLING_IPS, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

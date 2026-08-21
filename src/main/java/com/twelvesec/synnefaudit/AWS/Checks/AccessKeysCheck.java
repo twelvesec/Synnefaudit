@@ -8,6 +8,8 @@ import com.twelvesec.synnefaudit.DataWriter;
 import com.twelvesec.synnefaudit.SharedDataProvider;
 import com.twelvesec.synnefaudit.messages.Text;
 import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.services.codebuild.model.Project;
+import software.amazon.awssdk.services.codebuild.model.ReportGroup;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
 import software.amazon.awssdk.services.iam.model.*;
 import software.amazon.awssdk.services.kms.KmsAsyncClient;
@@ -40,26 +42,28 @@ public class AccessKeysCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllUsers()
-            .thenCompose(users -> {
-                this.allUsers = users;
-                return sharedDataProvider.getAllKeyIds();
-            })
-            .thenCompose(keyIds -> {
-                this.allKeyIds = keyIds;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkIAMUsersWithMultipleActiveAccessKeys,                  AWSFinding.IAM_USERS_WITH_MULTIPLE_ACTIVE_ACCESS_KEYS, this::reportError),
-                    wrapCheck(this::checkAccessKeysNotRotated90Days,                            AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED, this::reportError),
-                    wrapCheck(this::checkAccessKeysNotRotatedForUsersWithNonIAMorSTSPolicies,   AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED_PRIVILEGED, this::reportError),
-                    wrapCheck(this::checkNoAccessKeysDuringUserSetup,                           AWSFinding.IAM_NO_ACCESS_KEYS_DURING_SETUP, this::reportError),
-                    wrapCheck(this::checkUnusedAccessKeys,                                      AWSFinding.IAM_UNUSED_ACCESS_KEYS, this::reportError),
-                    wrapCheck(this::checkKmsKeyRotationEnabled,                                 AWSFinding.KMS_KEY_ROTATION_ENABLED, this::reportError),
-                    wrapCheck(this::checkKmsKeyDeletionProtection,                              AWSFinding.KMS_DELETION_PROTECTION, this::reportError),
-                    wrapCheck(this::checkKmsKeyNotMultiRegion,                                  AWSFinding.KMS_MULTI_REGION, this::reportError),
-                    wrapCheck(this::checkNoRootAccountAccessKey,                                AWSFinding.NO_ROOT_ACCOUNT_ACCESS_KEY, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<User>> users = sharedDataProvider.getAllUsers()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<String>> keyIds = sharedDataProvider.getAllKeyIds()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(users, keyIds)
+                .thenCompose(v -> {
+                    this.allUsers = users.join();
+                    this.allKeyIds = keyIds.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                        wrapCheck(this::checkIAMUsersWithMultipleActiveAccessKeys,                  AWSFinding.IAM_USERS_WITH_MULTIPLE_ACTIVE_ACCESS_KEYS, this::reportError),
+                        wrapCheck(this::checkAccessKeysNotRotated90Days,                            AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED, this::reportError),
+                        wrapCheck(this::checkAccessKeysNotRotatedForUsersWithNonIAMorSTSPolicies,   AWSFinding.IAM_ACCESS_KEYS_NOT_ROTATED_PRIVILEGED, this::reportError),
+                        wrapCheck(this::checkNoAccessKeysDuringUserSetup,                           AWSFinding.IAM_NO_ACCESS_KEYS_DURING_SETUP, this::reportError),
+                        wrapCheck(this::checkUnusedAccessKeys,                                      AWSFinding.IAM_UNUSED_ACCESS_KEYS, this::reportError),
+                        wrapCheck(this::checkKmsKeyRotationEnabled,                                 AWSFinding.KMS_KEY_ROTATION_ENABLED, this::reportError),
+                        wrapCheck(this::checkKmsKeyDeletionProtection,                              AWSFinding.KMS_DELETION_PROTECTION, this::reportError),
+                        wrapCheck(this::checkKmsKeyNotMultiRegion,                                  AWSFinding.KMS_MULTI_REGION, this::reportError),
+                        wrapCheck(this::checkNoRootAccountAccessKey,                                AWSFinding.NO_ROOT_ACCOUNT_ACCESS_KEY, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

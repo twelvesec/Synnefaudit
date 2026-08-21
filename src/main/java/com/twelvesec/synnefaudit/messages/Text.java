@@ -25,6 +25,16 @@ public enum Text {
     NO_INSTANCES_ASSOCIATED_WITH_ADDRESS("No instances associated with this address."),
     INSTANCES_ASSOCIATED_WITH_ADDRESS("Instances found associated with this address."),
 
+    INVALID_CIDR_FORMAT("Invalid CIDR format: "),
+    INVALID_PREFIX_LENGTH("Invalid prefix length: "),
+    MALFORMED_IP_ADDRESS_IN_CIDR("Malformed IP address in CIDR: "),
+
+    ALL_PORTS_OPEN_TO_INTERNET("All ports (0-65535) open to public internet"),
+    PORTS_OPEN_TO_INTERNET("One or more ports open to public internet"),
+    HIGH_RISK_PORTS_OPEN_TO_INTERNET("High-risk ports (1-1024) open to public internet"),
+    PUBLIC_PORTS_FOUND("Public Ports (%s) found."),
+    NO_PUBLIC_PORTS_FOUND("No Public Ports (%s) found."),
+
     ECR_NO_REPOSITORIES_FOUND("No repositories found."),
     ECR_NO_TAGGED_IMAGES_FOUND_IN_REPOSITORY("No tagged images found in repository."),
     ECR_NO_TAGGED_IMAGE_WITH_TIMESTAMP_FOUND("No tagged image with timestamp found."),

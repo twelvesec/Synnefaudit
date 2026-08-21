@@ -28,68 +28,44 @@ public class IAMPolicyCheck implements CloudCheck {
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final IamAsyncClient iam;
+    private final JsonNode config;
 
-    private static final Set<String> DANGEROUS_ACTIONS = Set.of(
-            "iam:*",
+    private static List<String> DANGEROUS_ACTIONS;
 
-            "iam:passrole",
-            "iam:createpolicyversion",
-            "iam:setdefaultpolicyversion",
-            "iam:updateassumerolepolicy",
-
-            "iam:putuserpolicy",
-            "iam:putgrouppolicy",
-            "iam:putrolepolicy",
-            "iam:attachuserpolicy",
-            "iam:attachgrouppolicy",
-            "iam:attachrolepolicy",
-            "iam:detachuserpolicy",
-            "iam:addusertogroup",
-
-            "iam:createaccesskey",
-            "iam:updateaccesskey",
-            "iam:deleteaccesskey",
-            "iam:createloginprofile",
-            "iam:updateloginprofile",
-
-            "lambda:updatefunctioncode",
-            "lambda:updatefunctionconfiguration",
-            "glue:updatedevendpoint",
-            "cloudformation:updatestack",
-            "apprunner:updateservice",
-            "bedrock-agentcore:invokeagentruntimecommand"
-    );
-
-    public IAMPolicyCheck(DataWriter writer, SharedDataProvider sharedDataProvider, IamAsyncClient iam) {
+    public IAMPolicyCheck(DataWriter writer, SharedDataProvider sharedDataProvider, IamAsyncClient iam, JsonNode config) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.iam = iam;
+        this.config = config;
+        this.DANGEROUS_ACTIONS = getStringList(config.path("dangerous_actions"));
     }
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllRoles()
-                .thenCompose(roles -> {
-                    this.allRoles = roles;
-                    return sharedDataProvider.getAllUsers();
-                })
-                .thenCompose(users -> {
-                    this.allUsers = users;
-                    return sharedDataProvider.getAllPolicies();
-                })
-                .thenCompose(policies -> {
-                    this.allPolicies = policies;
+        CompletableFuture<List<Role>> roles = sharedDataProvider.getAllRoles()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<User>> users = sharedDataProvider.getAllUsers()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Policy>> policies = sharedDataProvider.getAllPolicies()
+                .exceptionally(ex -> null);
+
+        return CompletableFuture.allOf(roles, users, policies)
+                .thenCompose(v -> {
+                    this.allRoles = roles.join();
+                    this.allUsers = users.join();
+                    this.allPolicies = policies.join();
+
                     List<Supplier<CheckResult>> checksList = List.of(
-                            wrapCheck(this::checkIAMPolicyAllowsPrivilegeEscalation,                    AWSFinding.IAM_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
-                            wrapCheck(this::checkIAMInlinePoliciesAllowsPrivilegeEscalation,            AWSFinding.IAM_INLINE_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
-                            wrapCheck(this::checkOverlyPermissiveManagedPolicies,                       AWSFinding.IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES, this::reportError),
-                            wrapCheck(this::checkIAMInlinePoliciesCloudTrailFullAccess,                 AWSFinding.IAM_INLINE_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
-                            wrapCheck(this::checkIAMInlinePoliciesKMSFullAccess,                        AWSFinding.IAM_INLINE_POLICY_KMS_FULL_ACCESS, this::reportError),
-                            wrapCheck(this::checkIAMInlinePoliciesAdminAccess,                          AWSFinding.IAM_INLINE_POLICY_ADMIN_ACCESS, this::reportError),
-                            wrapCheck(this::checkIAMCustomerManagedPoliciesAdminAccess,                 AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_ADMIN_ACCESS, this::reportError),
-                            wrapCheck(this::checkIAMCustomerManagedPoliciesCloudTrailFullAccess,        AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
-                            wrapCheck(this::checkIAMCustomerManagedPoliciesKMSFullAccess,               AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_KMS_FULL_ACCESS, this::reportError),
-                            wrapCheck(this::checkIAMCustomerManagedPoliciesPermissiveRoleAssumption,    AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_PERMISSIVE_ROLE_ASSUMPTION, this::reportError)
+                            wrapCheck(this::checkIAMPolicyAllowsPrivilegeEscalation,                 AWSFinding.IAM_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
+                            wrapCheck(this::checkIAMInlinePoliciesAllowsPrivilegeEscalation,         AWSFinding.IAM_INLINE_POLICY_ALLOWS_PRIVILEGE_ESCALATION, this::reportError),
+                            wrapCheck(this::checkOverlyPermissiveManagedPolicies,                    AWSFinding.IAM_OVERLY_PERMISSIVE_MANAGED_POLICIES, this::reportError),
+                            wrapCheck(this::checkIAMInlinePoliciesCloudTrailFullAccess,              AWSFinding.IAM_INLINE_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMInlinePoliciesKMSFullAccess,                     AWSFinding.IAM_INLINE_POLICY_KMS_FULL_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMInlinePoliciesAdminAccess,                       AWSFinding.IAM_INLINE_POLICY_ADMIN_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMCustomerManagedPoliciesAdminAccess,              AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_ADMIN_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMCustomerManagedPoliciesCloudTrailFullAccess,     AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_CLOUDTRAIL_FULL_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMCustomerManagedPoliciesKMSFullAccess,            AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_KMS_FULL_ACCESS, this::reportError),
+                            wrapCheck(this::checkIAMCustomerManagedPoliciesPermissiveRoleAssumption, AWSFinding.IAM_CUSTOMER_MANAGED_POLICY_PERMISSIVE_ROLE_ASSUMPTION, this::reportError)
                     );
                     return runChecksInList(checksList, writer);
                 });

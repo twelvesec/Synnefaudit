@@ -31,18 +31,21 @@ public class NetworkACLsCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllNetworkACLs()
-            .thenCompose(NetworkACLs -> {
-                this.allNetworkACLs = NetworkACLs;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::NetworkACLWithAllPortsOpenToTheInternet,        AWSFinding.NETWORK_ACL_WITH_ALL_PORTS_OPEN_TO_INTERNET, this::reportError),
-                    wrapCheck(this::NetworkACLAllowIngressFromTheInternetToPorts,   AWSFinding.NETWORK_ACL_WITH_SOME_PORTS_OPEN_TO_INTERNET, this::reportError),
-                    wrapCheck(this::NetworkACLAllowIngressFromInternetToRDP,        AWSFinding.NETWORK_ACL_WITH_RDP_OPEN_TO_INTERNET, this::reportError),
-                    wrapCheck(this::NetworkACLAllowIngressFromInternetToSSH,        AWSFinding.NETWORK_ACL_WITH_SSH_OPEN_TO_INTERNET, this::reportError),
-                    wrapCheck(this::checkUnusedNetworkAccessControlLists,           AWSFinding.UNUSED_NETWORK_ACLS_EXIST, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<NetworkAcl>> networkACLs = sharedDataProvider.getAllNetworkACLs()
+                .exceptionally(ex -> null);
+
+        return networkACLs.thenCompose(acls -> {
+            this.allNetworkACLs = acls;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::NetworkACLWithAllPortsOpenToTheInternet,       AWSFinding.NETWORK_ACL_WITH_ALL_PORTS_OPEN_TO_INTERNET, this::reportError),
+                    wrapCheck(this::NetworkACLAllowIngressFromTheInternetToPorts,AWSFinding.NETWORK_ACL_WITH_SOME_PORTS_OPEN_TO_INTERNET, this::reportError),
+                    wrapCheck(this::NetworkACLAllowIngressFromInternetToRDP,     AWSFinding.NETWORK_ACL_WITH_RDP_OPEN_TO_INTERNET, this::reportError),
+                    wrapCheck(this::NetworkACLAllowIngressFromInternetToSSH,     AWSFinding.NETWORK_ACL_WITH_SSH_OPEN_TO_INTERNET, this::reportError),
+                    wrapCheck(this::checkUnusedNetworkAccessControlLists,         AWSFinding.UNUSED_NETWORK_ACLS_EXIST, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

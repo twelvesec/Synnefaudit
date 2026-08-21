@@ -33,8 +33,8 @@ public class Inspector2Check implements CloudCheck {
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
         List<Supplier<CheckResult>> checksList = List.of(
-            wrapCheck(this::checkInspector2Disabled,    AWSFinding.INSPECTOR2_NOT_ENABLED, this::reportError),
-            wrapCheck(this::checkInspector2Findings,    AWSFinding.INSPECTOR2_FINDINGS_FOUND, this::reportError)
+                wrapCheck(this::checkInspector2Disabled, AWSFinding.INSPECTOR2_NOT_ENABLED, this::reportError),
+                wrapCheck(this::checkInspector2Findings, AWSFinding.INSPECTOR2_FINDINGS_FOUND, this::reportError)
         );
         return runChecksInList(checksList, writer);
     }

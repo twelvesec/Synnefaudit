@@ -33,32 +33,32 @@ public class EBSCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllVolumes()
-            .thenCompose(volumes -> {
-                this.allVolumes = volumes;
-                return sharedDataProvider.getAllSnapshots();
-            })
-            .thenCompose(snapshots -> {
-                this.allSnapshots = snapshots;
-                return sharedDataProvider.getAllLaunchConfigurations();
-            })
-            .thenCompose(lauchconfig -> {
-                this.allLaunchConfigurations = lauchconfig;
-                return sharedDataProvider.getAllProtectedResources();
-            })
-            .thenCompose(protectedResources -> {
-                this.allProtectedResources = protectedResources;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkNoSnapshotsForEBSVolumes,              AWSFinding.NO_SNAPSHOTS_FOR_EBS_VOLUMES, this::reportError),
-                    wrapCheck(this::checkEBSDefaultEncryptionIsNotActivated,    AWSFinding.EBS_DEFAULT_ENCRYPTION_NOT_ACTIVATED, this::reportError),
-                    wrapCheck(this::checkEBSSnapshotsEncrypted,                 AWSFinding.EBS_SNAPSHOTS_ENCRYPTED, this::reportError),
-                    wrapCheck(this::checkNoPublicEBSSnapshots,                  AWSFinding.EBS_SNAPSHOTS_NOT_PUBLIC, this::reportError),
-                    wrapCheck(this::checkEBSSnapshotPublicAccessDisabled,       AWSFinding.EBS_SNAPSHOT_PUBLIC_ACCESS_DISABLED, this::reportError),
-                    wrapCheck(this::checkEBSVolumesEncrypted,                   AWSFinding.EBS_VOLUMES_ENCRYPTED, this::reportError),
-                    wrapCheck(this::checkEBSVolumesProtectedByBackupPlan,       AWSFinding.EBS_VOLUMES_PROTECTED_BY_BACKUP_PLAN, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<Volume>> volumes = sharedDataProvider.getAllVolumes()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Snapshot>> snapshots = sharedDataProvider.getAllSnapshots()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<LaunchConfiguration>> lauchconfig = sharedDataProvider.getAllLaunchConfigurations()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<ProtectedResource>> protectedResources = sharedDataProvider.getAllProtectedResources()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(volumes, snapshots, lauchconfig, protectedResources)
+                .thenCompose(v -> {
+                    this.allVolumes = volumes.join();
+                    this.allSnapshots = snapshots.join();
+                    this.allLaunchConfigurations = lauchconfig.join();
+                    this.allProtectedResources = protectedResources.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                            wrapCheck(this::checkNoSnapshotsForEBSVolumes,              AWSFinding.NO_SNAPSHOTS_FOR_EBS_VOLUMES, this::reportError),
+                            wrapCheck(this::checkEBSDefaultEncryptionIsNotActivated,    AWSFinding.EBS_DEFAULT_ENCRYPTION_NOT_ACTIVATED, this::reportError),
+                            wrapCheck(this::checkEBSSnapshotsEncrypted,                 AWSFinding.EBS_SNAPSHOTS_ENCRYPTED, this::reportError),
+                            wrapCheck(this::checkNoPublicEBSSnapshots,                  AWSFinding.EBS_SNAPSHOTS_NOT_PUBLIC, this::reportError),
+                            wrapCheck(this::checkEBSSnapshotPublicAccessDisabled,       AWSFinding.EBS_SNAPSHOT_PUBLIC_ACCESS_DISABLED, this::reportError),
+                            wrapCheck(this::checkEBSVolumesEncrypted,                   AWSFinding.EBS_VOLUMES_ENCRYPTED, this::reportError),
+                            wrapCheck(this::checkEBSVolumesProtectedByBackupPlan,       AWSFinding.EBS_VOLUMES_PROTECTED_BY_BACKUP_PLAN, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

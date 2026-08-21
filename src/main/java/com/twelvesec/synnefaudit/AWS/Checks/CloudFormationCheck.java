@@ -32,14 +32,16 @@ public class CloudFormationCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllStacks()
-            .thenCompose(stacks -> {
-                this.allStacks = stacks;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkCloudFormationStacksWithoutTerminationProtection, AWSFinding.CLOUDFORMATION_STACKS_WITHOUT_TERMINATION_PROTECTION, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<StackSummary>> stacks = sharedDataProvider.getAllStacks()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(stacks)
+                .thenCompose(v -> {
+                    this.allStacks = stacks.join();
+                    List<Supplier<CheckResult>> checksList = List.of(
+                        wrapCheck(this::checkCloudFormationStacksWithoutTerminationProtection, AWSFinding.CLOUDFORMATION_STACKS_WITHOUT_TERMINATION_PROTECTION, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override
@@ -70,10 +72,7 @@ public class CloudFormationCheck implements CloudCheck {
                                             && stack.enableTerminationProtection();
                     s = protectionEnabled ? Status.PASS : Status.FAIL;
                     r = MAPPER.valueToTree(stack.toBuilder());
-                    
-                    if (r instanceof ObjectNode) {
-                        r.put("terminationProtectionEnabled", protectionEnabled);
-                    }
+                    r.put("terminationProtectionEnabled", protectionEnabled);
                 } catch (Exception e) {
                     s = Status.FAIL_EXCEPTION;
                     r = MAPPER.createObjectNode()

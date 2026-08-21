@@ -43,35 +43,37 @@ public class CloudWatchCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllLogGroups()
-            .thenCompose(logGroups -> {
-                this.allGroups = logGroups;
-                return sharedDataProvider.getAllAlarms();
-            })
-            .thenCompose(allAlarms -> {
-                this.allAlarms = allAlarms;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkCloudWatchAlarmsForSensitiveOperations,    AWSFinding.CLOUDWATCH_ALARMS_FOR_SENSITIVE_OPERATIONS, this::reportError),
-                    wrapCheck(this::checkLogGroupsWithNoAWSKMSKeysAssociated,       AWSFinding.CLOUDWATCH_LOG_GROUPS_WITH_NO_KMS_KEYS_ASSOCIATED, this::reportError),
-                    wrapCheck(this::checkLogGroupsWithLowRetentionPolicy,           AWSFinding.CLOUDWATCH_LOG_GROUPS_WITH_LOW_RETENTION_POLICY, this::reportError),
-                    wrapCheck(this::checkCloudWatchCrossAccountSharing,             AWSFinding.CLOUDWATCH_CROSS_ACCOUNT_SHARING, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForAWSConfigChanges,        AWSFinding.LOG_METRIC_FILTER_AWS_CONFIG_CHANGES, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForConsoleAuthFailures,     AWSFinding.LOG_METRIC_FILTER_CONSOLE_AUTH_FAILURES, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForOrganizationsChanges,    AWSFinding.LOG_METRIC_FILTER_ORGANIZATIONS_CHANGES, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForNACLChanges,             AWSFinding.LOG_METRIC_FILTER_NACL_CHANGES, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForNetworkGatewayChanges,   AWSFinding.LOG_METRIC_FILTER_NETWORK_GATEWAY_CHANGES, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForCloudTrailChanges,       AWSFinding.LOG_METRIC_FILTER_CLOUDTRAIL_CHANGES, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForKMSKeyDeletion,          AWSFinding.LOG_METRIC_FILTER_KMS_KEY_DELETION, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForIAMPolicyChanges,        AWSFinding.LOG_METRIC_FILTER_IAM_POLICY_CHANGES, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForConsoleSigninWithoutMFA, AWSFinding.LOG_METRIC_FILTER_CONSOLE_SIGNIN_NO_MFA, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForS3BucketPolicyChanges,   AWSFinding.LOG_METRIC_FILTER_S3_BUCKET_POLICY_CHANGES, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForSecurityGroupChanges,    AWSFinding.LOG_METRIC_FILTER_SECURITY_GROUP_CHANGES, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForUnauthorizedAPICalls,    AWSFinding.LOG_METRIC_FILTER_UNAUTHORIZED_API_CALLS, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForRootAccountUsage,        AWSFinding.LOG_METRIC_FILTER_ROOT_ACCOUNT_USAGE, this::reportError),
-                    wrapCheck(this::checkLogMetricFilterForVPCChanges,              AWSFinding.LOG_METRIC_FILTER_VPC_CHANGES, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<LogGroup>> logGroups = sharedDataProvider.getAllLogGroups()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<MetricAlarm>> allAlarms = sharedDataProvider.getAllAlarms()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(logGroups, allAlarms)
+                .thenCompose(v -> {
+                    this.allGroups = logGroups.join();
+                    this.allAlarms = allAlarms.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                        wrapCheck(this::checkCloudWatchAlarmsForSensitiveOperations,    AWSFinding.CLOUDWATCH_ALARMS_FOR_SENSITIVE_OPERATIONS, this::reportError),
+                        wrapCheck(this::checkLogGroupsWithNoAWSKMSKeysAssociated,       AWSFinding.CLOUDWATCH_LOG_GROUPS_WITH_NO_KMS_KEYS_ASSOCIATED, this::reportError),
+                        wrapCheck(this::checkLogGroupsWithLowRetentionPolicy,           AWSFinding.CLOUDWATCH_LOG_GROUPS_WITH_LOW_RETENTION_POLICY, this::reportError),
+                        wrapCheck(this::checkCloudWatchCrossAccountSharing,             AWSFinding.CLOUDWATCH_CROSS_ACCOUNT_SHARING, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForAWSConfigChanges,        AWSFinding.LOG_METRIC_FILTER_AWS_CONFIG_CHANGES, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForConsoleAuthFailures,     AWSFinding.LOG_METRIC_FILTER_CONSOLE_AUTH_FAILURES, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForOrganizationsChanges,    AWSFinding.LOG_METRIC_FILTER_ORGANIZATIONS_CHANGES, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForNACLChanges,             AWSFinding.LOG_METRIC_FILTER_NACL_CHANGES, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForNetworkGatewayChanges,   AWSFinding.LOG_METRIC_FILTER_NETWORK_GATEWAY_CHANGES, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForCloudTrailChanges,       AWSFinding.LOG_METRIC_FILTER_CLOUDTRAIL_CHANGES, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForKMSKeyDeletion,          AWSFinding.LOG_METRIC_FILTER_KMS_KEY_DELETION, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForIAMPolicyChanges,        AWSFinding.LOG_METRIC_FILTER_IAM_POLICY_CHANGES, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForConsoleSigninWithoutMFA, AWSFinding.LOG_METRIC_FILTER_CONSOLE_SIGNIN_NO_MFA, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForS3BucketPolicyChanges,   AWSFinding.LOG_METRIC_FILTER_S3_BUCKET_POLICY_CHANGES, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForSecurityGroupChanges,    AWSFinding.LOG_METRIC_FILTER_SECURITY_GROUP_CHANGES, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForUnauthorizedAPICalls,    AWSFinding.LOG_METRIC_FILTER_UNAUTHORIZED_API_CALLS, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForRootAccountUsage,        AWSFinding.LOG_METRIC_FILTER_ROOT_ACCOUNT_USAGE, this::reportError),
+                        wrapCheck(this::checkLogMetricFilterForVPCChanges,              AWSFinding.LOG_METRIC_FILTER_VPC_CHANGES, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

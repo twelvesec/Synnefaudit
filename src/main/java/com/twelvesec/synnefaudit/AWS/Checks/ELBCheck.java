@@ -1,5 +1,6 @@
 package com.twelvesec.synnefaudit.AWS.Checks;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.synnefaudit.AWS.AWSFinding;
@@ -28,33 +29,38 @@ public class ELBCheck implements CloudCheck {
     private final SharedDataProvider sharedDataProvider;
     private final ElasticLoadBalancingV2AsyncClient elb;
     private final Wafv2AsyncClient waf;
+    private final JsonNode config;
 
-    public ELBCheck(DataWriter writer, SharedDataProvider sharedDataProvider, 
-                    ElasticLoadBalancingV2AsyncClient elb, Wafv2AsyncClient waf) {
+    public ELBCheck(DataWriter writer, SharedDataProvider sharedDataProvider,
+                    ElasticLoadBalancingV2AsyncClient elb, Wafv2AsyncClient waf, JsonNode config) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.elb = elb;
         this.waf = waf;
+        this.config = config;
     }
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllLoadBalancers()
-            .thenCompose(loadBalancers -> {
-                this.allLoadBalancers = loadBalancers;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkELBWithNoWAFACLAttached,                               AWSFinding.ELB_WITHOUT_WAF_ACL_ATTACHED, this::reportError),
-                    wrapCheck(this::checkELBALBWithAccessLoggingDisabled,                       AWSFinding.ELB_ALBS_ACCESS_LOGGING_DISABLED, this::reportError),
-                    wrapCheck(this::checkELBWithDeletionProtectionDisabled,                     AWSFinding.ELB_DELETION_PROTECTION_DISABLED, this::reportError),
-                    wrapCheck(this::checkELBListenerWithoutSSLFound,                            AWSFinding.ELB_LISTENER_WITHOUT_SSL, this::reportError),
-                    wrapCheck(this::checkPubliclyAccessibleLoadBalancers,                       AWSFinding.PUBLICLY_ACCESSIBLE_LOAD_BALANCERS, this::reportError),
-                    wrapCheck(this::checkAlbsDefensiveMitigationButNotDroppingInvalidHeaders,   AWSFinding.ELB_ALBS_DEFENSIVE_MITIGATION_NOT_DROPPING_HEADERS, this::reportError),
-                    wrapCheck(this::checkELBInsecureSSLCiphers,                                 AWSFinding.ELB_INSECURE_SSL_CIPHERS, this::reportError),
-                    wrapCheck(this::checkELBWithoutListeners,                                   AWSFinding.ELB_WITHOUT_LISTENERS, this::reportError),
-                    wrapCheck(this::checkUnusedElasticLoadBalancersDeleted,                     AWSFinding.UNUSED_ELASTIC_LOAD_BALANCERS_EXIST, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<LoadBalancer>> loadBalancers = sharedDataProvider.getAllLoadBalancers()
+                .exceptionally(ex -> null);
+
+        return loadBalancers.thenCompose(lb -> {
+            this.allLoadBalancers = lb;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::checkELBWithNoWAFACLAttached,                             AWSFinding.ELB_WITHOUT_WAF_ACL_ATTACHED, this::reportError),
+                    wrapCheck(this::checkELBALBWithAccessLoggingDisabled,                    AWSFinding.ELB_ALBS_ACCESS_LOGGING_DISABLED, this::reportError),
+                    wrapCheck(this::checkELBWithDeletionProtectionDisabled,                  AWSFinding.ELB_DELETION_PROTECTION_DISABLED, this::reportError),
+                    wrapCheck(this::checkELBListenerWithoutSSLFound,                         AWSFinding.ELB_LISTENER_WITHOUT_SSL, this::reportError),
+                    wrapCheck(this::checkPubliclyAccessibleLoadBalancers,                    AWSFinding.PUBLICLY_ACCESSIBLE_LOAD_BALANCERS, this::reportError),
+                    wrapCheck(this::checkAlbsDefensiveMitigationButNotDroppingInvalidHeaders,AWSFinding.ELB_ALBS_DEFENSIVE_MITIGATION_NOT_DROPPING_HEADERS, this::reportError),
+                    wrapCheck(this::checkELBInsecureSSLCiphers,                              AWSFinding.ELB_INSECURE_SSL_CIPHERS, this::reportError),
+                    wrapCheck(this::checkELBWithoutListeners,                                AWSFinding.ELB_WITHOUT_LISTENERS, this::reportError),
+                    wrapCheck(this::checkUnusedElasticLoadBalancersDeleted,                  AWSFinding.UNUSED_ELASTIC_LOAD_BALANCERS_EXIST, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override
@@ -197,9 +203,8 @@ public class ELBCheck implements CloudCheck {
             .map(lb -> {
                 Status s;
                 ObjectNode r;
-                String arn;
+                String arn = lb.loadBalancerArn();
                 try {
-                    arn = lb.loadBalancerArn();
                     DescribeListenersResponse response = elb.describeListeners(
                             DescribeListenersRequest.builder().loadBalancerArn(arn).build()
                         ).join();
@@ -216,7 +221,6 @@ public class ELBCheck implements CloudCheck {
                     s = violation ? Status.FAIL : Status.PASS;
                     r = MAPPER.valueToTree(response.toBuilder());
                 } catch (Exception e) {
-                    arn = "UNKNOWN";
                     s = Status.FAIL_EXCEPTION;
                     r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
                                                 Text.EXCEPTION.toString().concat(e.getMessage()));
@@ -245,14 +249,12 @@ public class ELBCheck implements CloudCheck {
             .map(lb -> {
                 Status s;
                 ObjectNode r;
-                String name;
+                String name= lb.loadBalancerName();
                 try {
-                    name = lb.loadBalancerName();
                     String scheme = lb.scheme().toString();
                     s = "internet-facing".equalsIgnoreCase(scheme) ? Status.FAIL : Status.PASS;
                     r = MAPPER.valueToTree(lb.toBuilder());
                 } catch (Exception e) {
-                    name = "UNKNOWN";
                     s = Status.FAIL_EXCEPTION;
                     r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
                                                 Text.EXCEPTION.toString().concat(e.getMessage()));
@@ -360,23 +362,8 @@ public class ELBCheck implements CloudCheck {
             return Status.FAIL;
         }
 
-        Set<String> securePolicies = Set.of(
-            "ELBSecurityPolicy-TLS13-1-2-2021-06",
-            "ELBSecurityPolicy-TLS13-1-2-Res-2021-06",
-            "ELBSecurityPolicy-FS-1-2-Res-2020-10",
-            "ELBSecurityPolicy-FS-1-2-2019-08",
-            "ELBSecurityPolicy-FS-1-1-2019-08"
-        );
-
-        Set<String> insecurePolicies = Set.of(
-            "ELBSecurityPolicy-2016-08",
-            "ELBSecurityPolicy-2015-05",
-            "ELBSecurityPolicy-2015-03",
-            "ELBSecurityPolicy-2015-02",
-            "ELBSecurityPolicy-2014-10",
-            "ELBSecurityPolicy-2014-01",
-            "ELBSecurityPolicy-2011-08"
-        );
+        List<String> securePolicies = getStringList(config.path("secure_policies"));
+        List<String> insecurePolicies = getStringList(config.path("insecure_policies"));
 
         if (insecurePolicies.stream().anyMatch(sslPolicy::contains)) {
             return Status.FAIL;

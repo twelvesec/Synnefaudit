@@ -6,13 +6,9 @@ import com.twelvesec.synnefaudit.CloudCheck;
 import com.twelvesec.synnefaudit.DataWriter;
 import com.twelvesec.synnefaudit.SharedDataProvider;
 import com.twelvesec.synnefaudit.messages.Text;
-import software.amazon.awssdk.services.account.AccountAsyncClient;
 import software.amazon.awssdk.services.backup.BackupAsyncClient;
 import software.amazon.awssdk.services.backup.model.*;
-import software.amazon.awssdk.services.codebuild.CodeBuildAsyncClient;
-import software.amazon.awssdk.services.organizations.OrganizationsAsyncClient;
 import software.amazon.awssdk.services.resourceexplorer2.model.Index;
-import software.amazon.awssdk.services.sts.StsAsyncClient;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,9 +31,11 @@ public class BackupCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllIndexes()
-                .thenCompose(indexes -> {
-                    this.allIndexes = indexes;
+        CompletableFuture<List<Index>> indexes = sharedDataProvider.getAllIndexes()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(indexes)
+                .thenCompose(v -> {
+                    this.allIndexes = indexes.join();
                     List<Supplier<CheckResult>> checksList = List.of(
                             wrapCheck(this::checkNoBackupReportPlanExists,      AWSFinding.NO_BACKUP_REPORT_PLAN_EXISTS, this::reportError),
                             wrapCheck(this::checkNoBackupVaultsExist,           AWSFinding.NO_BACKUP_VAULTS_EXIST, this::reportError),

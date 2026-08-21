@@ -21,10 +21,7 @@ import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -39,46 +36,63 @@ public class S3BucketsCheck implements CloudCheck {
     private final S3AsyncClient s3;
     private final S3ControlAsyncClient s3control;
     private final StsAsyncClient sts;
+
+    private final Set<String> listActions;
+    private final Set<String> readActions;
+    private final Set<String> writeActions;
+    private final List<String> writeActionPrefixes;
+    private final List<String> predictablePrefixes;
+    private final List<String> predictableSubstrings;
     
-    public S3BucketsCheck(DataWriter writer, AWSDependencyFactory awsDependencyFactory, SharedDataProvider sharedDataProvider, 
-                        S3AsyncClient s3, S3ControlAsyncClient s3control, StsAsyncClient sts) {
+    public S3BucketsCheck(DataWriter writer, AWSDependencyFactory awsDependencyFactory, SharedDataProvider sharedDataProvider,
+                          S3AsyncClient s3, S3ControlAsyncClient s3control, StsAsyncClient sts, JsonNode config) {
         this.writer = writer;
         this.awsDependencyFactory = awsDependencyFactory;
         this.sharedDataProvider = sharedDataProvider;
         this.s3 = s3;
         this.s3control = s3control;
         this.sts = sts;
+
+        this.listActions = getLowercaseStringSet(config.path("list_actions"));
+        this.readActions = getLowercaseStringSet(config.path("read_actions"));
+        this.writeActions = getLowercaseStringSet(config.path("write_actions"));
+        this.writeActionPrefixes = getStringList(config.path("write_action_prefixes"));
+        this.predictablePrefixes = getStringList(config.path("predictable_bucket_prefixes"));
+        this.predictableSubstrings = getStringList(config.path("predictable_bucket_substrings"));
     }
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllS3BucketNames()
-            .thenCompose(s3Buckets -> {
-                this.allS3BucketNames = s3Buckets;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::S3BucketsWithMFADeleteDisabled,             AWSFinding.S3_BUCKETS_MFA_DELETE_DISABLED, this::reportError),
-                    wrapCheck(this::S3BucketsEncryptedWithoutSSEKMS,            AWSFinding.S3_BUCKETS_ENCRYPTED_WITHOUT_SSE_KMS, this::reportError),
-                    wrapCheck(this::S3BucketsWithNoSecureTransportPolicySet,    AWSFinding.S3_BUCKETS_WITH_NO_SECURE_TRANSPORT_POLICY_SET, this::reportError),
-                    wrapCheck(this::S3BucketsWithObjectLockDisabled,            AWSFinding.S3_BUCKETS_WITH_OBJECT_LOCK_DISABLED, this::reportError),
-                    wrapCheck(this::S3BucketsWithBucketVersioningDisabled,      AWSFinding.S3_BUCKETS_WITH_BUCKET_VERSIONING_DISABLED, this::reportError),
-                    wrapCheck(this::S3BucketsWithServerAccessLoggingDisabled,   AWSFinding.S3_BUCKETS_WITH_SERVER_ACCESS_LOGGING_DISABLED, this::reportError),
-                    wrapCheck(this::S3BucketsWithACLsEnabled,                   AWSFinding.S3_BUCKETS_WITH_ACL_ENABLED, this::reportError),
-                    wrapCheck(this::BlockPublicAccessForS3NotEnabled,           AWSFinding.BLOCK_PUBLIC_ACCESS_S3_DISABLED, this::reportError),
-                    wrapCheck(this::S3BucketsWithDefaultEncryptionDisabled,     AWSFinding.S3_BUCKETS_WITH_DEFAULT_ENCRYPTION_DISABLED, this::reportError),
-                    wrapCheck(this::S3BucketsWithWriteAccessAllowed,            AWSFinding.S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED, this::reportError),
-                    wrapCheck(this::checkS3AccountLevelPublicAccessBlock,       AWSFinding.S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCK, this::reportError),
-                    wrapCheck(this::S3BucketsListableByPublic,                  AWSFinding.S3_BUCKETS_LISTABLE_BY_PUBLIC, this::reportError),
-                    wrapCheck(this::S3BucketsOpenToPublic,                      AWSFinding.S3_BUCKETS_OPEN_TO_PUBLIC, this::reportError),
-                    wrapCheck(this::S3BucketsWritableByPublic,                  AWSFinding.S3_BUCKETS_WRITABLE_BY_PUBLIC, this::reportError),
-                    wrapCheck(this::checkS3BucketsCrossRegionReplication,       AWSFinding.S3_BUCKETS_CROSS_REGION_REPLICATION_ENABLED, this::reportError),
-                    wrapCheck(this::checkS3BucketsEventNotificationsEnabled,    AWSFinding.S3_BUCKETS_EVENT_NOTIFICATIONS_ENABLED, this::reportError),
-                    wrapCheck(this::checkS3BucketsLifecycleConfigurationEnabled,AWSFinding.S3_BUCKETS_LIFECYCLE_CONFIGURATION_ENABLED, this::reportError),
-                    wrapCheck(this::checkS3BucketsPolicyAllowsWriteAccess,      AWSFinding.S3_BUCKETS_POLICY_ALLOWS_WRITE_ACCESS, this::reportError),
-                    wrapCheck(this::checkS3BucketsShadowResourceHijacking,      AWSFinding.S3_BUCKETS_VULNERABLE_TO_SHADOW_RESOURCE_HIJACKING, this::reportError),
-                    wrapCheck(this::checkS3BucketsPolicyRestrictExternalAccounts,   AWSFinding.S3_BUCKETS_POLICY_RESTRICT_EXTERNAL_ACCOUNTS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<String>> s3Buckets = sharedDataProvider.getAllS3BucketNames()
+                .exceptionally(ex -> null);
+
+        return s3Buckets.thenCompose(buckets -> {
+            this.allS3BucketNames = buckets;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::S3BucketsWithMFADeleteDisabled,                 AWSFinding.S3_BUCKETS_MFA_DELETE_DISABLED, this::reportError),
+                    wrapCheck(this::S3BucketsEncryptedWithoutSSEKMS,                AWSFinding.S3_BUCKETS_ENCRYPTED_WITHOUT_SSE_KMS, this::reportError),
+                    wrapCheck(this::S3BucketsWithNoSecureTransportPolicySet,        AWSFinding.S3_BUCKETS_WITH_NO_SECURE_TRANSPORT_POLICY_SET, this::reportError),
+                    wrapCheck(this::S3BucketsWithObjectLockDisabled,                 AWSFinding.S3_BUCKETS_WITH_OBJECT_LOCK_DISABLED, this::reportError),
+                    wrapCheck(this::S3BucketsWithBucketVersioningDisabled,           AWSFinding.S3_BUCKETS_WITH_BUCKET_VERSIONING_DISABLED, this::reportError),
+                    wrapCheck(this::S3BucketsWithServerAccessLoggingDisabled,        AWSFinding.S3_BUCKETS_WITH_SERVER_ACCESS_LOGGING_DISABLED, this::reportError),
+                    wrapCheck(this::S3BucketsWithACLsEnabled,                        AWSFinding.S3_BUCKETS_WITH_ACL_ENABLED, this::reportError),
+                    wrapCheck(this::BlockPublicAccessForS3NotEnabled,                AWSFinding.BLOCK_PUBLIC_ACCESS_S3_DISABLED, this::reportError),
+                    wrapCheck(this::S3BucketsWithDefaultEncryptionDisabled,          AWSFinding.S3_BUCKETS_WITH_DEFAULT_ENCRYPTION_DISABLED, this::reportError),
+                    wrapCheck(this::S3BucketsWithWriteAccessAllowed,                 AWSFinding.S3_BUCKETS_WITH_WRITE_ACCESS_ALLOWED, this::reportError),
+                    wrapCheck(this::checkS3AccountLevelPublicAccessBlock,            AWSFinding.S3_ACCOUNT_LEVEL_PUBLIC_ACCESS_BLOCK, this::reportError),
+                    wrapCheck(this::S3BucketsListableByPublic,                       AWSFinding.S3_BUCKETS_LISTABLE_BY_PUBLIC, this::reportError),
+                    wrapCheck(this::S3BucketsOpenToPublic,                           AWSFinding.S3_BUCKETS_OPEN_TO_PUBLIC, this::reportError),
+                    wrapCheck(this::S3BucketsWritableByPublic,                       AWSFinding.S3_BUCKETS_WRITABLE_BY_PUBLIC, this::reportError),
+                    wrapCheck(this::checkS3BucketsCrossRegionReplication,            AWSFinding.S3_BUCKETS_CROSS_REGION_REPLICATION_ENABLED, this::reportError),
+                    wrapCheck(this::checkS3BucketsEventNotificationsEnabled,         AWSFinding.S3_BUCKETS_EVENT_NOTIFICATIONS_ENABLED, this::reportError),
+                    wrapCheck(this::checkS3BucketsLifecycleConfigurationEnabled,     AWSFinding.S3_BUCKETS_LIFECYCLE_CONFIGURATION_ENABLED, this::reportError),
+                    wrapCheck(this::checkS3BucketsPolicyAllowsWriteAccess,           AWSFinding.S3_BUCKETS_POLICY_ALLOWS_WRITE_ACCESS, this::reportError),
+                    wrapCheck(this::checkS3BucketsShadowResourceHijacking,            AWSFinding.S3_BUCKETS_VULNERABLE_TO_SHADOW_RESOURCE_HIJACKING, this::reportError),
+                    wrapCheck(this::checkS3BucketsPolicyRestrictExternalAccounts,    AWSFinding.S3_BUCKETS_POLICY_RESTRICT_EXTERNAL_ACCOUNTS, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override
@@ -583,19 +597,10 @@ public class S3BucketsCheck implements CloudCheck {
         if (action == null || action.isEmpty()) {
             return false;
         }
-
         String normalizedAction = action.toLowerCase();
-        
-        return normalizedAction.equals("s3:*") 
-            || normalizedAction.startsWith("s3:put")
-            || normalizedAction.startsWith("s3:delete")
-            || normalizedAction.equals("s3:putobject")
-            || normalizedAction.equals("s3:deleteobject")
-            || normalizedAction.equals("*")
-            || normalizedAction.equals("s3:putobjectacl")
-            || normalizedAction.equals("s3:putobjectversionacl")
-            || normalizedAction.equals("s3:putbucketpolicy")
-            || normalizedAction.equals("s3:putbucketacl");
+
+        return writeActions.contains(normalizedAction)
+                || writeActionPrefixes.stream().anyMatch(normalizedAction::startsWith);
     }
 
     private Status checkS3AccountLevelPublicAccessBlock() {
@@ -1052,17 +1057,8 @@ public class S3BucketsCheck implements CloudCheck {
                     ObjectNode r = MAPPER.createObjectNode();
 
                     String nameLower = bucketName.toLowerCase();
-                    boolean isPredictablePattern = nameLower.startsWith("cf-templates-")
-                            || nameLower.startsWith("aws-glue-assets-")
-                            || nameLower.startsWith("sagemaker-")
-                            || nameLower.startsWith("aws-sagemaker-")
-                            || nameLower.startsWith("codestar-")
-                            || nameLower.startsWith("aws-codestar-")
-                            || nameLower.startsWith("emr-")
-                            || nameLower.startsWith("aws-emr-")
-                            || nameLower.contains("hnb659fds");
 
-                    if (isPredictablePattern) {
+                    if (isPredictablePattern(nameLower)) {
                         s = Status.FAIL;
                         r.put(Text.MESSAGE.toString(), "Bucket uses predictable service naming.");
                     } else {
@@ -1079,6 +1075,15 @@ public class S3BucketsCheck implements CloudCheck {
         Status status = getOverallStatus(result);
         writer.addToBuffer(finding, result, status);
         return status;
+    }
+
+    private boolean isPredictablePattern(String bucketName) {
+        if (bucketName == null || bucketName.isEmpty()) {
+            return false;
+        }
+        String nameLower = bucketName.toLowerCase();
+        return predictablePrefixes.stream().anyMatch(nameLower::startsWith)
+                || predictableSubstrings.stream().anyMatch(nameLower::contains);
     }
 
     private Status checkS3BucketsPolicyRestrictExternalAccounts() {
@@ -1173,49 +1178,27 @@ public class S3BucketsCheck implements CloudCheck {
     }
 
     private boolean hasListAction(JsonNode actionNode) {
-        if (actionNode.isTextual()) {
-            String action = actionNode.asText();
-            return "s3:ListBucket".equals(action)
-                || "s3:ListBucketVersions".equals(action)
-                || "s3:GetBucket".equals(action)
-                || "s3:*".equals(action)
-                || "*".equals(action);
-        } else if (actionNode.isArray()) {
-            return StreamSupport.stream(actionNode.spliterator(), false)
-                .anyMatch(this::hasListAction);
-        }
-        return false;
+        return hasMatchingAction(actionNode, listActions);
     }
 
     private boolean hasReadAction(JsonNode actionNode) {
-        if (actionNode.isTextual()) {
-            String action = actionNode.asText();
-            return "s3:GetObject".equals(action)
-                || "s3:GetObjectVersion".equals(action)
-                || "s3:GetObjectAcl".equals(action)
-                || "s3:GetObjectVersionAcl".equals(action)
-                || "s3:*".equals(action)
-                || "*".equals(action);
-        } else if (actionNode.isArray()) {
-            return StreamSupport.stream(actionNode.spliterator(), false)
-                .anyMatch(this::hasReadAction);
-        }
-        return false;
+        return hasMatchingAction(actionNode, readActions);
     }
 
     private boolean hasWriteAction(JsonNode actionNode) {
+        return hasMatchingAction(actionNode, writeActions);
+    }
+
+    private boolean hasMatchingAction(JsonNode actionNode, Set<String> targetActions) {
+        if (actionNode == null || actionNode.isMissingNode()) {
+            return false;
+        }
         if (actionNode.isTextual()) {
-            String action = actionNode.asText();
-            return "s3:PutObject".equals(action)
-                || "s3:PutObjectAcl".equals(action)
-                || "s3:DeleteObject".equals(action)
-                || "s3:DeleteObjectVersion".equals(action)
-                || "s3:RestoreObject".equals(action)
-                || "s3:*".equals(action)
-                || "*".equals(action);
+            String action = actionNode.asText().toLowerCase();
+            return targetActions.contains(action);
         } else if (actionNode.isArray()) {
             return StreamSupport.stream(actionNode.spliterator(), false)
-                .anyMatch(this::hasWriteAction);
+                    .anyMatch(node -> hasMatchingAction(node, targetActions));
         }
         return false;
     }

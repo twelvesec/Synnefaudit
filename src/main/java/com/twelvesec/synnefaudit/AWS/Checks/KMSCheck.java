@@ -36,16 +36,19 @@ public class KMSCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllKeyIds()
-            .thenCompose(keyIds -> {
-                this.keyIds = keyIds;
-                List<Supplier<CheckResult>> checksList = List.of(
+        CompletableFuture<List<String>> keyIds = sharedDataProvider.getAllKeyIds()
+                .exceptionally(ex -> null);
+
+        return keyIds.thenCompose(ids -> {
+            this.keyIds = ids;
+
+            List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkKMSKeysNotRotated, AWSFinding.KMS_KEYS_NOT_ROTATED, this::reportError),
                     wrapCheck(this::checkExposedKmsKeys,    AWSFinding.PUBLICLY_EXPOSED_KMS_KEYS, this::reportError),
                     wrapCheck(this::checkUnusedCMKKmsKeys,  AWSFinding.KMS_UNUSED_CMK_KEYS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

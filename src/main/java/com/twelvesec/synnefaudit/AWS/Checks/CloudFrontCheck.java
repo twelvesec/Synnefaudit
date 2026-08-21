@@ -34,17 +34,19 @@ public class CloudFrontCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllDistributions()
-            .thenCompose(distributions -> {
-                this.allDistributions = distributions;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkCloudFrontIsNotConfigured,                                 AWSFinding.CLOUDFRONT_NOT_CONFIGURED, this::reportError),
-                    wrapCheck(this::checkCloudFrontDistributionsNotUsingAWAFWebACL,                 AWSFinding.CLOUDFRONT_DISTRIBUTIONS_WITHOUT_WAF_WEB_ACL, this::reportError),
-                    wrapCheck(this::checkCloudFrontDistributionsWithFieldLevelEncryptionDisabled,   AWSFinding.CLOUDFRONT_DISTRIBUTIONS_FIELDLEVELENCRYPTION_DISABLED, this::reportError),
-                    wrapCheck(this::checkCloudFrontDistributionsWithNoGeoRestrictions,              AWSFinding.CLOUDFRONT_DISTRIBUTIONS_WITH_NO_GEO_RESTRICTIONS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<DistributionSummary>> distributions = sharedDataProvider.getAllDistributions()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(distributions)
+                .thenCompose(v -> {
+                    this.allDistributions = distributions.join();
+                    List<Supplier<CheckResult>> checksList = List.of(
+                        wrapCheck(this::checkCloudFrontIsNotConfigured,                                 AWSFinding.CLOUDFRONT_NOT_CONFIGURED, this::reportError),
+                        wrapCheck(this::checkCloudFrontDistributionsNotUsingAWAFWebACL,                 AWSFinding.CLOUDFRONT_DISTRIBUTIONS_WITHOUT_WAF_WEB_ACL, this::reportError),
+                        wrapCheck(this::checkCloudFrontDistributionsWithFieldLevelEncryptionDisabled,   AWSFinding.CLOUDFRONT_DISTRIBUTIONS_FIELDLEVELENCRYPTION_DISABLED, this::reportError),
+                        wrapCheck(this::checkCloudFrontDistributionsWithNoGeoRestrictions,              AWSFinding.CLOUDFRONT_DISTRIBUTIONS_WITH_NO_GEO_RESTRICTIONS, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

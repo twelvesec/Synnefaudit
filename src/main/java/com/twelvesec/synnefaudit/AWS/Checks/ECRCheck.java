@@ -28,16 +28,19 @@ public class ECRCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllRepositoryNames()
-            .thenCompose(repositoryNames -> {
-                this.allRepositoryNames = repositoryNames;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkRegistryScanningConfiguration,             AWSFinding.ECR_REGISTRY_WITHOUT_SCAN_ON_PUSH, this::reportError),
-                    wrapCheck(this::checkRepositoriesWithoutLifecyclePolicy,        AWSFinding.ECR_REGISTRY_WITHOUT_LIFECYCLE_POLICY, this::reportError),
-                    wrapCheck(this::checkRepositoriesWithLatestImageTagFindings,    AWSFinding.ECR_LATEST_IMAGE_WITH_FINDINGS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<String>> repositoryNames = sharedDataProvider.getAllRepositoryNames()
+                .exceptionally(ex -> null);
+
+        return repositoryNames.thenCompose(repositories -> {
+            this.allRepositoryNames = repositories;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::checkRegistryScanningConfiguration,          AWSFinding.ECR_REGISTRY_WITHOUT_SCAN_ON_PUSH, this::reportError),
+                    wrapCheck(this::checkRepositoriesWithoutLifecyclePolicy,     AWSFinding.ECR_REGISTRY_WITHOUT_LIFECYCLE_POLICY, this::reportError),
+                    wrapCheck(this::checkRepositoriesWithLatestImageTagFindings, AWSFinding.ECR_LATEST_IMAGE_WITH_FINDINGS, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

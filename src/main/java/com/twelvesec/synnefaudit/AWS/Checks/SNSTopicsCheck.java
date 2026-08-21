@@ -32,16 +32,19 @@ public class SNSTopicsCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllSNSTopicArns()
-            .thenCompose(snsArns -> {
-                this.allSNSArns = snsArns;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::SNSTopicsEncryptedWithoutAWSKMS,    AWSFinding.SNS_ENCRYPTION_WITHOUT_AWS_KMS, this::reportError),
-                    wrapCheck(this::checkSNSTopicsWithPublicPolicy,     AWSFinding.SNS_PUBLIC_TOPIC_POLICY, this::reportError),
-                    wrapCheck(this::checkSNSSubscriptionsUsingHttp,     AWSFinding.SNS_HTTP_SUBSCRIPTIONS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<String>> snsArns = sharedDataProvider.getAllSNSTopicArns()
+                .exceptionally(ex -> null);
+
+        return snsArns.thenCompose(arns -> {
+            this.allSNSArns = arns;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::SNSTopicsEncryptedWithoutAWSKMS, AWSFinding.SNS_ENCRYPTION_WITHOUT_AWS_KMS, this::reportError),
+                    wrapCheck(this::checkSNSTopicsWithPublicPolicy,  AWSFinding.SNS_PUBLIC_TOPIC_POLICY, this::reportError),
+                    wrapCheck(this::checkSNSSubscriptionsUsingHttp,  AWSFinding.SNS_HTTP_SUBSCRIPTIONS, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

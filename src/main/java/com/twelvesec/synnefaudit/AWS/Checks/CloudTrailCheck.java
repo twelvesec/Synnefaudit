@@ -1,5 +1,6 @@
 package com.twelvesec.synnefaudit.AWS.Checks;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.synnefaudit.AWS.AWSFinding;
@@ -32,42 +33,45 @@ public class CloudTrailCheck implements CloudCheck {
     private final SharedDataProvider sharedDataProvider;
     private final CloudTrailAsyncClient cloudTrail;
     private final CloudWatchLogsAsyncClient cloudWatchLogs;
+    private final JsonNode config;
 
-    public CloudTrailCheck(DataWriter writer, SharedDataProvider sharedDataProvider, 
-                        CloudTrailAsyncClient cloudTrail, CloudWatchLogsAsyncClient cloudWatchLogs) {
+    public CloudTrailCheck(DataWriter writer, SharedDataProvider sharedDataProvider,
+                           CloudTrailAsyncClient cloudTrail, CloudWatchLogsAsyncClient cloudWatchLogs, JsonNode config) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.cloudTrail = cloudTrail;
-        this.cloudWatchLogs = cloudWatchLogs; 
+        this.cloudWatchLogs = cloudWatchLogs;
+        this.config = config;
     }
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllTrails()
-            .thenCompose(trails -> {
-                this.allTrails = trails;
-                return sharedDataProvider.getAllS3BucketNames();
-            })
-            .thenCompose(s3Buckets -> {
-                this.allS3BucketNames = s3Buckets;
-                return sharedDataProvider.getAllLogGroups();
-            })
-            .thenCompose(logGroups -> {
-                this.allLogGroups = logGroups;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkTrailWithNoInsightSelectors,                   AWSFinding.CLOUDTRAIL_WITH_NO_INSIGHT_SELECTORS, this::reportError),
-                    wrapCheck(this::checkRecentRootAccountUsage,                        AWSFinding.CLOUDTRAIL_RECENT_ROOT_ACCOUNT_USAGE, this::reportError),
-                    wrapCheck(this::checkS3ObjectLevelReadLogging,                      AWSFinding.S3_OBJECT_LEVEL_READ_LOGGING, this::reportError),
-                    wrapCheck(this::checkS3ObjectLevelWriteLogging,                     AWSFinding.S3_OBJECT_LEVEL_WRITE_LOGGING, this::reportError),
-                    wrapCheck(this::checkCloudTrailCloudWatchIntegration,               AWSFinding.CLOUDTRAIL_CLOUDWATCH_INTEGRATION, this::reportError),
-                    wrapCheck(this::checkLogGroupsWithSecretsInCloudWatchLogs,          AWSFinding.CLOUDTRAIL_LOG_GROUPS_WITH_SECRETS_IN_CLOUDWATCH_LOGS, this::reportError),
-                    wrapCheck(this::checkCloudTrailEnabledInAllRegions,                 AWSFinding.CLOUDTRAIL_ENABLED_IN_ALL_REGIONS, this::reportError),
-                    wrapCheck(this::checkCloudTrailLogFileValidationEnabled,            AWSFinding.CLOUDTRAIL_LOG_FILE_VALIDATION_ENABLED, this::reportError),
-                    wrapCheck(this::checkCloudTrailLoggingManagementEventsInAllRegions, AWSFinding.CLOUDTRAIL_LOGGING_MANAGEMENT_EVENTS_ALL_REGIONS, this::reportError),
-                    wrapCheck(this::checkCloudTrailLogsEncryptedAtRestWithKMS,          AWSFinding.CLOUDTRAIL_LOGS_ENCRYPTED_AT_REST_KMS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<TrailInfo>> trails = sharedDataProvider.getAllTrails()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<String>> s3Buckets = sharedDataProvider.getAllS3BucketNames()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<LogGroup>> logGroups = sharedDataProvider.getAllLogGroups()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(trails, s3Buckets, logGroups)
+                .thenCompose(v -> {
+                    this.allTrails = trails.join();
+                    this.allS3BucketNames = s3Buckets.join();
+                    this.allLogGroups = logGroups.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                        wrapCheck(this::checkTrailWithNoInsightSelectors,                   AWSFinding.CLOUDTRAIL_WITH_NO_INSIGHT_SELECTORS, this::reportError),
+                        wrapCheck(this::checkRecentRootAccountUsage,                        AWSFinding.CLOUDTRAIL_RECENT_ROOT_ACCOUNT_USAGE, this::reportError),
+                        wrapCheck(this::checkS3ObjectLevelReadLogging,                      AWSFinding.S3_OBJECT_LEVEL_READ_LOGGING, this::reportError),
+                        wrapCheck(this::checkS3ObjectLevelWriteLogging,                     AWSFinding.S3_OBJECT_LEVEL_WRITE_LOGGING, this::reportError),
+                        wrapCheck(this::checkCloudTrailCloudWatchIntegration,               AWSFinding.CLOUDTRAIL_CLOUDWATCH_INTEGRATION, this::reportError),
+                        wrapCheck(this::checkLogGroupsWithSecretsInCloudWatchLogs,          AWSFinding.CLOUDTRAIL_LOG_GROUPS_WITH_SECRETS_IN_CLOUDWATCH_LOGS, this::reportError),
+                        wrapCheck(this::checkCloudTrailEnabledInAllRegions,                 AWSFinding.CLOUDTRAIL_ENABLED_IN_ALL_REGIONS, this::reportError),
+                        wrapCheck(this::checkCloudTrailLogFileValidationEnabled,            AWSFinding.CLOUDTRAIL_LOG_FILE_VALIDATION_ENABLED, this::reportError),
+                        wrapCheck(this::checkCloudTrailLoggingManagementEventsInAllRegions, AWSFinding.CLOUDTRAIL_LOGGING_MANAGEMENT_EVENTS_ALL_REGIONS, this::reportError),
+                        wrapCheck(this::checkCloudTrailLogsEncryptedAtRestWithKMS,          AWSFinding.CLOUDTRAIL_LOGS_ENCRYPTED_AT_REST_KMS, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override
@@ -294,10 +298,7 @@ public class CloudTrailCheck implements CloudCheck {
             return Status.NOT_APPLICABLE;
         }
 
-        List<String> secretPatterns = Arrays.asList(
-            "accessKeyId", "secretKey", "password", "apiKey", "token",
-            "credential", "privateKey", "aws_secret", "aws_access", "client_secret"
-        );
+        List<String> secretPatterns = getStringList(config.path("sensitive_keywords"));
 
         List<Map<String, Object>> result = allLogGroups.stream()
             .map(logGroup -> {
@@ -389,7 +390,7 @@ public class CloudTrailCheck implements CloudCheck {
                                                     && trailDetails.isMultiRegionTrail();
                                 String homeRegion = trailDetails.homeRegion();
 
-                                if (!isMultiRegion && (homeRegion == null || !regionName.equalsIgnoreCase(homeRegion))) {
+                                if (!isMultiRegion && (!regionName.equalsIgnoreCase(homeRegion))) {
                                     return null;
                                 }
 

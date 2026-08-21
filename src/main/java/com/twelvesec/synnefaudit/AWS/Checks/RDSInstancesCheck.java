@@ -1,5 +1,6 @@
 package com.twelvesec.synnefaudit.AWS.Checks;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.synnefaudit.AWS.AWSFinding;
 import com.twelvesec.synnefaudit.CloudCheck;
@@ -26,62 +27,48 @@ public class RDSInstancesCheck implements CloudCheck {
     private final DataWriter writer;
     private final SharedDataProvider sharedDataProvider;
     private final RdsAsyncClient rds;
-    private static final Map<String, String> ENGINE_DEFAULT_USERNAMES = new HashMap<>();
+    private final JsonNode config;
+    private static Map<String, String> ENGINE_DEFAULT_USERNAMES = new HashMap<>();
 
-    static {
-        ENGINE_DEFAULT_USERNAMES.put("postgres",           "postgres");
-        ENGINE_DEFAULT_USERNAMES.put("aurora-postgresql",  "postgres");
-
-        ENGINE_DEFAULT_USERNAMES.put("mysql",              "admin");
-        ENGINE_DEFAULT_USERNAMES.put("mariadb",            "admin");
-        ENGINE_DEFAULT_USERNAMES.put("aurora-mysql",       "admin");
-
-        ENGINE_DEFAULT_USERNAMES.put("oracle-se",          "admin");
-        ENGINE_DEFAULT_USERNAMES.put("oracle-se1",         "admin");
-        ENGINE_DEFAULT_USERNAMES.put("oracle-se2",         "admin");
-        ENGINE_DEFAULT_USERNAMES.put("oracle-ee",          "admin");
-
-        ENGINE_DEFAULT_USERNAMES.put("sqlserver-ee",       "admin");
-        ENGINE_DEFAULT_USERNAMES.put("sqlserver-se",       "admin");
-        ENGINE_DEFAULT_USERNAMES.put("sqlserver-ex",       "admin");
-        ENGINE_DEFAULT_USERNAMES.put("sqlserver-web",      "admin");
-    }
-
-    public RDSInstancesCheck(DataWriter writer, SharedDataProvider sharedDataProvider, RdsAsyncClient rds) {
+    public RDSInstancesCheck(DataWriter writer, SharedDataProvider sharedDataProvider, RdsAsyncClient rds, JsonNode config) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.rds = rds;
+        this.config = config;
+        ENGINE_DEFAULT_USERNAMES = getStringMap(config.path("engine_default_usernames"));
     }
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllDBInstances()
-            .thenCompose(dbInstances -> {
-                this.allDbInstances = dbInstances;
-                return sharedDataProvider.getAllDBSnapshots();
-            })
-            .thenCompose(snapshots -> {
-                this.allDbSnapshots = snapshots;
-                return sharedDataProvider.getAllDBClusterSnapshots();
-            })
-            .thenCompose(clusterSnapshots -> {
-                this.allDbClusterSnapshots = clusterSnapshots;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkRDSInstancesWithMultiAvailabilityZoneDisabled, AWSFinding.RDS_MULTI_AZ_DISABLED, this::reportError),
-                    wrapCheck(this::checkRDSInstancesWithIAMAuthenticationDisabled,     AWSFinding.RDS_IAM_AUTHENTICATION_DISABLED, this::reportError),
-                    wrapCheck(this::checkRDSInstancesWithAutomatedBackupsDisabled,      AWSFinding.RDS_AUTOMATED_BACKUPS_DISABLED, this::reportError),
-                    wrapCheck(this::checkRDSInstancesWithDeletionProtectionDisabled,    AWSFinding.RDS_DELETION_PROTECTION_DISABLED, this::reportError),
-                    wrapCheck(this::checkRDSInstancesWithEnhancedMonitoringDisabled,    AWSFinding.RDS_ENHANCED_MONITORING_DISABLED, this::reportError),
-                    wrapCheck(this::checkRDSDeprecatedEngineVersions,                   AWSFinding.RDS_DEPRECATED_ENGINE_VERSIONS, this::reportError),
-                    wrapCheck(this::checkRDSMissingEventCategories,                     AWSFinding.RDS_EVENT_SUBSCRIPTIONS_MISSING_CATEGORIES, this::reportError),
-                    wrapCheck(this::checkRDSInstancesUsingDefaultMasterUsername,        AWSFinding.RDS_INSTANCES_USING_DEFAULT_MASTER_USERNAME, this::reportError),
-                    wrapCheck(this::checkRDSClientConnectionEncryption,                 AWSFinding.RDS_CLIENT_CONNECTION_ENCRYPTION, this::reportError),
-                    wrapCheck(this::checkRDSCloudWatchLogsIntegration,                  AWSFinding.RDS_CLOUDWATCH_LOGS_INTEGRATION, this::reportError),
-                    wrapCheck(this::checkRDSSnapshotsEncryption,                        AWSFinding.RDS_SNAPSHOTS_ENCRYPTION, this::reportError),
-                    wrapCheck(this::checkRDSClusterSnapshotsEncryption,                 AWSFinding.RDS_CLUSTER_SNAPSHOTS_ENCRYPTION, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<DBInstance>> dbInstances = sharedDataProvider.getAllDBInstances()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<DBSnapshot>> dbSnapshots = sharedDataProvider.getAllDBSnapshots()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<DBClusterSnapshot>> dbClusterSnapshots = sharedDataProvider.getAllDBClusterSnapshots()
+                .exceptionally(ex -> null);
+
+        return CompletableFuture.allOf(dbInstances, dbSnapshots, dbClusterSnapshots)
+                .thenCompose(v -> {
+                    this.allDbInstances = dbInstances.join();
+                    this.allDbSnapshots = dbSnapshots.join();
+                    this.allDbClusterSnapshots = dbClusterSnapshots.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                            wrapCheck(this::checkRDSInstancesWithMultiAvailabilityZoneDisabled, AWSFinding.RDS_MULTI_AZ_DISABLED, this::reportError),
+                            wrapCheck(this::checkRDSInstancesWithIAMAuthenticationDisabled,    AWSFinding.RDS_IAM_AUTHENTICATION_DISABLED, this::reportError),
+                            wrapCheck(this::checkRDSInstancesWithAutomatedBackupsDisabled,     AWSFinding.RDS_AUTOMATED_BACKUPS_DISABLED, this::reportError),
+                            wrapCheck(this::checkRDSInstancesWithDeletionProtectionDisabled,    AWSFinding.RDS_DELETION_PROTECTION_DISABLED, this::reportError),
+                            wrapCheck(this::checkRDSInstancesWithEnhancedMonitoringDisabled,    AWSFinding.RDS_ENHANCED_MONITORING_DISABLED, this::reportError),
+                            wrapCheck(this::checkRDSDeprecatedEngineVersions,                   AWSFinding.RDS_DEPRECATED_ENGINE_VERSIONS, this::reportError),
+                            wrapCheck(this::checkRDSMissingEventCategories,                     AWSFinding.RDS_EVENT_SUBSCRIPTIONS_MISSING_CATEGORIES, this::reportError),
+                            wrapCheck(this::checkRDSInstancesUsingDefaultMasterUsername,        AWSFinding.RDS_INSTANCES_USING_DEFAULT_MASTER_USERNAME, this::reportError),
+                            wrapCheck(this::checkRDSClientConnectionEncryption,                 AWSFinding.RDS_CLIENT_CONNECTION_ENCRYPTION, this::reportError),
+                            wrapCheck(this::checkRDSCloudWatchLogsIntegration,                  AWSFinding.RDS_CLOUDWATCH_LOGS_INTEGRATION, this::reportError),
+                            wrapCheck(this::checkRDSSnapshotsEncryption,                        AWSFinding.RDS_SNAPSHOTS_ENCRYPTION, this::reportError),
+                            wrapCheck(this::checkRDSClusterSnapshotsEncryption,                 AWSFinding.RDS_CLUSTER_SNAPSHOTS_ENCRYPTION, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override
@@ -357,10 +344,7 @@ public class RDSInstancesCheck implements CloudCheck {
             return Status.NOT_APPLICABLE;
         }
 
-        Set<String> enginesToCheck = Set.of(
-            "sqlserver", "postgres", "mysql", "mariadb",
-            "aurora-postgresql", "aurora-mysql"
-        );
+        List<String> enginesToCheck = getStringList(config.path("engines_to_check"));
 
         List<Map<String, Object>> result = allDbInstances.stream()
             .filter(instance -> enginesToCheck.contains(instance.engine()))

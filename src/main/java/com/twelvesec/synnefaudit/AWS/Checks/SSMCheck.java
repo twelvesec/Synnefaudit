@@ -38,15 +38,18 @@ public class SSMCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllSSMDocuments()
-            .thenCompose(documents -> {
-                this.allDocuments = documents;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkSSMIncidentsWithNoResponsePlans,   AWSFinding.SSM_INCIDENTS_WITHOUT_RESPONSE_PLANS, this::reportError),
-                    wrapCheck(this::checkPublicSSMDocuments,                AWSFinding.PUBLIC_SSM_DOCUMENTS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<DocumentIdentifier>> documents = sharedDataProvider.getAllSSMDocuments()
+                .exceptionally(ex -> null);
+
+        return documents.thenCompose(docs -> {
+            this.allDocuments = docs;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::checkSSMIncidentsWithNoResponsePlans, AWSFinding.SSM_INCIDENTS_WITHOUT_RESPONSE_PLANS, this::reportError),
+                    wrapCheck(this::checkPublicSSMDocuments,              AWSFinding.PUBLIC_SSM_DOCUMENTS, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

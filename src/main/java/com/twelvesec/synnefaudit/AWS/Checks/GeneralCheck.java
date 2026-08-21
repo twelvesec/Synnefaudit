@@ -1,5 +1,6 @@
 package com.twelvesec.synnefaudit.AWS.Checks;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.twelvesec.synnefaudit.AWS.AWSFinding;
 import com.twelvesec.synnefaudit.CloudCheck;
@@ -37,29 +38,34 @@ public class GeneralCheck implements CloudCheck {
     private final AccountAsyncClient accountClient;
     private final OrganizationsAsyncClient orgs;
     private final StsAsyncClient sts;
+    private final JsonNode config;
 
-    public GeneralCheck(DataWriter writer, SharedDataProvider sharedDataProvider, 
+    public GeneralCheck(DataWriter writer, SharedDataProvider sharedDataProvider,
                         AccountAsyncClient accountClient,
-                        OrganizationsAsyncClient orgs, StsAsyncClient sts) {
+                        OrganizationsAsyncClient orgs, StsAsyncClient sts, JsonNode config) {
         this.writer = writer;
         this.sharedDataProvider = sharedDataProvider;
         this.accountClient = accountClient;
         this.orgs = orgs;
         this.sts = sts;
+        this.config = config;
     }
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllIndexes()
-            .thenCompose(indexes -> {
-                this.allIndexes = indexes;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkNoAlternateContactsFound,              AWSFinding.NO_ALTERNATE_CONTACTS_FOUND, this::reportError),
-                    wrapCheck(this::checkResourceExplorerIndexes,               AWSFinding.RESOURCE_EXPLORER_NO_INDEXES_FOUND, this::reportError),
-                    wrapCheck(this::checkAccountInOrganizations,                AWSFinding.ACCOUNT_IS_NOT_PART_OF_ORGANIZATIONS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<Index>> indexes = sharedDataProvider.getAllIndexes()
+                .exceptionally(ex -> null);
+
+        return indexes.thenCompose(i -> {
+            this.allIndexes = i;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::checkNoAlternateContactsFound, AWSFinding.NO_ALTERNATE_CONTACTS_FOUND, this::reportError),
+                    wrapCheck(this::checkResourceExplorerIndexes,  AWSFinding.RESOURCE_EXPLORER_NO_INDEXES_FOUND, this::reportError),
+                    wrapCheck(this::checkAccountInOrganizations,   AWSFinding.ACCOUNT_IS_NOT_PART_OF_ORGANIZATIONS, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override
@@ -68,7 +74,7 @@ public class GeneralCheck implements CloudCheck {
     }
 
     private Status checkNoAlternateContactsFound() {
-        List<String> types = List.of("BILLING","OPERATIONS","SECURITY");
+        List<String> types = getStringList(config.path("contact_types"));
         List<Map<String,Object>> result = types.stream()
             .map(type -> {
                 Status s;

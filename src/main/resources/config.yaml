@@ -1,0 +1,180 @@
+aws:
+  codebuild:
+    allowed_github_organizations:
+      [
+        # insert allowed organizations
+      ]
+    sensitive_keywords:
+      [
+        "AWS_SECRET_ACCESS_KEY", "PASSWORD", "SECRET", "TOKEN", "API_KEY", "ACCESS_KEY"
+      ]
+
+  acmCertificates:
+    cert_expiration_in_days: 15
+
+  cloudtrail:
+    sensitive_keywords:
+      [
+        "accessKeyId", "secretKey", "password", "apiKey", "token", "credential", "privateKey", "aws_secret", "aws_access", "client_secret"
+      ]
+
+  ec2securitygroup:
+    CIDR:
+      [
+        "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"
+      ]
+    IPv4_default_route: "0.0.0.0/0"
+    IPv6_default_route: "::/0"
+    total_well_known_ports: 1024
+    total_ports: 65535
+    CassandraPorts:
+      [ 7000, 7001, 7199, 8888, 9042, 9160 ]
+    KibanaPorts:
+      [ 9200, 9300, 5601 ]
+    FTPPorts:
+      [ 20, 21 ]
+    KafkaPorts:
+      [ 9092 ]
+    MemcachedPorts:
+      [ 11211 ]
+    MongoDBPorts:
+      [ 27017, 27018 ]
+    MySQLPort:
+      [ 3306 ]
+    OraclePorts:
+      [ 1521, 2483, 2484 ]
+    RDPPorts:
+      [ 3389 ]
+    PostgreSQLPorts:
+      [ 5432 ]
+    RedisPorts:
+      [ 6379 ]
+    SSHPorts:
+      [ 22 ]
+    TelnetPorts:
+      [ 23 ]
+    SQLServerPorts:
+      [ 1433, 1434 ]
+    CIFSPorts:
+      [ 139, 445]
+    MicrosoftSQLServerPorts:
+      [ 1433, 1434 ]
+    LDAPPorts:
+      [ 389, 636 ]
+    KerberosPorts:
+      [ 88, 464, 749, 750 ]
+
+  elb:
+    secure_policies:
+      - "ELBSecurityPolicy-TLS13-1-2-2021-06"
+      - "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
+      - "ELBSecurityPolicy-FS-1-2-Res-2020-10"
+      - "ELBSecurityPolicy-FS-1-2-2019-08"
+      - "ELBSecurityPolicy-FS-1-1-2019-08"
+    insecure_policies:
+      - "ELBSecurityPolicy-2016-08"
+      - "ELBSecurityPolicy-2015-05"
+      - "ELBSecurityPolicy-2015-03"
+      - "ELBSecurityPolicy-2015-02"
+      - "ELBSecurityPolicy-2014-10"
+      - "ELBSecurityPolicy-2014-01"
+      - "ELBSecurityPolicy-2011-08"
+
+  general:
+    contact_types:
+      [
+        "BILLING", "OPERATIONS", "SECURITY"
+      ]
+
+  iamPolicy:
+    dangerous_actions:
+      [
+        "iam:*",
+
+        "iam:passrole",
+        "iam:createpolicyversion",
+        "iam:setdefaultpolicyversion",
+        "iam:updateassumerolepolicy",
+
+        "iam:putuserpolicy",
+        "iam:putgrouppolicy",
+        "iam:putrolepolicy",
+        "iam:attachuserpolicy",
+        "iam:attachgrouppolicy",
+        "iam:attachrolepolicy",
+        "iam:detachuserpolicy",
+        "iam:addusertogroup",
+
+        "iam:createaccesskey",
+        "iam:updateaccesskey",
+        "iam:deleteaccesskey",
+        "iam:createloginprofile",
+        "iam:updateloginprofile",
+
+        "lambda:updatefunctioncode",
+        "lambda:updatefunctionconfiguration",
+        "glue:updatedevendpoint",
+        "cloudformation:updatestack",
+        "apprunner:updateservice",
+        "bedrock-agentcore:invokeagentruntimecommand"
+      ]
+
+  rds:
+    engine_default_usernames:
+      postgres: "postgres"
+      aurora-postgresql: "postgres"
+      mysql: "admin"
+      mariadb: "admin"
+      aurora-mysql: "admin"
+      oracle-se: "admin"
+      oracle-se1: "admin"
+      oracle-se2: "admin"
+      oracle-ee: "admin"
+      sqlserver-ee: "admin"
+      sqlserver-se: "admin"
+      sqlserver-ex: "admin"
+      sqlserver-web: "admin"
+    engines_to_check:
+      [
+        "sqlserver", "postgres", "mysql", "mariadb", "aurora-postgresql", "aurora-mysql"
+      ]
+
+  s3:
+    list_actions:
+      - "s3:listbucket"
+      - "s3:listbucketversions"
+      - "s3:getbucket"
+      - "s3:*"
+      - "*"
+    read_actions:
+      - "s3:getobject"
+      - "s3:getobjectversion"
+      - "s3:getobjectacl"
+      - "s3:getobjectversionacl"
+      - "s3:*"
+      - "*"
+    write_actions:
+      - "s3:*"
+      - "*"
+      - "s3:putobject"
+      - "s3:deleteobject"
+      - "s3:deleteobjectversion"
+      - "s3:restoreobject"
+      - "s3:putobjectacl"
+      - "s3:putobjectversionacl"
+      - "s3:putbucketpolicy"
+      - "s3:putbucketacl"
+    write_action_prefixes:
+      - "s3:put"
+      - "s3:delete"
+    predictable_bucket_prefixes:
+      - "cf-templates-"
+      - "aws-glue-assets-"
+      - "sagemaker-"
+      - "aws-sagemaker-"
+      - "codestar-"
+      - "aws-codestar-"
+      - "emr-"
+      - "aws-emr-"
+    predictable_bucket_substrings:
+      - "hnb659fds"

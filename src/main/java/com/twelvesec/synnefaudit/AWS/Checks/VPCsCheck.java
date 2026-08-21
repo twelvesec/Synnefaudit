@@ -51,32 +51,33 @@ public class VPCsCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllVPCs()
-            .thenCompose(vpcs -> {
-                this.allVPCs = vpcs;
-                return sharedDataProvider.getAllVPCEndpoints();
-            })
-            .thenCompose(endpoints -> {
-                this.allVPCEndpoints = endpoints;
-                return sharedDataProvider.getAllVPCSubnets();
-            })
-            .thenCompose(subnets -> {
-                this.allVPCSubnets = subnets;
-                this.subnetsByVpc = subnets.stream()
-                    .collect(Collectors.groupingBy(Subnet::vpcId));
-                return sharedDataProvider.getAllRouteTables();
-            })
-            .thenCompose(routeTables -> {
-                this.allRouteTables = routeTables;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::VPCFirewallDisabled,            AWSFinding.VPC_FIREWALL_DISABLED, this::reportError),
-                    wrapCheck(this::VPCFlowLoggingDisabled,         AWSFinding.VPC_FLOW_LOGGING_DISABLED, this::reportError),
-                    wrapCheck(this::VPCSubnetsAssignPublicIP,       AWSFinding.VPC_SUBNETS_PUBLIC_IP_ON_LAUNCH, this::reportError),
-                    wrapCheck(this::VPCEndpointsAllowFullAccess,    AWSFinding.VPC_ENDPOINTS_ALLOW_FULL_ACCESS, this::reportError),
-                    wrapCheck(this::checkVpcsWithOnlyPublicSubnets, AWSFinding.VPCS_WITH_ONLY_PUBLIC_SUBNETS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<Vpc>> vpcs = sharedDataProvider.getAllVPCs()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<VpcEndpoint>> vpcEndpoints = sharedDataProvider.getAllVPCEndpoints()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Subnet>> vpcSubnets = sharedDataProvider.getAllVPCSubnets()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<RouteTable>> routeTables = sharedDataProvider.getAllRouteTables()
+                .exceptionally(ex -> null);
+
+        return CompletableFuture.allOf(vpcs, vpcEndpoints, vpcSubnets, routeTables)
+                .thenCompose(v -> {
+                    this.allVPCs = vpcs.join();
+                    this.allVPCEndpoints = vpcEndpoints.join();
+                    this.allVPCSubnets = vpcSubnets.join();
+                    this.subnetsByVpc = this.allVPCSubnets.stream()
+                            .collect(Collectors.groupingBy(Subnet::vpcId));
+                    this.allRouteTables = routeTables.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                            wrapCheck(this::VPCFirewallDisabled,            AWSFinding.VPC_FIREWALL_DISABLED, this::reportError),
+                            wrapCheck(this::VPCFlowLoggingDisabled,         AWSFinding.VPC_FLOW_LOGGING_DISABLED, this::reportError),
+                            wrapCheck(this::VPCSubnetsAssignPublicIP,       AWSFinding.VPC_SUBNETS_PUBLIC_IP_ON_LAUNCH, this::reportError),
+                            wrapCheck(this::VPCEndpointsAllowFullAccess,    AWSFinding.VPC_ENDPOINTS_ALLOW_FULL_ACCESS, this::reportError),
+                            wrapCheck(this::checkVpcsWithOnlyPublicSubnets, AWSFinding.VPCS_WITH_ONLY_PUBLIC_SUBNETS, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

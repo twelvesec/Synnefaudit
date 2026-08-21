@@ -29,15 +29,18 @@ public class AthenaCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllWorkGroups()
-            .thenCompose(workgroups -> {
-                this.allWorkGroups = workgroups;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkAthenaWorkGroupEncryption,             AWSFinding.ATHENA_WORKGROUPS_WITHOUT_ENCRYPTION, this::reportError),
-                    wrapCheck(this::checkAthenaWorkgroupsEnforceConfiguration,  AWSFinding.ATHENA_WORKGROUPS_ENFORCE_CONFIGURATION_DISABLED, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<WorkGroupSummary>> workgroups = sharedDataProvider.getAllWorkGroups()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(workgroups)
+                .thenCompose(v -> {
+                    this.allWorkGroups = workgroups.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                        wrapCheck(this::checkAthenaWorkGroupEncryption,             AWSFinding.ATHENA_WORKGROUPS_WITHOUT_ENCRYPTION, this::reportError),
+                        wrapCheck(this::checkAthenaWorkgroupsEnforceConfiguration,  AWSFinding.ATHENA_WORKGROUPS_ENFORCE_CONFIGURATION_DISABLED, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
     
     @Override

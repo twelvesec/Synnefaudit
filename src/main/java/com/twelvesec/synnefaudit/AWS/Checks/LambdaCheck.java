@@ -31,14 +31,17 @@ public class LambdaCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllLambdaFunctionNames()
-            .thenCompose(lambdaFunctionNames -> {
-                this.AllLambdaFunctionNames = lambdaFunctionNames;
-                List<Supplier<CheckResult>> checksList = List.of(
+        CompletableFuture<List<String>> lambdaFunctionNames = sharedDataProvider.getAllLambdaFunctionNames()
+                .exceptionally(ex -> null);
+
+        return lambdaFunctionNames.thenCompose(names -> {
+            this.AllLambdaFunctionNames = names;
+
+            List<Supplier<CheckResult>> checksList = List.of(
                     wrapCheck(this::checkLambdaFunctionSecrets, AWSFinding.LAMBDA_FUNCTIONS_WITH_POTENTIAL_SECRETS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

@@ -26,14 +26,17 @@ public class NeptuneDBCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllNeptuneClusters()
-                .thenCompose(neptuneClutsers -> {
-                    this.allNeptuneClusters = neptuneClutsers;
-                    List<Supplier<CheckResult>> checksList = List.of(
-                            wrapCheck(this::checkNeptuneStorageEncrypted,  AWSFinding.NEPTUNE_STORAGE_ENCRYPTION_ENABLED, this::reportError)
-                    );
-                    return runChecksInList(checksList, writer);
-                });
+        CompletableFuture<List<DBCluster>> neptuneClusters = sharedDataProvider.getAllNeptuneClusters()
+                .exceptionally(ex -> null);
+
+        return neptuneClusters.thenCompose(clusters -> {
+            this.allNeptuneClusters = clusters;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::checkNeptuneStorageEncrypted, AWSFinding.NEPTUNE_STORAGE_ENCRYPTION_ENABLED, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

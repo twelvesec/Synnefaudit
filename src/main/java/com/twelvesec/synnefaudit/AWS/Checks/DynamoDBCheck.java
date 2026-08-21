@@ -50,27 +50,29 @@ public class DynamoDBCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllTableNames()
-            .thenCompose(tableNames -> {
-                this.allTableNames = tableNames;
-                return sharedDataProvider.getAllDaxClusters();
-            })
-            .thenCompose(daxClusters -> {
-                this.allDaxClusters = daxClusters;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkDynamoDBTableWithPointInTimeRecoveryDisabled,  AWSFinding.DYNAMODB_POINT_IN_TIME_RECOVERY_DISABLED, this::reportError),
-                    wrapCheck(this::checkDynamoDBTableWithDefaultEncryptionEnabled,     AWSFinding.DYNAMODB_TABLE_DEFAULT_ENCRYPTION_ENABLED, this::reportError),
-                    wrapCheck(this::checkDynamoDBEncryptionWithCMK,                     AWSFinding.DYNAMODB_ENCRYPTION_WITH_CMK, this::reportError),
-                    wrapCheck(this::checkDaxEncryptionAtRest,                           AWSFinding.DAX_ENCRYPTION_AT_REST_ENABLED, this::reportError),
-                    wrapCheck(this::checkDaxClustersEncryptionInTransitDisabled,        AWSFinding.DAX_ENCRYPTION_IN_TRANSIT_ENABLED, this::reportError),
-                    wrapCheck(this::checkDaxClustersMultiAzDisabled,                    AWSFinding.DAX_CLUSTERS_MULTI_AZ, this::reportError),
-                    wrapCheck(this::checkDynamoDBTablesAutoScalingDisabled,             AWSFinding.DYNAMODB_TABLE_AUTO_SCALING_ENABLED, this::reportError),
-                    wrapCheck(this::checkDynamoDBTableDeletionProtectionDisabled,       AWSFinding.DYNAMODB_TABLE_DELETION_PROTECTION_ENABLED, this::reportError),
-                    wrapCheck(this::checkDynamoDBTableInBackupPlan,                     AWSFinding.DYNAMODB_TABLE_IN_BACKUP_PLAN, this::reportError),
-                    wrapCheck(this::checkDynamoDBTableCrossAccountAccess,               AWSFinding.DYNAMODB_TABLE_CROSS_ACCOUNT_ACCESS, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<String>> tableNames = sharedDataProvider.getAllTableNames()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Cluster>> daxClusters = sharedDataProvider.getAllDaxClusters()
+                .exceptionally(ex -> null);
+        return CompletableFuture.allOf(tableNames, daxClusters)
+                .thenCompose(v -> {
+                    this.allTableNames = tableNames.join();
+                    this.allDaxClusters = daxClusters.join();
+
+                    List<Supplier<CheckResult>> checksList = List.of(
+                        wrapCheck(this::checkDynamoDBTableWithPointInTimeRecoveryDisabled,  AWSFinding.DYNAMODB_POINT_IN_TIME_RECOVERY_DISABLED, this::reportError),
+                        wrapCheck(this::checkDynamoDBTableWithDefaultEncryptionEnabled,     AWSFinding.DYNAMODB_TABLE_DEFAULT_ENCRYPTION_ENABLED, this::reportError),
+                        wrapCheck(this::checkDynamoDBEncryptionWithCMK,                     AWSFinding.DYNAMODB_ENCRYPTION_WITH_CMK, this::reportError),
+                        wrapCheck(this::checkDaxEncryptionAtRest,                           AWSFinding.DAX_ENCRYPTION_AT_REST_ENABLED, this::reportError),
+                        wrapCheck(this::checkDaxClustersEncryptionInTransitDisabled,        AWSFinding.DAX_ENCRYPTION_IN_TRANSIT_ENABLED, this::reportError),
+                        wrapCheck(this::checkDaxClustersMultiAzDisabled,                    AWSFinding.DAX_CLUSTERS_MULTI_AZ, this::reportError),
+                        wrapCheck(this::checkDynamoDBTablesAutoScalingDisabled,             AWSFinding.DYNAMODB_TABLE_AUTO_SCALING_ENABLED, this::reportError),
+                        wrapCheck(this::checkDynamoDBTableDeletionProtectionDisabled,       AWSFinding.DYNAMODB_TABLE_DELETION_PROTECTION_ENABLED, this::reportError),
+                        wrapCheck(this::checkDynamoDBTableInBackupPlan,                     AWSFinding.DYNAMODB_TABLE_IN_BACKUP_PLAN, this::reportError),
+                        wrapCheck(this::checkDynamoDBTableCrossAccountAccess,               AWSFinding.DYNAMODB_TABLE_CROSS_ACCOUNT_ACCESS, this::reportError)
+                    );
+                    return runChecksInList(checksList, writer);
+                });
     }
 
     @Override

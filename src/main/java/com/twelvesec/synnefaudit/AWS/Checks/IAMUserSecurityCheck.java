@@ -42,24 +42,27 @@ public class IAMUserSecurityCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllUsers()
-            .thenCompose(users -> {
-                this.allUsers = users;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkIAMPasswordPolicyIsNotSet,                     AWSFinding.IAM_PASSWORD_POLICY_NOT_SET, this::reportError),
-                    wrapCheck(this::checkShortIAMPasswordPolicyReuse,                   AWSFinding.IAM_SHORT_PASSWORD_POLICY_REUSE, this::reportError),
-                    wrapCheck(this::checkIamUsersWithLongTermCredentials,               AWSFinding.IAM_USERS_WITH_LONG_TERM_CREDENTIALS, this::reportError),
-                    wrapCheck(this::checkIamUsersWithAttachedPolicies,                  AWSFinding.IAM_USERS_WITH_ATTACHED_POLICIES, this::reportError),
-                    wrapCheck(this::checkIAMPasswordPolicyMaxAge,                       AWSFinding.IAM_PASSWORD_POLICY_MAX_AGE, this::reportError),
-                    wrapCheck(this::checkIAMPasswordPolicyRequireLowercase,             AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_LOWERCASE, this::reportError),
-                    wrapCheck(this::checkIAMPasswordPolicyRequireNumber,                AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_NUMBER, this::reportError),
-                    wrapCheck(this::checkIAMPasswordPolicyRequireSymbol,                AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_SYMBOL, this::reportError),
-                    wrapCheck(this::checkIAMPasswordPolicyRequireUppercase,             AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_UPPERCASE, this::reportError),
-                    wrapCheck(this::checkIAMPasswordPolicyMinimumLength,                AWSFinding.IAM_PASSWORD_POLICY_MINIMUM_LENGTH, this::reportError),
-                    wrapCheck(this::checkUnusedUserConsoleAccessDisabled,               AWSFinding.UNUSED_CONSOLE_ACCESS_ENABLED, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<User>> users = sharedDataProvider.getAllUsers()
+                .exceptionally(ex -> null);
+
+        return users.thenCompose(u -> {
+            this.allUsers = u;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::checkIAMPasswordPolicyIsNotSet,       AWSFinding.IAM_PASSWORD_POLICY_NOT_SET, this::reportError),
+                    wrapCheck(this::checkShortIAMPasswordPolicyReuse,     AWSFinding.IAM_SHORT_PASSWORD_POLICY_REUSE, this::reportError),
+                    wrapCheck(this::checkIamUsersWithLongTermCredentials, AWSFinding.IAM_USERS_WITH_LONG_TERM_CREDENTIALS, this::reportError),
+                    wrapCheck(this::checkIamUsersWithAttachedPolicies,    AWSFinding.IAM_USERS_WITH_ATTACHED_POLICIES, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyMaxAge,         AWSFinding.IAM_PASSWORD_POLICY_MAX_AGE, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyRequireLowercase,AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_LOWERCASE, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyRequireNumber,  AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_NUMBER, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyRequireSymbol,  AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_SYMBOL, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyRequireUppercase,AWSFinding.IAM_PASSWORD_POLICY_REQUIRE_UPPERCASE, this::reportError),
+                    wrapCheck(this::checkIAMPasswordPolicyMinimumLength,  AWSFinding.IAM_PASSWORD_POLICY_MINIMUM_LENGTH, this::reportError),
+                    wrapCheck(this::checkUnusedUserConsoleAccessDisabled,AWSFinding.UNUSED_CONSOLE_ACCESS_ENABLED, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

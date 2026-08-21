@@ -29,23 +29,26 @@ public class GuardDutyCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllDetectorIds()
-            .thenCompose(detectorIds -> {
-                this.allDetectorIds = detectorIds;
-                List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkGuardDutyNotEnabled,                       AWSFinding.GUARDDUTY_NOT_ENABLED, this::reportError),
-                    wrapCheck(this::checkGuardDutyDetectorIsNotCetrallyManaged,     AWSFinding.GUARDDUTY_DETECTOR_NOT_CENTRALLY_MANAGED, this::reportError),
-                    wrapCheck(this::checkGuardDutyMalwareProtectionForEC2Enabled,   AWSFinding.GUARDDUTY_EC2_MALWARE_PROTECTION_ENABLED, this::reportError),
-                    wrapCheck(this::checkGuardDutyEKSAuditLogMonitoringEnabled,     AWSFinding.GUARDDUTY_EKS_AUDIT_LOGS_ENABLED, this::reportError),
-                    wrapCheck(this::checkGuardDutyEKSRuntimeMonitoringEnabled,      AWSFinding.GUARDDUTY_EKS_RUNTIME_MONITORING_ENABLED, this::reportError),
-                    wrapCheck(this::checkGuardDutyLambdaProtectionEnabled,          AWSFinding.GUARDDUTY_LAMBDA_PROTECTION_ENABLED, this::reportError),
-                    wrapCheck(this::checkGuardDutyRDSProtectionEnabled,             AWSFinding.GUARDDUTY_RDS_PROTECTION_ENABLED, this::reportError),
-                    wrapCheck(this::checkGuardDutyS3ProtectionEnabled,              AWSFinding.GUARDDUTY_S3_PROTECTION_ENABLED, this::reportError),
-                    wrapCheck(this::checkGuardDutyNoHighSeverityFindings,           AWSFinding.GUARDDUTY_NO_HIGH_SEVERITY_FINDINGS, this::reportError),
-                    wrapCheck(this::checkGuardDutyNotEnabled,                       AWSFinding.GUARDDUTY_NOT_ENABLED, this::reportError)
-                );
-                return runChecksInList(checksList, writer);
-            });
+        CompletableFuture<List<String>> detectorIds = sharedDataProvider.getAllDetectorIds()
+                .exceptionally(ex -> null);
+
+        return detectorIds.thenCompose(ids -> {
+            this.allDetectorIds = ids;
+
+            List<Supplier<CheckResult>> checksList = List.of(
+                    wrapCheck(this::checkGuardDutyNotEnabled,                     AWSFinding.GUARDDUTY_NOT_ENABLED, this::reportError),
+                    wrapCheck(this::checkGuardDutyDetectorIsNotCetrallyManaged,   AWSFinding.GUARDDUTY_DETECTOR_NOT_CENTRALLY_MANAGED, this::reportError),
+                    wrapCheck(this::checkGuardDutyMalwareProtectionForEC2Enabled, AWSFinding.GUARDDUTY_EC2_MALWARE_PROTECTION_ENABLED, this::reportError),
+                    wrapCheck(this::checkGuardDutyEKSAuditLogMonitoringEnabled,   AWSFinding.GUARDDUTY_EKS_AUDIT_LOGS_ENABLED, this::reportError),
+                    wrapCheck(this::checkGuardDutyEKSRuntimeMonitoringEnabled,    AWSFinding.GUARDDUTY_EKS_RUNTIME_MONITORING_ENABLED, this::reportError),
+                    wrapCheck(this::checkGuardDutyLambdaProtectionEnabled,        AWSFinding.GUARDDUTY_LAMBDA_PROTECTION_ENABLED, this::reportError),
+                    wrapCheck(this::checkGuardDutyRDSProtectionEnabled,           AWSFinding.GUARDDUTY_RDS_PROTECTION_ENABLED, this::reportError),
+                    wrapCheck(this::checkGuardDutyS3ProtectionEnabled,            AWSFinding.GUARDDUTY_S3_PROTECTION_ENABLED, this::reportError),
+                    wrapCheck(this::checkGuardDutyNoHighSeverityFindings,         AWSFinding.GUARDDUTY_NO_HIGH_SEVERITY_FINDINGS, this::reportError),
+                    wrapCheck(this::checkGuardDutyNotEnabled,                     AWSFinding.GUARDDUTY_NOT_ENABLED, this::reportError)
+            );
+            return runChecksInList(checksList, writer);
+        });
     }
 
     @Override

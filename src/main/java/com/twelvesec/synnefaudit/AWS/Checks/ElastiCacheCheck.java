@@ -35,31 +35,32 @@ public class ElastiCacheCheck implements CloudCheck {
 
     @Override
     public CompletableFuture<Void> runAllChecksAsync() {
-        return sharedDataProvider.getAllReplicationGroups()
-                .thenCompose(replGroups -> {
-                    this.allReplicationGroups = replGroups;
-                    return sharedDataProvider.getAllCacheClusters();
-                })
-                .thenCompose(cacheClusters -> {
-                    this.allCacheClusters = cacheClusters;
-                    return sharedDataProvider.getAllVPCSubnets();
-                })
-                .thenCompose(subnets -> {
-                    this.allVPCSubnets = subnets;
-                    return sharedDataProvider.getAllServerlessCaches();
-                })
-                .thenCompose(serverlesscaches -> {
-                    this.allServerlessCaches = serverlesscaches;
+        CompletableFuture<List<ReplicationGroup>> replicationGroups = sharedDataProvider.getAllReplicationGroups()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<CacheCluster>> cacheClusters = sharedDataProvider.getAllCacheClusters()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<Subnet>> vpcSubnets = sharedDataProvider.getAllVPCSubnets()
+                .exceptionally(ex -> null);
+        CompletableFuture<List<ServerlessCache>> serverlessCaches = sharedDataProvider.getAllServerlessCaches()
+                .exceptionally(ex -> null);
+
+        return CompletableFuture.allOf(replicationGroups, cacheClusters, vpcSubnets, serverlessCaches)
+                .thenCompose(v -> {
+                    this.allReplicationGroups = replicationGroups.join();
+                    this.allCacheClusters = cacheClusters.join();
+                    this.allVPCSubnets = vpcSubnets.join();
+                    this.allServerlessCaches = serverlessCaches.join();
+
                     List<Supplier<CheckResult>> checksList = List.of(
-                            wrapCheck(this::checkElastiCacheRedisAtRestEncryptionDisabled,          AWSFinding.ELASTICACHE_REDIS_AT_REST_ENCRYPTION_ENABLED, this::reportError),
-                            wrapCheck(this::checkElastiCacheRedisInTransitEncryptionDisabled,       AWSFinding.ELASTICACHE_REDIS_IN_TRANSIT_ENCRYPTION_ENABLED, this::reportError),
-                            wrapCheck(this::checkElastiCacheClusterInPublicSubnets,                 AWSFinding.ELASTICACHE_CLUSTER_NOT_IN_PUBLIC_SUBNETS, this::reportError),
-                            wrapCheck(this::checkElastiCacheServerlessInPublicSubnets,              AWSFinding.ELASTICACHE_SERVERLESS_NOT_IN_PUBLIC_SUBNETS, this::reportError),
-                            wrapCheck(this::checkElastiCacheRedisAutoMinorVersionUpgradesDisabled,  AWSFinding.ELASTICACHE_REDIS_AUTO_MINOR_VERSION_UPGRADES_ENABLED, this::reportError),
-                            wrapCheck(this::checkElastiCacheRedisAutomaticFailoverDisabled,         AWSFinding.ELASTICACHE_REDIS_AUTOMATIC_FAILOVER_ENABLED, this::reportError),
-                            wrapCheck(this::checkElastiCacheRedisAutomatedSnapshots,                AWSFinding.ELASTICACHE_REDIS_AUTOMATED_SNAPSHOTS, this::reportError),
-                            wrapCheck(this::checkElastiCacheRedisMultiAzDisabled,                   AWSFinding.ELASTICACHE_REDIS_MULTI_AZ_ENABLED, this::reportError),
-                            wrapCheck(this::checkElastiCacheRedisAuthDisabledForLegacyVersions,     AWSFinding.ELASTICACHE_REDIS_AUTH_ENABLED_LEGACY, this::reportError)
+                            wrapCheck(this::checkElastiCacheRedisAtRestEncryptionDisabled,         AWSFinding.ELASTICACHE_REDIS_AT_REST_ENCRYPTION_ENABLED, this::reportError),
+                            wrapCheck(this::checkElastiCacheRedisInTransitEncryptionDisabled,      AWSFinding.ELASTICACHE_REDIS_IN_TRANSIT_ENCRYPTION_ENABLED, this::reportError),
+                            wrapCheck(this::checkElastiCacheClusterInPublicSubnets,                AWSFinding.ELASTICACHE_CLUSTER_NOT_IN_PUBLIC_SUBNETS, this::reportError),
+                            wrapCheck(this::checkElastiCacheServerlessInPublicSubnets,             AWSFinding.ELASTICACHE_SERVERLESS_NOT_IN_PUBLIC_SUBNETS, this::reportError),
+                            wrapCheck(this::checkElastiCacheRedisAutoMinorVersionUpgradesDisabled, AWSFinding.ELASTICACHE_REDIS_AUTO_MINOR_VERSION_UPGRADES_ENABLED, this::reportError),
+                            wrapCheck(this::checkElastiCacheRedisAutomaticFailoverDisabled,        AWSFinding.ELASTICACHE_REDIS_AUTOMATIC_FAILOVER_ENABLED, this::reportError),
+                            wrapCheck(this::checkElastiCacheRedisAutomatedSnapshots,               AWSFinding.ELASTICACHE_REDIS_AUTOMATED_SNAPSHOTS, this::reportError),
+                            wrapCheck(this::checkElastiCacheRedisMultiAzDisabled,                  AWSFinding.ELASTICACHE_REDIS_MULTI_AZ_ENABLED, this::reportError),
+                            wrapCheck(this::checkElastiCacheRedisAuthDisabledForLegacyVersions,    AWSFinding.ELASTICACHE_REDIS_AUTH_ENABLED_LEGACY, this::reportError)
                     );
                     return runChecksInList(checksList, writer);
                 });
