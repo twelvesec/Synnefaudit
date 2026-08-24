@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EVENTBRIDGE_BUS_CROSS_ACCOUNT_ACCESS",
+  "CheckTitle": "EventBridge event allows cross-account access",
+  "Severity": "Medium",
+  "Description": "Amazon EventBridge event bus resource policies allow access from AWS accounts outside of the owning account.",
+  "Risk": "Cross-account access to an EventBridge event bus can allow external AWS accounts to publish events or otherwise interact with the event bus. Unintended access can enable unauthorized event injection, manipulation of event-driven workflows, data exposure through event payloads, and abuse of downstream targets, affecting the availability and integrity of data.",
+  "RelatedUrls": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-bus.html, https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-bus-example-policy-cross-account-custom-bus-source.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Remove unnecessary cross-account permissions from the event bus resource policy. Where cross-account access is required, restrict the Principal to specific trusted AWS accounts or organizations and limit permitted actions and events using appropriate policy conditions.",
+      "Urls": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cross-account.html, https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-bus-permissions-manage.html"
+    }
+  },
+  "Notes": ""
+}

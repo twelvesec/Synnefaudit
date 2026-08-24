@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EVENTBRIDGE_SCHEMA_REGISTRY_CROSS_ACCOUNT_ACCESS",
+  "CheckTitle": "EventBridge schema registry allows cross-account access",
+  "Severity": "Medium",
+  "Description": "EventBridge schema registry resource-based policies allow access from AWS accounts outside of the owning account.",
+  "Risk": "Unnecessary cross-account access to an EventBridge schema registry could allow external principals to discover, create, modify, or delete schemas and registry resources. This may expose application event structures and metadata, enable unauthorized changes to schemas, and increase the risk of downstream application or integration failures.",
+  "RelatedUrls": "https://aws.amazon.com/about-aws/whats-new/2021/09/cross-account-discovery-amazon-eventbridge-schema/",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Remove unnecessary cross-account permissions from EventBridge schema registry resource-based policies. Where cross-account access is required, restrict access to explicitly trusted AWS accounts or principals and grant only required actions in accordance with the principle of least privilege.",
+      "Urls": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-resource-based-schemas.html, https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-schema-registry.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EVENTBRIDGE_BUS_PUBLIC_ACCESS",
+  "CheckTitle": "EventBridge event bus policy permits public access",
+  "Severity": "High",
+  "Description": "EventBridge event bus resource policies allow public or anonymous access through broad principals such as Principal '*' or similarly unrestricted permissions.",
+  "Risk": "Public access to an EventBridge event bus can allow unauthenticated or unintended external principals to publish events or interact with the bus. Attackers may inject malicious events into event-driven workflows, trigger downstream actions, manipulate application behavior, or generate unexpected resource usage and costs.",
+  "RelatedUrls": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-bus-perms.html, https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cross-account.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Remove statements that grant public or anonymous access to the event bus. Restrict access to trusted AWS accounts, IAM principals, or AWS Organizations where cross-account access is required, and scope permissions to the minimum required actions and events.",
+      "Urls": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-bus-permissions-manage.html, https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-permissions-reference.html"
+    }
+  },
+  "Notes": ""
+}

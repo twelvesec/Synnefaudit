@@ -51,6 +51,7 @@ import software.amazon.awssdk.services.ecr.EcrAsyncClient;
 import software.amazon.awssdk.services.efs.EfsAsyncClient;
 import software.amazon.awssdk.services.elasticache.ElastiCacheAsyncClient;
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2AsyncClient;
+import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.glue.GlueAsyncClient;
 import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
@@ -68,6 +69,7 @@ import software.amazon.awssdk.services.resourceexplorer2.ResourceExplorer2AsyncC
 import software.amazon.awssdk.services.route53.Route53AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClient;
+import software.amazon.awssdk.services.schemas.SchemasAsyncClient;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerAsyncClient;
 import software.amazon.awssdk.services.securityhub.SecurityHubAsyncClient;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
@@ -135,6 +137,8 @@ public class App {
     private static AcmAsyncClient acm;
     private static ApplicationAutoScalingAsyncClient appAutoScaling;
     private static AutoScalingAsyncClient autoscaling;
+    private static EventBridgeAsyncClient eventBridge;
+    private static SchemasAsyncClient schemas;
 
     private static DataWriter writer;
     private static ReportPrinter printer;
@@ -182,7 +186,7 @@ public class App {
         try {
             sharedDataProvider = new SharedDataProvider(
                     accessAnalyzer, acm, autoscaling, athena, backup, cloudformation, cf, cloudTrail, cloudWatch, cloudWatchLogs, codeBuild, dax, dynamodb, ec2, ecr, efs, elasticache,
-                    elb, secretsmanager, guardduty, iam, kafka, kms, lambda, neptune, rds, route53, resourceexplorer2, s3, sns, ssm, sts, support);
+                    elb, eventBridge, secretsmanager, guardduty, iam, kafka, kms, lambda, neptune, schemas, rds, route53, resourceexplorer2, s3, sns, ssm, sts, support);
 
             List<CloudCheck> checks = getAWSChecks();
             printer.printSectionHeader(ReportPrinter.CHECKS_SUMMARY);
@@ -395,6 +399,7 @@ public class App {
                 new ELBCheck(writer, sharedDataProvider, elb, waf, config.path("aws").path("elb")),
                 new EnabledServicesCheck(writer, sharedDataProvider, secretsmanager, drs,
                         macie2, securityHub, waf),
+                new EventBridgeCheck(writer, sharedDataProvider, schemas, sts),
                 new GeneralCheck(writer, sharedDataProvider, accountClient, orgs, sts, config.path("aws").path("general")),
                 new GlueCheck(writer, glue),
                 new GuardDutyCheck(writer, sharedDataProvider, guardduty),
@@ -471,5 +476,7 @@ public class App {
         acm                 = awsDependencyFactory.getClient(AcmAsyncClient.class);
         appAutoScaling      = awsDependencyFactory.getClient(ApplicationAutoScalingAsyncClient.class);
         autoscaling         = awsDependencyFactory.getClient(AutoScalingAsyncClient.class);
+        eventBridge         = awsDependencyFactory.getClient(EventBridgeAsyncClient.class);
+        schemas             = awsDependencyFactory.getClient(SchemasAsyncClient.class);
     }
 }

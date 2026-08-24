@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "EVENTBRIDGE_GLOBAL_ENDPOINT_REPLICATION_ENABLED",
+  "CheckTitle": "EventBridge global endpoint without replication enabled",
+  "Severity": "Medium",
+  "Description": "EventBridge global endpoints are configured with event replication disabled. With event replication, custom events are replicated to event buses in both the primary and secondary regions.",
+  "Risk": "Without event replication, events may be lost or delayed during a regional failure and the global endpoint may not automatically recover event processing in the primary region after failover. This can increase recovery point objectives and result in inconsistencies across regions.",
+  "RelatedUrls": "https://docs.aws.amazon.com/securityhub/latest/userguide/eventbridge-controls.html#eventbridge-4, https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-ge-best-practices.html#eb-ge-bp-enable-replication",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable event replication on EventBridge global endpoints. Configure an appropriate execution role with least-privilege permissions for replication, ensure the primary and secondary event buses and their associated rules and targets are correctly configured, and design consumers to handle replicated events idempotently.",
+      "Urls": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-ge-create-endpoint.html, https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-global-endpoints.html#eb-ge-event-replication"
+    }
+  },
+  "Notes": ""
+}

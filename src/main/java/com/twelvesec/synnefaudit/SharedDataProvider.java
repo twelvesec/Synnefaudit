@@ -65,6 +65,9 @@ import software.amazon.awssdk.services.elasticache.model.*;
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2AsyncClient;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.DescribeLoadBalancersResponse;
 import software.amazon.awssdk.services.elasticloadbalancingv2.model.LoadBalancer;
+import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
+import software.amazon.awssdk.services.eventbridge.model.Endpoint;
+import software.amazon.awssdk.services.eventbridge.model.*;
 import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
 import software.amazon.awssdk.services.guardduty.model.ListDetectorsResponse;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
@@ -95,6 +98,10 @@ import software.amazon.awssdk.services.route53.model.ListHostedZonesRequest;
 import software.amazon.awssdk.services.route53.model.ListHostedZonesResponse;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.Bucket;
+import software.amazon.awssdk.services.schemas.SchemasAsyncClient;
+import software.amazon.awssdk.services.schemas.model.ListRegistriesRequest;
+import software.amazon.awssdk.services.schemas.model.ListRegistriesResponse;
+import software.amazon.awssdk.services.schemas.model.RegistrySummary;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerAsyncClient;
 import software.amazon.awssdk.services.secretsmanager.model.ListSecretsRequest;
 import software.amazon.awssdk.services.secretsmanager.model.ListSecretsResponse;
@@ -143,6 +150,8 @@ public class SharedDataProvider {
     private final EfsAsyncClient efs;
     private final ElastiCacheAsyncClient elasticache;
     private final ElasticLoadBalancingV2AsyncClient elb;
+    private final EventBridgeAsyncClient eventBridge;
+    private final SchemasAsyncClient schemas;
     private final SecretsManagerAsyncClient secretsmanager;
     private final GuardDutyAsyncClient guardduty;
     private final IamAsyncClient iam;
@@ -161,9 +170,9 @@ public class SharedDataProvider {
     public SharedDataProvider(AccessAnalyzerAsyncClient accessAnalyzer, AcmAsyncClient acm, AutoScalingAsyncClient autoscaling, AthenaAsyncClient athena, BackupAsyncClient backup,
                               CloudFormationAsyncClient cloudformation, CloudFrontAsyncClient cf, CloudTrailAsyncClient cloudTrail,
                               CloudWatchAsyncClient cloudWatch, CloudWatchLogsAsyncClient cloudwatchlogs, CodeBuildAsyncClient codeBuild, DaxAsyncClient dax, DynamoDbAsyncClient dynamodb,
-                              Ec2AsyncClient ec2, EcrAsyncClient ecr, EfsAsyncClient efs, ElastiCacheAsyncClient elasticache, ElasticLoadBalancingV2AsyncClient elb,
+                              Ec2AsyncClient ec2, EcrAsyncClient ecr, EfsAsyncClient efs, ElastiCacheAsyncClient elasticache, ElasticLoadBalancingV2AsyncClient elb, EventBridgeAsyncClient eventBridge,
                               SecretsManagerAsyncClient secretsmanager, GuardDutyAsyncClient guardduty, IamAsyncClient iam,
-                              KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, NeptuneAsyncClient neptune, RdsAsyncClient rds,
+                              KafkaAsyncClient kafka, KmsAsyncClient kms, LambdaAsyncClient lambda, NeptuneAsyncClient neptune, SchemasAsyncClient schemas, RdsAsyncClient rds,
                               Route53AsyncClient route53, ResourceExplorer2AsyncClient resourceexplorer2, S3AsyncClient s3, SnsAsyncClient sns,
                               SsmAsyncClient ssm, StsAsyncClient sts, SupportAsyncClient support) {
         this.accessAnalyzer = accessAnalyzer;
@@ -184,6 +193,7 @@ public class SharedDataProvider {
         this.efs = efs;
         this.elasticache = elasticache;
         this.elb = elb;
+        this.eventBridge = eventBridge;
         this.secretsmanager = secretsmanager;
         this.guardduty = guardduty;
         this.iam = iam;
@@ -191,6 +201,7 @@ public class SharedDataProvider {
         this.kms = kms;
         this.lambda = lambda;
         this.neptune = neptune;
+        this.schemas = schemas;
         this.rds = rds;
         this.route53 = route53;
         this.resourceexplorer2 = resourceexplorer2;
@@ -532,6 +543,30 @@ public class SharedDataProvider {
         Supplier<CompletableFuture<List<LoadBalancer>>> loader = () ->
             elb.describeLoadBalancers()
                 .thenApply(DescribeLoadBalancersResponse::loadBalancers);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<EventBus>> getAllEventBuses() {
+        String key = "eventbridge:eventbuses";
+        Supplier<CompletableFuture<List<EventBus>>> loader = () ->
+                eventBridge.listEventBuses(ListEventBusesRequest.builder().build())
+                        .thenApply(ListEventBusesResponse::eventBuses);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<Endpoint>> getAllEventBridgeEndpoints() {
+        String key = "eventbridge:endpoints";
+        Supplier<CompletableFuture<List<Endpoint>>> loader = () ->
+                eventBridge.listEndpoints(ListEndpointsRequest.builder().build())
+                        .thenApply(ListEndpointsResponse::endpoints);
+        return getCachedData(key, loader);
+    }
+
+    public CompletableFuture<List<RegistrySummary>> getAllSchemaRegistries() {
+        String key = "schemas:registries";
+        Supplier<CompletableFuture<List<RegistrySummary>>> loader = () ->
+                schemas.listRegistries(ListRegistriesRequest.builder().build())
+                        .thenApply(ListRegistriesResponse::registries);
         return getCachedData(key, loader);
     }
 

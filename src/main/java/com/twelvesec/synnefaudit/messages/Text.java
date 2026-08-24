@@ -42,6 +42,8 @@ public enum Text {
     ECR_FINDINGS_FOUND_FOR_IMAGE_TAG("Findings found for image tag '%s'."),
 
     NO_ELBS_FOUND("No ELBs found."),
+
+    NO_EVENT_BUSSES_FOUND("No event busses found."),
     
     NO_VIRTUAL_MFA_FOR_ROOT("No virtual MFAs found for root account."),
     NO_MFA_DEVICES_FOR_USER("No MFA devices found for user."),

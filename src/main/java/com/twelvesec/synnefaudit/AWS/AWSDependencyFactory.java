@@ -33,6 +33,7 @@ import software.amazon.awssdk.services.ecr.EcrAsyncClient;
 import software.amazon.awssdk.services.efs.EfsAsyncClient;
 import software.amazon.awssdk.services.elasticache.ElastiCacheAsyncClient;
 import software.amazon.awssdk.services.elasticloadbalancingv2.ElasticLoadBalancingV2AsyncClient;
+import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.glue.GlueAsyncClient;
 import software.amazon.awssdk.services.guardduty.GuardDutyAsyncClient;
 import software.amazon.awssdk.services.iam.IamAsyncClient;
@@ -53,6 +54,7 @@ import software.amazon.awssdk.services.s3.model.BucketLocationConstraint;
 import software.amazon.awssdk.services.s3.model.GetBucketLocationRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketLocationResponse;
 import software.amazon.awssdk.services.s3control.S3ControlAsyncClient;
+import software.amazon.awssdk.services.schemas.SchemasAsyncClient;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerAsyncClient;
 import software.amazon.awssdk.services.securityhub.SecurityHubAsyncClient;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
@@ -125,7 +127,9 @@ public class AWSDependencyFactory {
         Map.entry(OrganizationsAsyncClient.class,            builderFor(OrganizationsAsyncClient::builder)),
         Map.entry(AcmAsyncClient.class,                      builderFor(AcmAsyncClient::builder)),
         Map.entry(ApplicationAutoScalingAsyncClient.class,   builderFor(ApplicationAutoScalingAsyncClient::builder)),
-        Map.entry(AutoScalingAsyncClient.class,              builderFor(AutoScalingAsyncClient::builder))
+        Map.entry(AutoScalingAsyncClient.class,              builderFor(AutoScalingAsyncClient::builder)),
+        Map.entry(EventBridgeAsyncClient.class,              builderFor(EventBridgeAsyncClient::builder)),
+        Map.entry(SchemasAsyncClient.class,                  builderFor(SchemasAsyncClient::builder))
     );
 
     public AWSDependencyFactory(Region region) {

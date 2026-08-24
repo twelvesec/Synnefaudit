@@ -236,6 +236,14 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>autoscaling</artifactId>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>eventbridge</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>schemas</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>commons-cli</groupId>
