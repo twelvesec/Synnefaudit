@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELB_ONLY_HTTPS_OR_SSL_LISTENERS",
+  "CheckTitle": "ELB with non-secure listeners configured",
+  "Severity": "Medium",
+  "Description": "Elastic Load Balancers found using unencrypted (HTTP) listeners instead of secure HTTPS or SSL/TLS listeners.",
+  "Risk": "Using HTTP listeners allows data to be transmitted in plaintext across the network, exposing sensitive information, user credentials, and session tokens to interception and eavesdropping.",
+  "RelatedUrls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-listener-config.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-listeners.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-listeners.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Delete HTTP listeners or configure them to redirect all HTTP requests to a secure HTTPS listener. Ensure all active listeners use encrypted protocols.",
+      "Urls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-add-or-delete-listeners.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/network/create-listener.html"
+    }
+  },
+  "Notes": ""
+}

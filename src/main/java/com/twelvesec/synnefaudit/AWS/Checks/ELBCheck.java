@@ -31,6 +31,8 @@ public class ELBCheck implements CloudCheck {
     private final Wafv2AsyncClient waf;
     private final JsonNode config;
 
+    private final Map<String, String> TLS_1_2_OR_HIGHER_POLICIES;
+
     public ELBCheck(DataWriter writer, SharedDataProvider sharedDataProvider,
                     ElasticLoadBalancingV2AsyncClient elb, Wafv2AsyncClient waf, JsonNode config) {
         this.writer = writer;
@@ -38,6 +40,8 @@ public class ELBCheck implements CloudCheck {
         this.elb = elb;
         this.waf = waf;
         this.config = config;
+
+        TLS_1_2_OR_HIGHER_POLICIES = getStringMap(config.path("tls_1_2_or_higher_policies"));
     }
 
     @Override
@@ -49,15 +53,17 @@ public class ELBCheck implements CloudCheck {
             this.allLoadBalancers = lb;
 
             List<Supplier<CheckResult>> checksList = List.of(
-                    wrapCheck(this::checkELBWithNoWAFACLAttached,                             AWSFinding.ELB_WITHOUT_WAF_ACL_ATTACHED, this::reportError),
+                    wrapCheck(this::checkELBWithNoWAFACLAttached,                            AWSFinding.ELB_WITHOUT_WAF_ACL_ATTACHED, this::reportError),
                     wrapCheck(this::checkELBALBWithAccessLoggingDisabled,                    AWSFinding.ELB_ALBS_ACCESS_LOGGING_DISABLED, this::reportError),
                     wrapCheck(this::checkELBWithDeletionProtectionDisabled,                  AWSFinding.ELB_DELETION_PROTECTION_DISABLED, this::reportError),
                     wrapCheck(this::checkELBListenerWithoutSSLFound,                         AWSFinding.ELB_LISTENER_WITHOUT_SSL, this::reportError),
                     wrapCheck(this::checkPubliclyAccessibleLoadBalancers,                    AWSFinding.PUBLICLY_ACCESSIBLE_LOAD_BALANCERS, this::reportError),
                     wrapCheck(this::checkAlbsDefensiveMitigationButNotDroppingInvalidHeaders,AWSFinding.ELB_ALBS_DEFENSIVE_MITIGATION_NOT_DROPPING_HEADERS, this::reportError),
-                    wrapCheck(this::checkELBInsecureSSLCiphers,                              AWSFinding.ELB_INSECURE_SSL_CIPHERS, this::reportError),
                     wrapCheck(this::checkELBWithoutListeners,                                AWSFinding.ELB_WITHOUT_LISTENERS, this::reportError),
-                    wrapCheck(this::checkUnusedElasticLoadBalancersDeleted,                  AWSFinding.UNUSED_ELASTIC_LOAD_BALANCERS_EXIST, this::reportError)
+                    wrapCheck(this::checkUnusedElasticLoadBalancersDeleted,                  AWSFinding.UNUSED_ELASTIC_LOAD_BALANCERS_EXIST, this::reportError),
+                    wrapCheck(this::checkELBSecureSSLPolicies,                               AWSFinding.ELB_SECURE_SSL_POLICIES, this::reportError),
+                    wrapCheck(this::checkELBAccessLogsS3Enabled,                             AWSFinding.ELB_ACCESS_LOGS_S3_ENABLED, this::reportError),
+                    wrapCheck(this::checkELBOnlyHttpsOrSslListeners,                         AWSFinding.ELB_ONLY_HTTPS_OR_SSL_LISTENERS, this::reportError)
             );
             return runChecksInList(checksList, writer);
         });
@@ -323,57 +329,6 @@ public class ELBCheck implements CloudCheck {
         return status;
     }
 
-    private Status checkELBInsecureSSLCiphers() {
-        if (allLoadBalancers.isEmpty()) {
-            writer.addToBuffer(AWSFinding.ELB_INSECURE_SSL_CIPHERS,
-                            Text.NO_ELBS_FOUND.toString(), Status.NOT_APPLICABLE);
-            return Status.NOT_APPLICABLE;
-        }
-
-        List<Map<String, Object>> result = allLoadBalancers.stream()
-            .flatMap(lb -> {
-                DescribeListenersResponse listenersResponse = elb.describeListeners(
-                    DescribeListenersRequest.builder().loadBalancerArn(lb.loadBalancerArn()).build()
-                ).join();
-                
-                return listenersResponse.listeners().stream()
-                    .filter(listener -> "HTTPS".equalsIgnoreCase(listener.protocol().toString()))
-                    .map(listener -> {
-                        String policy = listener.sslPolicy();
-                        Status s = evaluateSSLPolicy(policy);
-                        String nameArn = lb.loadBalancerName() + ":" + listener.listenerArn();
-                        
-                        Map<String, Object> inner = new HashMap<>();
-                        inner.put(Text.STATUS.toString(), s);
-                        inner.put(Text.RESULT.toString(), listener);
-                        inner.put("ssl_policy", policy);
-                        return Map.<String, Object>of(nameArn, inner);
-                    });
-            })
-            .toList();
-
-        Status status = getOverallStatus(result);
-        writer.addToBuffer(AWSFinding.ELB_INSECURE_SSL_CIPHERS, result, status);
-        return status;
-    }
-
-    private Status evaluateSSLPolicy(String sslPolicy) {
-        if (sslPolicy == null || sslPolicy.isEmpty()) {
-            return Status.FAIL;
-        }
-
-        List<String> securePolicies = getStringList(config.path("secure_policies"));
-        List<String> insecurePolicies = getStringList(config.path("insecure_policies"));
-
-        if (insecurePolicies.stream().anyMatch(sslPolicy::contains)) {
-            return Status.FAIL;
-        }
-        if (securePolicies.stream().anyMatch(sslPolicy::contains)) {
-            return Status.PASS;
-        }
-        return Status.FAIL;
-    }
-
     private Status checkELBWithoutListeners() {
         if (allLoadBalancers == null || allLoadBalancers.isEmpty()) {
             writer.addToBuffer(AWSFinding.ELB_WITHOUT_LISTENERS, 
@@ -478,6 +433,149 @@ public class ELBCheck implements CloudCheck {
 
         Status status = getOverallStatus(result);
         writer.addToBuffer(AWSFinding.UNUSED_ELASTIC_LOAD_BALANCERS_EXIST, result, status);
+        return status;
+    }
+
+    private Status checkELBSecureSSLPolicies() {
+        if (allLoadBalancers.isEmpty()) {
+            writer.addToBuffer(AWSFinding.ELB_SECURE_SSL_POLICIES,
+                    Text.NO_ELBS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allLoadBalancers.stream()
+                .map(lb -> {
+                    String arn = lb.loadBalancerArn();
+                    Status s;
+                    ObjectNode r;
+                    try {
+                        DescribeListenersResponse response = elb.describeListeners(
+                                DescribeListenersRequest.builder().loadBalancerArn(arn).build()
+                        ).join();
+
+                        boolean violation = response.listeners().stream()
+                                .filter(listener -> {
+                                    String protocol = listener.protocolAsString();
+                                    return "HTTPS".equalsIgnoreCase(protocol) || "TLS".equalsIgnoreCase(protocol);
+                                })
+                                .anyMatch(listener -> !isTls12OrHigherPolicy(listener.sslPolicy()));
+
+                        s = violation ? Status.FAIL : Status.PASS;
+                        r = MAPPER.valueToTree(response.toBuilder());
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(arn, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.ELB_SECURE_SSL_POLICIES, result, status);
+        return status;
+    }
+
+    private boolean isTls12OrHigherPolicy(String sslPolicy) {
+        if (sslPolicy == null || sslPolicy.isEmpty() || TLS_1_2_OR_HIGHER_POLICIES == null) {
+            return false;
+        }
+        return TLS_1_2_OR_HIGHER_POLICIES.values().stream()
+                .anyMatch(policies -> policies != null && policies.contains(sslPolicy));
+    }
+
+    private Status checkELBAccessLogsS3Enabled() {
+        if (allLoadBalancers.isEmpty()) {
+            writer.addToBuffer(AWSFinding.ELB_ACCESS_LOGS_S3_ENABLED,
+                    Text.NO_ELBS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allLoadBalancers.stream()
+                .map(lb -> {
+                    String arn = lb.loadBalancerArn();
+                    Status s;
+                    ObjectNode r;
+                    try {
+                        DescribeLoadBalancerAttributesResponse response = elb.describeLoadBalancerAttributes(
+                                DescribeLoadBalancerAttributesRequest.builder().loadBalancerArn(arn).build()
+                        ).join();
+
+                        boolean logsEnabled = response.attributes().stream()
+                                .filter(attr -> "access_logs.s3.enabled".equals(attr.key()))
+                                .anyMatch(attr -> "true".equalsIgnoreCase(attr.value()));
+
+                        s = logsEnabled ? Status.PASS : Status.FAIL;
+                        r = MAPPER.valueToTree(response.toBuilder());
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(arn, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.ELB_ACCESS_LOGS_S3_ENABLED, result, status);
+        return status;
+    }
+
+    private Status checkELBOnlyHttpsOrSslListeners() {
+        if (allLoadBalancers.isEmpty()) {
+            writer.addToBuffer(AWSFinding.ELB_ONLY_HTTPS_OR_SSL_LISTENERS,
+                    Text.NO_ELBS_FOUND.toString(), Status.NOT_APPLICABLE);
+            return Status.NOT_APPLICABLE;
+        }
+
+        List<Map<String, Object>> result = allLoadBalancers.stream()
+                .map(lb -> {
+                    String arn = lb.loadBalancerArn();
+                    Status s;
+                    ObjectNode r;
+                    try {
+                        DescribeListenersResponse response = elb.describeListeners(
+                                DescribeListenersRequest.builder().loadBalancerArn(arn).build()
+                        ).join();
+
+                        List<Listener> listeners = response.listeners();
+
+                        if (listeners.isEmpty()) {
+                            s = Status.FAIL;
+                        } else {
+                            boolean allSecure = listeners.stream().allMatch(listener -> {
+                                String protocol = listener.protocolAsString();
+                                return "HTTPS".equalsIgnoreCase(protocol)
+                                        || "SSL".equalsIgnoreCase(protocol)
+                                        || "TLS".equalsIgnoreCase(protocol);
+                            });
+                            s = allSecure ? Status.PASS : Status.FAIL;
+                        }
+
+                        r = MAPPER.valueToTree(response.toBuilder());
+                    } catch (Exception e) {
+                        s = Status.FAIL_EXCEPTION;
+                        r = MAPPER.createObjectNode().put(Text.ERROR.toString(),
+                                Text.EXCEPTION.toString().concat(e.getMessage()));
+                    }
+
+                    Map<String, Object> inner = new HashMap<>();
+                    inner.put(Text.STATUS.toString(), s);
+                    inner.put(Text.RESULT.toString(), r);
+                    return Map.<String, Object>of(arn, inner);
+                })
+                .toList();
+
+        Status status = getOverallStatus(result);
+        writer.addToBuffer(AWSFinding.ELB_ONLY_HTTPS_OR_SSL_LISTENERS, result, status);
         return status;
     }
 }

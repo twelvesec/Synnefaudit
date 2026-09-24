@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELB_SECURE_SSL_POLICIES",
+  "CheckTitle": "ELBs without TLS minimum 1.2 or higher security policies",
+  "Severity": "Medium",
+  "Description": "ELB HTTPS and TLS listeners found not using an approved TLS 1.2 or higher security policy (such as ELBSecurityPolicy-TLS-1-2-2017-01).",
+  "Risk": "Using outdated TLS policies (such as those allowing TLS 1.0 or 1.1) exposes in-transit traffic to known cryptographic vulnerabilities and man-in-the-middle attacks.",
+  "RelatedUrls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-policy-table.html#tls-protocols, https://docs.aws.amazon.com/elasticloadbalancing/latest/application/describe-ssl-policies.html#tls-security-policies, https://docs.aws.amazon.com/elasticloadbalancing/latest/network/describe-ssl-policies.html#tls-security-policies",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Update the load balancer listeners (HTTPS/TLS) to use a security policy that enforces a minimum of TLS 1.2, such as ELBSecurityPolicy-TLS-1-2-2017-01 or ELBSecurityPolicy-TLS13-1-2-2021-06.",
+      "Urls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/ssl-config-update.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html"
+    }
+  },
+  "Notes": ""
+}

@@ -1,0 +1,22 @@
+{
+  "Provider": "aws",
+  "CheckID": "ELB_ACCESS_LOGS_S3_ENABLED",
+  "CheckTitle": "ELB without access logs to S3",
+  "Severity": "Low",
+  "Description": "Elastic Load Balancers found without access logging configured to store logs in an Amazon S3 bucket.",
+  "Risk": "Without access logs, it is difficult to monitor traffic, analyze request patterns, troubleshoot operational issues, and perform forensics in the event of a security incident.",
+  "RelatedUrls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/access-log-collection.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-access-logs.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-access-logs.html",
+  "Remediation": {
+    "Code": {
+      "CLI": "",
+      "NativeIaC": "",
+      "Other": "",
+      "Terraform": ""
+    },
+    "Recommendation": {
+      "Text": "Enable access logging for the Elastic Load Balancer and specify a secure, properly configured Amazon S3 bucket to store the logs.",
+      "Urls": "https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/enable-access-logs.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html, https://docs.aws.amazon.com/elasticloadbalancing/latest/network/enable-access-logs.html"
+    }
+  },
+  "Notes": ""
+}
