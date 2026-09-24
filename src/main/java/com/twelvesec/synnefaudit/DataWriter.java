@@ -15,7 +15,9 @@ import com.twelvesec.synnefaudit.messages.Text;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -93,7 +95,7 @@ public class DataWriter {
             try {
                 ObjectNode output = readExistingFile();
                 snapshot.forEach(output::set);
-                writeFile(output, outputFilePath);
+                writeFileAtomic(output, outputFilePath);
             } catch (Exception e) {
                 System.err.println("Failed to write .json output file: " + e.getMessage());
                 buffer.putAll(snapshot);
@@ -102,7 +104,7 @@ public class DataWriter {
             try {
                 ObjectNode summaryOutput = readExistingSummaryFile();
                 summarySnapshot.forEach(summaryOutput::set);
-                writeFile(summaryOutput, summaryFilePath);
+                writeFileAtomic(summaryOutput, summaryFilePath);
             } catch (Exception e) {
                 System.err.println("Failed to write .json summary file: " + e.getMessage());
                 summaryBuffer.putAll(summarySnapshot);
@@ -124,10 +126,11 @@ public class DataWriter {
         }
     }
 
-    private void writeFile(ObjectNode content, Path path) {
+    private void writeFileAtomic(ObjectNode content, Path path) {
+        Path tempFile = path.resolveSibling(path.getFileName() + ".tmp");
         try {
-            MAPPER.writerWithDefaultPrettyPrinter()
-                .writeValue(path.toFile(), content);
+            MAPPER.writerWithDefaultPrettyPrinter().writeValue(tempFile.toFile(), content);
+            Files.move(tempFile, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to write JSON file to " + path, e);
         }

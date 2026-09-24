@@ -149,6 +149,7 @@ public class App {
 
     private static ExecutorService executor;
 
+    private static boolean completedNormally = false;
     private static int exitCode = 0;
 
     static void main(String[] args) {
@@ -180,6 +181,7 @@ public class App {
         }
 
         writer = new DataWriter(outfilePath);
+        addShutdownHook();
         setAWSClients();
         executor = Executors.newVirtualThreadPerTaskExecutor();
 
@@ -198,6 +200,7 @@ public class App {
                                 synchronized (System.out) {
                                     printer.printIndividualStatus(summary);
                                 }
+                                writer.flush();
                                 return summary;
                             }))
                     .toList();
@@ -227,7 +230,7 @@ public class App {
                     } catch (IOException ignored) {}
                 }
             }
-
+            completedNormally = true;
             exitCode = 0;
         } catch (Exception e) {
             System.err.println(Text.EXCEPTION.toString() + e.getMessage());
@@ -376,6 +379,28 @@ public class App {
         pw.println("_________________________________________________________________________________");
 
         pw.flush();
+    }
+
+    private static void addShutdownHook() {
+        Thread shutdownHook = new Thread(() -> {
+            if (!completedNormally) {
+                System.out.println("\nProcess interrupted. Flushing partial audit data to disk...");
+                if (writer != null) {
+                    writer.flush();
+                    Path generatedJson = writer.getOutputFilePath();
+                    try {
+                        if (Files.exists(generatedJson) && Files.size(generatedJson) > 0) {
+                            Path targetHtml = generatedJson.resolveSibling(
+                                    generatedJson.getFileName().toString().replace(".json", "-INTERRUPTED.html")
+                            );
+                            HtmlReportGenerator.generate(generatedJson, targetHtml);
+                            System.out.println("Partial emergency report generated at: " + targetHtml);
+                        }
+                    } catch (IOException ignored) {}
+                }
+            }
+        });
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
     private static List<CloudCheck> getAWSChecks() {
