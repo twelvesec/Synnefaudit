@@ -3,7 +3,43 @@
 This is a cli tool that can be used to perform audits on AWS infrastructure.
 After running, a detailed report is generated based on different metrics and requirements which includes the response data for each item, issue descriptions, recommendations and links to official resources that expand on what is mentioned and offer additional assistance.
 
-# How to use
+# Usage
+
+```
+usage: synnefaudit [options]
+
+=================================================================================
+ SYNNEFAUDIT SECURITY DASHBOARD CLI
+=================================================================================
+This program executes live AWS architecture scans or builds HTML reports locally.
+
+GLOBAL OPTIONS (Optional):
+     --format <FORMAT>    Output strategy variations: json | html | all (default value)
+  -h,--help               Show this grouped help menu context.
+
+LIVE SCAN MODE OPTIONS:
+     --outdir <OUTDIR>    Target path where audit assets drop
+     --region <REGION>    Target cloud scope deployment geography
+
+LIVE SCAN AUTHENTICATION:
+     --profile <PROFILE>    Named credential map stored via local AWS config file
+
+REPORT COMPILATION MODE OPTIONS (Isolated processing path):
+     --from-json <JSON_PATH>    Skips live network requests entirely to forge HTML visualizations
+                                directly from a local log source
+```
+
+## Usage Examples
+
+```
+synnefaudit --help
+
+synnefaudit --region eu-west-2 --profile myscanprofileonAWS --outdir C:\Users\myuser\Desktop\synnefaudit-output --format json
+
+synnefaudit --from-json C:\Users\myuser\Desktop\synnefaudit-output\synnefaudit-output-2026XXXXXXXXX.json
+```
+
+## Setup (AWS)
 
 The AWS permissions required for the user are: SecurityAudit, ViewOnlyAccess
 
@@ -36,18 +72,6 @@ In order to test everything is set up correctly, you may run a command such as:
 ```
 aws s3 ls
 ```
-
-Call the program using the following parameters:
-```
---region {region} --profile {profile} --outdir {absolute-path-to-output-directory}
-```
-
-If there is already a JSON output you want to use to create an HTML file, run:
-```
---from-json {absolute-path-to-json-file}
-```
-
-You may also use `--help` for more options.
 
 # Output
 

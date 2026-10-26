@@ -548,7 +548,7 @@ public class HtmlReportGenerator {
                             <th onclick="sortTable(3)">Severity</th>
                             <th onclick="sortTable(4)">Description & Risks</th>
                             <th onclick="sortTable(5)">Remediation Guide</th>
-                            <th>Evidence Payload</th>
+                            <th>Affected Resources / Output</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
